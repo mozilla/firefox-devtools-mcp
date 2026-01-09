@@ -1,0 +1,282 @@
+/**
+ * Firefox Management Tools
+ * Tools for managing Firefox instance, logs, and configuration
+ */
+
+import { readFileSync, existsSync, statSync } from 'node:fs';
+import { getFirefox, resetFirefox, setNextLaunchOptions } from '../index.js';
+import { errorResponse, successResponse } from '../utils/response-helpers.js';
+
+// ============================================================================
+// Tool: get_firefox_logs
+// ============================================================================
+
+export const getFirefoxLogsTool = {
+  name: 'get_firefox_output',
+  description:
+    'Retrieve Firefox output (stdout/stderr including MOZ_LOG, warnings, crashes, stack traces). Returns recent output from the capture file. Use filters to focus on specific content.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      lines: {
+        type: 'number',
+        description: 'Number of recent log lines to return (default: 100, max: 10000)',
+      },
+      grep: {
+        type: 'string',
+        description: 'Filter log lines containing this string (case-insensitive)',
+      },
+      since: {
+        type: 'number',
+        description: 'Only show logs written in the last N seconds',
+      },
+    },
+  },
+};
+
+export async function handleGetFirefoxLogs(input: unknown) {
+  try {
+    const {
+      lines = 100,
+      grep,
+      since,
+    } = input as {
+      lines?: number;
+      grep?: string;
+      since?: number;
+    };
+
+    const firefox = await getFirefox();
+    const logFilePath = firefox.getLogFilePath();
+
+    if (!logFilePath) {
+      return successResponse(
+        'No output capture configured. Use --env to set environment variables or --output-file to enable output capture.'
+      );
+    }
+
+    if (!existsSync(logFilePath)) {
+      return successResponse(`Output file not found: ${logFilePath}`);
+    }
+
+    // Check file age if 'since' filter is used
+    if (since !== undefined) {
+      const stats = statSync(logFilePath);
+      const ageSeconds = (Date.now() - stats.mtimeMs) / 1000;
+      if (ageSeconds > since) {
+        return successResponse(
+          `Output file is ${Math.floor(ageSeconds)}s old, but only output from last ${since}s was requested. File may not have recent entries.`
+        );
+      }
+    }
+
+    // Read output file
+    const content = readFileSync(logFilePath, 'utf-8');
+    let allLines = content.split('\n').filter((line) => line.trim().length > 0);
+
+    // Apply grep filter
+    if (grep) {
+      const grepLower = grep.toLowerCase();
+      allLines = allLines.filter((line) => line.toLowerCase().includes(grepLower));
+    }
+
+    // Get last N lines
+    const maxLines = Math.min(lines, 10000);
+    const recentLines = allLines.slice(-maxLines);
+
+    const result = [
+      `📋 Firefox Output File: ${logFilePath}`,
+      `Total lines in file: ${allLines.length}`,
+      grep ? `Lines matching "${grep}": ${allLines.length}` : '',
+      `Showing last ${recentLines.length} lines:`,
+      '',
+      '─'.repeat(80),
+      recentLines.join('\n'),
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    return successResponse(result);
+  } catch (error) {
+    return errorResponse(error as Error);
+  }
+}
+
+// ============================================================================
+// Tool: get_firefox_info
+// ============================================================================
+
+export const getFirefoxInfoTool = {
+  name: 'get_firefox_info',
+  description:
+    'Get information about the current Firefox instance configuration, including binary path, environment variables, and output file location.',
+  inputSchema: {
+    type: 'object',
+    properties: {},
+  },
+};
+
+export async function handleGetFirefoxInfo(_input: unknown) {
+  try {
+    const firefox = await getFirefox();
+    const options = firefox.getOptions();
+    const logFilePath = firefox.getLogFilePath();
+
+    const info = [];
+    info.push('🦊 Firefox Instance Configuration');
+    info.push('');
+
+    info.push(`Binary: ${options.firefoxPath ?? 'System Firefox (default)'}`);
+    info.push(`Headless: ${options.headless ? 'Yes' : 'No'}`);
+
+    if (options.viewport) {
+      info.push(`Viewport: ${options.viewport.width}x${options.viewport.height}`);
+    }
+
+    if (options.profilePath) {
+      info.push(`Profile: ${options.profilePath}`);
+    }
+
+    if (options.startUrl) {
+      info.push(`Start URL: ${options.startUrl}`);
+    }
+
+    if (options.args && options.args.length > 0) {
+      info.push(`Arguments: ${options.args.join(' ')}`);
+    }
+
+    if (options.env && Object.keys(options.env).length > 0) {
+      info.push('');
+      info.push('Environment Variables:');
+      for (const [key, value] of Object.entries(options.env)) {
+        info.push(`  ${key}=${value}`);
+      }
+    }
+
+    if (logFilePath) {
+      info.push('');
+      info.push(`Output File: ${logFilePath}`);
+      if (existsSync(logFilePath)) {
+        const stats = statSync(logFilePath);
+        const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
+        info.push(`  Size: ${sizeMB} MB`);
+        info.push(`  Last Modified: ${stats.mtime.toISOString()}`);
+      } else {
+        info.push('  (file not created yet)');
+      }
+    }
+
+    return successResponse(info.join('\n'));
+  } catch (error) {
+    return errorResponse(error as Error);
+  }
+}
+
+// ============================================================================
+// Tool: restart_firefox
+// ============================================================================
+
+export const restartFirefoxTool = {
+  name: 'restart_firefox',
+  description:
+    'Restart Firefox with different configuration. Allows changing binary path, environment variables, and other options. All current tabs will be closed.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      firefoxPath: {
+        type: 'string',
+        description: 'New Firefox binary path (optional, keeps current if not specified)',
+      },
+      env: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+        description:
+          'New environment variables in KEY=VALUE format (optional, e.g., ["MOZ_LOG=HTMLMediaElement:5", "MOZ_LOG_FILE=/tmp/ff.log"])',
+      },
+      headless: {
+        type: 'boolean',
+        description: 'Run in headless mode (optional, keeps current if not specified)',
+      },
+      startUrl: {
+        type: 'string',
+        description:
+          'URL to navigate to after restart (optional, uses about:home if not specified)',
+      },
+    },
+  },
+};
+
+export async function handleRestartFirefox(input: unknown) {
+  try {
+    const { firefoxPath, env, headless, startUrl } = input as {
+      firefoxPath?: string;
+      env?: string[];
+      headless?: boolean;
+      startUrl?: string;
+    };
+
+    // Get current Firefox instance to retrieve current options
+    const currentFirefox = await getFirefox();
+    const currentOptions = currentFirefox.getOptions();
+
+    // Parse new environment variables
+    let newEnv: Record<string, string> | undefined;
+    if (env && Array.isArray(env) && env.length > 0) {
+      newEnv = {};
+      for (const envStr of env) {
+        const [key, ...valueParts] = envStr.split('=');
+        if (key && valueParts.length > 0) {
+          newEnv[key] = valueParts.join('=');
+        }
+      }
+    }
+
+    // Merge with current options, preferring new values
+    const newOptions = {
+      ...currentOptions,
+      firefoxPath: firefoxPath ?? currentOptions.firefoxPath,
+      env: newEnv !== undefined ? newEnv : currentOptions.env,
+      headless: headless !== undefined ? headless : currentOptions.headless,
+      startUrl: startUrl ?? currentOptions.startUrl ?? 'about:home',
+    };
+
+    // Set options for next launch
+    setNextLaunchOptions(newOptions);
+
+    // Close current instance
+    await currentFirefox.close();
+    resetFirefox();
+
+    // Prepare change summary
+    const changes = [];
+    if (firefoxPath && firefoxPath !== currentOptions.firefoxPath) {
+      changes.push(`Binary: ${firefoxPath}`);
+    }
+    if (newEnv !== undefined && JSON.stringify(newEnv) !== JSON.stringify(currentOptions.env)) {
+      changes.push(`Environment variables updated:`);
+      for (const [key, value] of Object.entries(newEnv)) {
+        changes.push(`  ${key}=${value}`);
+      }
+    }
+    if (headless !== undefined && headless !== currentOptions.headless) {
+      changes.push(`Headless: ${headless ? 'enabled' : 'disabled'}`);
+    }
+    if (startUrl && startUrl !== currentOptions.startUrl) {
+      changes.push(`Start URL: ${startUrl}`);
+    }
+
+    if (changes.length === 0) {
+      return successResponse(
+        '✅ Firefox closed. Will restart with same configuration on next tool call.'
+      );
+    }
+
+    return successResponse(
+      `✅ Firefox closed. Will restart with new configuration on next tool call:\n${changes.join('\n')}`
+    );
+  } catch (error) {
+    return errorResponse(error as Error);
+  }
+}

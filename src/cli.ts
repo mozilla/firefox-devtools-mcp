@@ -66,6 +66,16 @@ export const cliOptions = {
     description: 'Marionette port to connect to when using --connect-existing (default: 2828)',
     default: Number(process.env.MARIONETTE_PORT ?? '2828'),
   },
+  env: {
+    type: 'array',
+    description:
+      'Environment variables for Firefox in KEY=VALUE format. Can be specified multiple times. Example: --env MOZ_LOG=HTMLMediaElement:4',
+  },
+  outputFile: {
+    type: 'string',
+    description:
+      'Path to file where Firefox output (stdout/stderr) will be written. If not specified, output is written to ~/.firefox-devtools-mcp/output/',
+  },
 } satisfies Record<string, YargsOptions>;
 
 export function parseArguments(version: string, argv = process.argv) {

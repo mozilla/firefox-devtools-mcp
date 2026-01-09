@@ -391,6 +391,20 @@ export class FirefoxClient {
   }
 
   /**
+   * Get log file path (if logging is enabled)
+   */
+  getLogFilePath(): string | undefined {
+    return this.core.getLogFilePath();
+  }
+
+  /**
+   * Get current launch options
+   */
+  getOptions(): FirefoxLaunchOptions {
+    return this.core.getOptions();
+  }
+
+  /**
    * Reset all internal state (used when Firefox is detected as closed)
    */
   reset(): void {

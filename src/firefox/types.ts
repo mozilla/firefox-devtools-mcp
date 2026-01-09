@@ -60,6 +60,8 @@ export interface FirefoxLaunchOptions {
   acceptInsecureCerts?: boolean | undefined;
   connectExisting?: boolean | undefined;
   marionettePort?: number | undefined;
+  env?: Record<string, string> | undefined;
+  logFile?: string | undefined;
 }
 
 /**

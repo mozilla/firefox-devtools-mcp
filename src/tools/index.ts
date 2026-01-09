@@ -80,3 +80,13 @@ export {
   handleNavigateHistory,
   handleSetViewportSize,
 } from './utilities.js';
+
+// Firefox management tools (logs, restart, info)
+export {
+  getFirefoxLogsTool,
+  getFirefoxInfoTool,
+  restartFirefoxTool,
+  handleGetFirefoxLogs,
+  handleGetFirefoxInfo,
+  handleRestartFirefox,
+} from './firefox-management.js';
