@@ -16,8 +16,8 @@ export {
   handleClosePage,
 } from './pages.js';
 
-// Script evaluation tools - DISABLED (see docs/future-features.md)
-// export { evaluateScriptTool, handleEvaluateScript } from './script.js';
+// Script evaluation tools
+export { evaluateScriptTool, handleEvaluateScript } from './script.js';
 
 // Console tools
 export {

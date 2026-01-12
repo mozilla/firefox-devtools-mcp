@@ -126,6 +126,7 @@ BiDi-dependent features (console events, network events) are not available in co
 - Network: list/get (ID‑first, filters, always‑on capture)
 - Console: list/clear
 - Screenshot: page/by uid (with optional `saveTo` for CLI environments)
+- Script: evaluate_script (content)
 - Utilities: accept/dismiss dialog, history back/forward, set viewport
 
 ### Screenshot optimization for Claude Code

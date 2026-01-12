@@ -145,8 +145,8 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse
   ['select_page', tools.handleSelectPage],
   ['close_page', tools.handleClosePage],
 
-  // Script evaluation - DISABLED (see docs/future-features.md)
-  // ['evaluate_script', tools.handleEvaluateScript],
+  // Script evaluation
+  ['evaluate_script', tools.handleEvaluateScript],
 
   // Console
   ['list_console_messages', tools.handleListConsoleMessages],
@@ -194,8 +194,8 @@ const allTools = [
   tools.selectPageTool,
   tools.closePageTool,
 
-  // Script evaluation - DISABLED (see docs/future-features.md)
-  // tools.evaluateScriptTool,
+  // Script evaluation
+  tools.evaluateScriptTool,
 
   // Console
   tools.listConsoleMessagesTool,
