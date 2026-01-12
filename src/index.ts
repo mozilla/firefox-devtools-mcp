@@ -183,6 +183,11 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse
   ['get_firefox_output', tools.handleGetFirefoxLogs],
   ['get_firefox_info', tools.handleGetFirefoxInfo],
   ['restart_firefox', tools.handleRestartFirefox],
+
+  // Chrome Context
+  ['list_chrome_contexts', tools.handleListChromeContexts],
+  ['select_chrome_context', tools.handleSelectChromeContext],
+  ['evaluate_chrome_script', tools.handleEvaluateChromeScript],
 ]);
 
 // All tool definitions
@@ -232,6 +237,11 @@ const allTools = [
   tools.getFirefoxLogsTool,
   tools.getFirefoxInfoTool,
   tools.restartFirefoxTool,
+
+  // Chrome Context
+  tools.listChromeContextsTool,
+  tools.selectChromeContextTool,
+  tools.evaluateChromeScriptTool,
 ];
 
 async function main() {

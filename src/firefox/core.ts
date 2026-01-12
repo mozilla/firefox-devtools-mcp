@@ -652,6 +652,53 @@ export class FirefoxCore {
   }
 
   /**
+   * Send raw BiDi command and get response
+   */
+  async sendBiDiCommand(method: string, params: Record<string, any> = {}): Promise<any> {
+    if (!this.driver) {
+      throw new Error('Driver not connected');
+    }
+
+    const bidi = await this.driver.getBidi();
+    const id = Math.floor(Math.random() * 1000000);
+
+    return new Promise((resolve, reject) => {
+      const ws: any = bidi.socket;
+
+      const messageHandler = (data: any) => {
+        try {
+          const payload = JSON.parse(data.toString());
+          if (payload.id === id) {
+            ws.off('message', messageHandler);
+            if (payload.error) {
+              reject(new Error(`BiDi error: ${JSON.stringify(payload.error)}`));
+            } else {
+              resolve(payload.result);
+            }
+          }
+        } catch (err) {
+          // ignore parse errors
+        }
+      };
+
+      ws.on('message', messageHandler);
+
+      const command = {
+        id,
+        method,
+        params,
+      };
+
+      ws.send(JSON.stringify(command));
+
+      setTimeout(() => {
+        ws.off('message', messageHandler);
+        reject(new Error(`BiDi command timeout: ${method}`));
+      }, 10000);
+    });
+  }
+
+  /**
    * Close driver and cleanup.
    * When connected to an existing Firefox instance, only kills geckodriver
    * without closing the browser.

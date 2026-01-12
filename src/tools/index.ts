@@ -90,3 +90,13 @@ export {
   handleGetFirefoxInfo,
   handleRestartFirefox,
 } from './firefox-management.js';
+
+// Chrome context tools (privileged JavaScript access)
+export {
+  listChromeContextsTool,
+  selectChromeContextTool,
+  evaluateChromeScriptTool,
+  handleListChromeContexts,
+  handleSelectChromeContext,
+  handleEvaluateChromeScript,
+} from './chrome-context.js';

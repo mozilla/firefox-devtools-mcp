@@ -375,6 +375,14 @@ export class FirefoxClient {
   // ============================================================================
 
   /**
+   * Send raw BiDi command (for advanced operations)
+   * @internal
+   */
+  async sendBiDiCommand(method: string, params: Record<string, any> = {}): Promise<any> {
+    return await this.core.sendBiDiCommand(method, params);
+  }
+
+  /**
    * Get WebDriver instance (for advanced operations)
    * @internal
    */
