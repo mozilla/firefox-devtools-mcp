@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { restartFirefoxTool } from '../../src/tools/firefox-management.js';
+import { restartFirefoxTool, getFirefoxInfoTool } from '../../src/tools/firefox-management.js';
 
 // Create mock functions that will be used in the hoisted mock
 const mockSetNextLaunchOptions = vi.hoisted(() => vi.fn());
@@ -14,12 +14,14 @@ const mockArgs = vi.hoisted(() => ({
   profilePath: undefined as string | undefined,
 }));
 
+const mockGetFirefox = vi.hoisted(() => vi.fn());
+
 vi.mock('../../src/index.js', () => ({
   args: mockArgs,
   getFirefoxIfRunning: () => mockGetFirefoxIfRunning(),
   setNextLaunchOptions: (opts: unknown) => mockSetNextLaunchOptions(opts),
   resetFirefox: () => mockResetFirefox(),
-  getFirefox: vi.fn(),
+  getFirefox: () => mockGetFirefox(),
 }));
 
 describe('Firefox Management Tools', () => {
@@ -31,6 +33,15 @@ describe('Firefox Management Tools', () => {
       expect(properties.profilePath).toBeDefined();
       expect(properties.profilePath.type).toBe('string');
       expect(properties.profilePath.description).toContain('profile');
+    });
+
+    // Step 7.1
+    it('should have prefs in input schema properties', () => {
+      const { properties } = restartFirefoxTool.inputSchema as {
+        properties: Record<string, { type: string; description: string }>;
+      };
+      expect(properties.prefs).toBeDefined();
+      expect(properties.prefs.type).toBe('object');
     });
   });
 
@@ -150,6 +161,102 @@ describe('Firefox Management Tools', () => {
         expect(text).toContain('Profile');
         expect(text).toContain('/new/profile');
       });
+
+      // Step 7.2
+      it('should merge prefs into launch options', async () => {
+        mockFirefoxInstance.getOptions.mockReturnValue({
+          firefoxPath: '/current/firefox',
+          profilePath: '/current/profile',
+          headless: false,
+          env: {},
+          prefs: { 'existing.pref': 'old' },
+        });
+
+        const { handleRestartFirefox } = await import('../../src/tools/firefox-management.js');
+
+        await handleRestartFirefox({
+          prefs: { 'new.pref': 'value', 'existing.pref': 'new' },
+        });
+
+        expect(mockSetNextLaunchOptions).toHaveBeenCalledWith(
+          expect.objectContaining({
+            prefs: { 'existing.pref': 'new', 'new.pref': 'value' },
+          })
+        );
+      });
+
+      it('should preserve existing prefs when none provided', async () => {
+        mockFirefoxInstance.getOptions.mockReturnValue({
+          firefoxPath: '/current/firefox',
+          profilePath: '/current/profile',
+          headless: false,
+          env: {},
+          prefs: { 'existing.pref': 'value' },
+        });
+
+        const { handleRestartFirefox } = await import('../../src/tools/firefox-management.js');
+
+        await handleRestartFirefox({});
+
+        expect(mockSetNextLaunchOptions).toHaveBeenCalledWith(
+          expect.objectContaining({
+            prefs: { 'existing.pref': 'value' },
+          })
+        );
+      });
+    });
+  });
+
+  describe('handleGetFirefoxInfo', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    // Step 8.1
+    it('should include prefs in output when configured', async () => {
+      const mockFirefoxWithPrefs = {
+        getOptions: vi.fn().mockReturnValue({
+          firefoxPath: '/path/to/firefox',
+          headless: true,
+          prefs: {
+            'bool.pref': true,
+            'int.pref': 42,
+            'string.pref': 'hello',
+          },
+        }),
+        getLogFilePath: vi.fn().mockReturnValue(undefined),
+      };
+
+      mockGetFirefox.mockResolvedValue(mockFirefoxWithPrefs);
+
+      const { handleGetFirefoxInfo } = await import('../../src/tools/firefox-management.js');
+
+      const result = await handleGetFirefoxInfo({});
+
+      const text = result.content[0].text;
+      expect(text).toContain('Preferences:');
+      expect(text).toContain('bool.pref = true');
+      expect(text).toContain('int.pref = 42');
+      expect(text).toContain('string.pref = "hello"');
+    });
+
+    it('should not show preferences section when none configured', async () => {
+      const mockFirefoxNoPrefs = {
+        getOptions: vi.fn().mockReturnValue({
+          firefoxPath: '/path/to/firefox',
+          headless: true,
+        }),
+        getLogFilePath: vi.fn().mockReturnValue(undefined),
+      };
+
+      mockGetFirefox.mockResolvedValue(mockFirefoxNoPrefs);
+
+      const { handleGetFirefoxInfo } = await import('../../src/tools/firefox-management.js');
+
+      const result = await handleGetFirefoxInfo({});
+
+      const text = result.content[0].text;
+      expect(text).not.toContain('Preferences:');
     });
   });
 });

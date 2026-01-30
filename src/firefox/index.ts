@@ -391,6 +391,14 @@ export class FirefoxClient {
   }
 
   /**
+   * Get current browsing context ID (for advanced operations)
+   * @internal
+   */
+  getCurrentContextId(): string | null {
+    return this.core.getCurrentContextId();
+  }
+
+  /**
    * Check if Firefox is still connected and responsive
    * Returns false if Firefox was closed or connection is broken
    */

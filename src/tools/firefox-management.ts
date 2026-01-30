@@ -159,6 +159,14 @@ export async function handleGetFirefoxInfo(_input: unknown) {
       }
     }
 
+    if (options.prefs && Object.keys(options.prefs).length > 0) {
+      info.push('');
+      info.push('Preferences:');
+      for (const [key, value] of Object.entries(options.prefs)) {
+        info.push(`  ${key} = ${JSON.stringify(value)}`);
+      }
+    }
+
     if (logFilePath) {
       info.push('');
       info.push(`Output File: ${logFilePath}`);
@@ -214,18 +222,27 @@ export const restartFirefoxTool = {
         description:
           'URL to navigate to after restart (optional, uses about:home if not specified)',
       },
+      prefs: {
+        type: 'object',
+        description:
+          'Firefox preferences to set at startup. Values are auto-typed: true/false become booleans, integers become numbers, everything else is a string. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1.',
+        additionalProperties: {
+          oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }],
+        },
+      },
     },
   },
 };
 
 export async function handleRestartFirefox(input: unknown) {
   try {
-    const { firefoxPath, profilePath, env, headless, startUrl } = input as {
+    const { firefoxPath, profilePath, env, headless, startUrl, prefs } = input as {
       firefoxPath?: string;
       profilePath?: string;
       env?: string[];
       headless?: boolean;
       startUrl?: string;
+      prefs?: Record<string, string | number | boolean>;
     };
 
     // This tool is designed to be robust and never get stuck:
@@ -254,6 +271,10 @@ export async function handleRestartFirefox(input: unknown) {
       // Firefox is running - restart with new config
       const currentOptions = currentFirefox.getOptions();
 
+      // Merge prefs: combine existing with new, new takes precedence
+      const mergedPrefs =
+        prefs !== undefined ? { ...(currentOptions.prefs || {}), ...prefs } : currentOptions.prefs;
+
       // Merge with current options, preferring new values
       const newOptions = {
         ...currentOptions,
@@ -262,6 +283,7 @@ export async function handleRestartFirefox(input: unknown) {
         env: newEnv !== undefined ? newEnv : currentOptions.env,
         headless: headless !== undefined ? headless : currentOptions.headless,
         startUrl: startUrl ?? currentOptions.startUrl ?? 'about:home',
+        prefs: mergedPrefs,
       };
 
       // Set options for next launch

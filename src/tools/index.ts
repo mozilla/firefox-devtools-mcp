@@ -100,3 +100,11 @@ export {
   handleSelectChromeContext,
   handleEvaluateChromeScript,
 } from './chrome-context.js';
+
+// Firefox preferences tools
+export {
+  setFirefoxPrefsTool,
+  getFirefoxPrefsTool,
+  handleSetFirefoxPrefs,
+  handleGetFirefoxPrefs,
+} from './firefox-prefs.js';

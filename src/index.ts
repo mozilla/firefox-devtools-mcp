@@ -34,7 +34,7 @@ import {
 
 import { SERVER_NAME, SERVER_VERSION } from './config/constants.js';
 import { log, logError, logDebug } from './utils/logger.js';
-import { parseArguments } from './cli.js';
+import { parseArguments, parsePrefs } from './cli.js';
 import { FirefoxDevTools } from './firefox/index.js';
 import type { FirefoxLaunchOptions } from './firefox/types.js';
 import * as tools from './tools/index.js';
@@ -128,6 +128,10 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
       }
     }
 
+    // Parse preferences from CLI args
+    const prefValues = parsePrefs(args.pref);
+    const prefs = Object.keys(prefValues).length > 0 ? prefValues : undefined;
+
     options = {
       firefoxPath: args.firefoxPath ?? undefined,
       headless: args.headless,
@@ -140,6 +144,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
       marionettePort: args.marionettePort,
       env: envVars,
       logFile: args.outputFile ?? undefined,
+      prefs,
     };
   }
 
@@ -207,6 +212,10 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse
   ['list_chrome_contexts', tools.handleListChromeContexts],
   ['select_chrome_context', tools.handleSelectChromeContext],
   ['evaluate_chrome_script', tools.handleEvaluateChromeScript],
+
+  // Firefox Preferences
+  ['set_firefox_prefs', tools.handleSetFirefoxPrefs],
+  ['get_firefox_prefs', tools.handleGetFirefoxPrefs],
 ]);
 
 // All tool definitions
@@ -261,6 +270,10 @@ const allTools = [
   tools.listChromeContextsTool,
   tools.selectChromeContextTool,
   tools.evaluateChromeScriptTool,
+
+  // Firefox Preferences
+  tools.setFirefoxPrefsTool,
+  tools.getFirefoxPrefsTool,
 ];
 
 async function main() {

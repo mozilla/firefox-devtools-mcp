@@ -10,6 +10,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { FirefoxLaunchOptions } from './types.js';
 import { log, logDebug } from '../utils/logger.js';
+import { generatePrefScript } from './pref-utils.js';
 
 // ---------------------------------------------------------------------------
 // Shared driver interface — the minimal surface used by all consumers
@@ -583,6 +584,11 @@ export class FirefoxCore {
       logDebug(`Navigated to: ${this.options.startUrl}`);
     }
 
+    // Apply preferences if configured
+    if (this.options.prefs && Object.keys(this.options.prefs).length > 0) {
+      await this.applyPreferences();
+    }
+
     log('✅ Firefox DevTools ready');
   }
 
@@ -652,6 +658,90 @@ export class FirefoxCore {
    */
   getOptions(): FirefoxLaunchOptions {
     return this.options;
+  }
+
+  /**
+   * Apply Firefox preferences via Services.prefs API
+   * Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 environment variable
+   */
+  async applyPreferences(): Promise<void> {
+    const prefs = this.options.prefs;
+
+    // Return early if no prefs to set
+    if (!prefs || Object.keys(prefs).length === 0) {
+      return;
+    }
+
+    // Check for MOZ_REMOTE_ALLOW_SYSTEM_ACCESS
+    if (!process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS) {
+      throw new Error(
+        'MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 environment variable is required to set Firefox preferences at startup. ' +
+          'Add --env MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 to your command line.'
+      );
+    }
+
+    if (!this.driver) {
+      throw new Error('Driver not connected');
+    }
+
+    // Get chrome contexts
+    const result = await this.sendBiDiCommand('browsingContext.getTree', {
+      'moz:scope': 'chrome',
+    });
+
+    const contexts = result.contexts || [];
+    if (contexts.length === 0) {
+      throw new Error(
+        'No chrome contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
+      );
+    }
+
+    const chromeContextId = contexts[0].context;
+    const originalContextId = this.currentContextId;
+
+    const successes: string[] = [];
+    const failures: string[] = [];
+
+    try {
+      // Switch to chrome context
+      await this.driver.switchTo().window(chromeContextId);
+      await (this.driver as any).setContext('chrome');
+
+      // Set each preference
+      for (const [name, value] of Object.entries(prefs)) {
+        try {
+          const script = generatePrefScript(name, value);
+          await this.driver.executeScript(script);
+          successes.push(`${name} = ${JSON.stringify(value)}`);
+        } catch (error) {
+          failures.push(`${name}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+
+      // Log results
+      if (successes.length > 0) {
+        log(`✅ Applied ${successes.length} Firefox preference(s)`);
+        for (const msg of successes) {
+          logDebug(`  ${msg}`);
+        }
+      }
+      if (failures.length > 0) {
+        log(`⚠️ Failed to set ${failures.length} preference(s)`);
+        for (const msg of failures) {
+          logDebug(`  ${msg}`);
+        }
+      }
+    } finally {
+      // Restore content context
+      try {
+        await (this.driver as any).setContext('content');
+        if (originalContextId) {
+          await this.driver.switchTo().window(originalContextId);
+        }
+      } catch {
+        // Ignore errors restoring context
+      }
+    }
   }
 
   /**

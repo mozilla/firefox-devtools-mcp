@@ -95,6 +95,7 @@ You can pass flags or environment variables (names on the right):
 - `--accept-insecure-certs` — ignore TLS errors (`ACCEPT_INSECURE_CERTS=true`)
 - `--connect-existing` — attach to an already-running Firefox instead of launching a new one (`CONNECT_EXISTING=true`)
 - `--marionette-port` — Marionette port for connect-existing mode, default 2828 (`MARIONETTE_PORT`)
+- `--pref name=value` — set Firefox preference at startup (repeatable, requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 
 ### Connect to existing Firefox
 
@@ -118,6 +119,8 @@ BiDi-dependent features (console events, network events) are not available in co
 > Only enable Marionette when you need MCP automation, then restart Firefox
 > normally afterward.
 
+> **Note on `--pref`:** When Firefox runs in WebDriver BiDi mode, it applies [RecommendedPreferences](https://searchfox.org/firefox-main/source/remote/shared/RecommendedPreferences.sys.mjs) that modify browser behavior for testing. The `--pref` option allows overriding these defaults when needed (e.g., for Firefox development, debugging, or testing scenarios that require production-like behavior).
+
 ## Tool overview
 
 - Pages: list/new/navigate/select/close
@@ -128,7 +131,7 @@ BiDi-dependent features (console events, network events) are not available in co
 - Screenshot: page/by uid (with optional `saveTo` for CLI environments)
 - Script: evaluate_script (content), evaluate_chrome_script (privileged)
 - Chrome Context: list/select chrome contexts (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
-- Firefox Management: get_firefox_info, get_firefox_output, restart_firefox
+- Firefox Management: get_firefox_info, get_firefox_output, restart_firefox, set_firefox_prefs, get_firefox_prefs
 - Utilities: accept/dismiss dialog, history back/forward, set viewport
 
 ### Screenshot optimization for Claude Code
