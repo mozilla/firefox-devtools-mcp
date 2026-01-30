@@ -745,6 +745,35 @@ export class FirefoxCore {
   }
 
   /**
+   * Wait for WebSocket to be in OPEN state
+   */
+  private async waitForWebSocketOpen(ws: any, timeout: number = 5000): Promise<void> {
+    // Already open
+    if (ws.readyState === 1) {
+      return;
+    }
+
+    // Still connecting - wait for open event with timeout
+    if (ws.readyState === 0) {
+      return new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          ws.off('open', onOpen);
+          reject(new Error('Timeout waiting for WebSocket to open'));
+        }, timeout);
+
+        const onOpen = () => {
+          clearTimeout(timeoutId);
+          ws.off('open', onOpen);
+          resolve();
+        };
+        ws.on('open', onOpen);
+      });
+    }
+
+    throw new Error(`WebSocket is not open: readyState ${ws.readyState}`);
+  }
+
+  /**
    * Send raw BiDi command and get response
    */
   async sendBiDiCommand(method: string, params: Record<string, any> = {}): Promise<any> {
@@ -753,11 +782,14 @@ export class FirefoxCore {
     }
 
     const bidi = await this.driver.getBidi();
+    const ws: any = bidi.socket;
+
+    // Wait for WebSocket to be ready before sending
+    await this.waitForWebSocketOpen(ws);
+
     const id = Math.floor(Math.random() * 1000000);
 
     return new Promise((resolve, reject) => {
-      const ws: any = bidi.socket;
-
       const messageHandler = (data: any) => {
         try {
           const payload = JSON.parse(data.toString());
