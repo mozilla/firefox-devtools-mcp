@@ -35,7 +35,7 @@ export const selectPrivilegedContextTool = {
 export const evaluatePrivilegedScriptTool = {
   name: 'evaluate_privileged_script',
   description:
-    'Evaluate JavaScript in the current privileged context. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Returns the result of the expression.',
+    'Evaluate JavaScript in the current privileged context. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Returns the result of the expression. IMPORTANT: Only provide expressions, not statements. Do not use const, let, or var declarations as they will cause syntax errors. For complex logic, wrap in an IIFE: (function() { const x = 1; return x; })()',
   inputSchema: {
     type: 'object',
     properties: {
@@ -47,6 +47,15 @@ export const evaluatePrivilegedScriptTool = {
     required: ['expression'],
   },
 };
+
+/**
+ * Detects if the input looks like a JavaScript statement rather than an expression.
+ * Statements like const/let/var declarations cannot be used with return().
+ */
+export function isLikelyStatement(input: string): boolean {
+  const trimmed = input.trim();
+  return /^(const|let|var)\s/.test(trimmed);
+}
 
 function formatContextList(contexts: any[]): string {
   if (contexts.length === 0) {
@@ -129,6 +138,16 @@ export async function handleEvaluatePrivilegedScript(args: unknown): Promise<Mcp
 
     if (!expression || typeof expression !== 'string') {
       throw new Error('expression parameter is required and must be a string');
+    }
+
+    if (isLikelyStatement(expression)) {
+      return errorResponse(
+        new Error(
+          `Cannot evaluate statement: "${expression.substring(0, 50)}${expression.length > 50 ? '...' : ''}". ` +
+            'This tool expects an expression, not a statement (const/let/var declarations are statements). ' +
+            'To use statements, wrap them in an IIFE: (function() { const x = 1; return x; })()'
+        )
+      );
     }
 
     const { getFirefox } = await import('../index.js');
