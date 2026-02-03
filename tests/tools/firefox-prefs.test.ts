@@ -19,12 +19,10 @@ vi.mock('../../src/index.js', () => ({
 
 describe('Firefox Prefs Tool Definitions', () => {
   describe('setFirefoxPrefsTool', () => {
-    // Step 5.1
     it('should have correct name', () => {
       expect(setFirefoxPrefsTool.name).toBe('set_firefox_prefs');
     });
 
-    // Step 5.2
     it('should require prefs parameter', () => {
       const schema = setFirefoxPrefsTool.inputSchema as {
         required?: string[];
@@ -46,12 +44,10 @@ describe('Firefox Prefs Tool Definitions', () => {
   });
 
   describe('getFirefoxPrefsTool', () => {
-    // Step 5.3
     it('should have correct name', () => {
       expect(getFirefoxPrefsTool.name).toBe('get_firefox_prefs');
     });
 
-    // Step 5.4
     it('should require names parameter', () => {
       const schema = getFirefoxPrefsTool.inputSchema as {
         required?: string[];

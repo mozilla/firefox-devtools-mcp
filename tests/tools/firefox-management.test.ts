@@ -35,7 +35,6 @@ describe('Firefox Management Tools', () => {
       expect(properties.profilePath.description).toContain('profile');
     });
 
-    // Step 7.1
     it('should have prefs in input schema properties', () => {
       const { properties } = restartFirefoxTool.inputSchema as {
         properties: Record<string, { type: string; description: string }>;
@@ -162,7 +161,6 @@ describe('Firefox Management Tools', () => {
         expect(text).toContain('/new/profile');
       });
 
-      // Step 7.2
       it('should merge prefs into launch options', async () => {
         mockFirefoxInstance.getOptions.mockReturnValue({
           firefoxPath: '/current/firefox',
@@ -212,7 +210,6 @@ describe('Firefox Management Tools', () => {
       vi.clearAllMocks();
     });
 
-    // Step 8.1
     it('should include prefs in output when configured', async () => {
       const mockFirefoxWithPrefs = {
         getOptions: vi.fn().mockReturnValue({

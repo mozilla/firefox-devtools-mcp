@@ -50,7 +50,6 @@ describe('FirefoxCore applyPreferences', () => {
     }
   });
 
-  // Step 6.1
   it('should return early if no prefs', async () => {
     // Mock selenium-webdriver
     vi.doMock('selenium-webdriver/firefox.js', () => ({
@@ -94,7 +93,6 @@ describe('FirefoxCore applyPreferences', () => {
     expect(mockSendBiDiCommand).not.toHaveBeenCalled();
   });
 
-  // Step 6.2
   it('should throw if MOZ_REMOTE_ALLOW_SYSTEM_ACCESS not set', async () => {
     delete process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS;
 
@@ -137,7 +135,6 @@ describe('FirefoxCore applyPreferences', () => {
     await expect(core.applyPreferences()).rejects.toThrow('MOZ_REMOTE_ALLOW_SYSTEM_ACCESS');
   });
 
-  // Step 6.3 & 6.4
   it('should get chrome contexts via BiDi', async () => {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 
@@ -242,7 +239,6 @@ describe('FirefoxCore applyPreferences', () => {
     await expect(core.applyPreferences()).rejects.toThrow('No chrome contexts');
   });
 
-  // Step 6.5 & 6.6
   it('should switch to chrome context and execute pref scripts', async () => {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 
@@ -310,7 +306,6 @@ describe('FirefoxCore applyPreferences', () => {
     );
   });
 
-  // Step 6.7
   it('should restore content context in finally block', async () => {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 
@@ -366,7 +361,6 @@ describe('FirefoxCore applyPreferences', () => {
     expect(mockSwitchToWindow).toHaveBeenLastCalledWith('content-context-id');
   });
 
-  // Step 10.1 - connect() integration
   it('should call applyPreferences when prefs configured in connect()', async () => {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 
@@ -428,7 +422,6 @@ describe('FirefoxCore applyPreferences', () => {
     expect(applyPrefsSpy).toHaveBeenCalled();
   });
 
-  // Step 6.8
   it('should continue on per-pref errors and log failures', async () => {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 

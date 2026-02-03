@@ -6,7 +6,6 @@ import { describe, it, expect } from 'vitest';
 import type { FirefoxLaunchOptions } from '../../src/firefox/types.js';
 
 describe('FirefoxLaunchOptions', () => {
-  // Step 3.1
   it('should accept prefs field', () => {
     const options: FirefoxLaunchOptions = {
       headless: true,

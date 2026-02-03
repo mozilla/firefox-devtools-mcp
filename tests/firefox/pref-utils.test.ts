@@ -6,27 +6,22 @@ import { describe, it, expect } from 'vitest';
 import { generatePrefScript } from '../../src/firefox/pref-utils.js';
 
 describe('generatePrefScript', () => {
-  // Step 4.1
   it('should generate setBoolPref for true', () => {
     expect(generatePrefScript('p', true)).toBe('Services.prefs.setBoolPref("p", true)');
   });
 
-  // Step 4.2
   it('should generate setBoolPref for false', () => {
     expect(generatePrefScript('p', false)).toBe('Services.prefs.setBoolPref("p", false)');
   });
 
-  // Step 4.3
   it('should generate setIntPref for number', () => {
     expect(generatePrefScript('p', 42)).toBe('Services.prefs.setIntPref("p", 42)');
   });
 
-  // Step 4.4
   it('should generate setStringPref for string', () => {
     expect(generatePrefScript('p', 'v')).toBe('Services.prefs.setStringPref("p", "v")');
   });
 
-  // Step 4.5
   it('should escape quotes in values', () => {
     expect(generatePrefScript('p', 'a"b')).toBe('Services.prefs.setStringPref("p", "a\\"b")');
   });
