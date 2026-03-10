@@ -55,6 +55,17 @@ export const cliOptions = {
     description: 'URL to open when Firefox starts (default: about:home)',
     default: process.env.START_URL ?? 'about:home',
   },
+  connectExisting: {
+    type: 'boolean',
+    description:
+      'Connect to an already-running Firefox instance via Marionette instead of launching a new one. Requires Firefox to be running with marionette.enabled=true (set in user.js or launched with --marionette).',
+    default: (process.env.CONNECT_EXISTING ?? 'false') === 'true',
+  },
+  marionettePort: {
+    type: 'number',
+    description: 'Marionette port to connect to when using --connect-existing (default: 2828)',
+    default: Number(process.env.MARIONETTE_PORT ?? '2828'),
+  },
 } satisfies Record<string, YargsOptions>;
 
 export function parseArguments(version: string, argv = process.argv) {

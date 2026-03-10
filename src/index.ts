@@ -92,6 +92,8 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
     args: (args.firefoxArg as string[] | undefined) ?? undefined,
     startUrl: args.startUrl ?? undefined,
     acceptInsecureCerts: args.acceptInsecureCerts,
+    connectExisting: args.connectExisting,
+    marionettePort: args.marionettePort,
   };
 
   firefox = new FirefoxDevTools(options);

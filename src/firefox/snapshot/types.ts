@@ -2,7 +2,7 @@
  * Snapshot types and interfaces
  */
 
-import type { WebElement } from 'selenium-webdriver';
+import type { IElement } from '../core.js';
 
 /**
  * UID entry with CSS and XPath selectors
@@ -100,7 +100,7 @@ export interface InjectedScriptResult {
 export interface ElementCacheEntry {
   selector: string;
   xpath?: string;
-  cachedElement?: WebElement;
+  cachedElement?: IElement;
   snapshotId: number;
   timestamp: number;
 }
