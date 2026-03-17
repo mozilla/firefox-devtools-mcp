@@ -43,6 +43,7 @@ claude mcp add firefox-devtools npx firefox-devtools-mcp@latest \
 Option B — Edit Claude Code settings JSON
 
 Add to your Claude Code config file:
+
 - macOS: `~/Library/Application Support/Claude/Code/mcp_settings.json`
 - Linux: `~/.config/claude/code/mcp_settings.json`
 - Windows: `%APPDATA%\Claude\Code\mcp_settings.json`
@@ -75,6 +76,7 @@ npx @modelcontextprotocol/inspector npx firefox-devtools-mcp@latest --start-url 
 ```
 
 Then call tools like:
+
 - `list_pages`, `select_page`, `navigate_page`
 - `take_snapshot` then `click_by_uid` / `fill_by_uid`
 - `list_network_requests` (always‑on capture), `get_network_request`
@@ -91,6 +93,30 @@ You can pass flags or environment variables (names on the right):
 - `--firefox-arg` — extra Firefox arguments (repeatable)
 - `--start-url` — open this URL on start (`START_URL`)
 - `--accept-insecure-certs` — ignore TLS errors (`ACCEPT_INSECURE_CERTS=true`)
+- `--connect-existing` — attach to an already-running Firefox instead of launching a new one (`CONNECT_EXISTING=true`)
+- `--marionette-port` — Marionette port for connect-existing mode, default 2828 (`MARIONETTE_PORT`)
+
+### Connect to existing Firefox
+
+Use `--connect-existing` to automate your real browsing session — with cookies, logins, and open tabs intact:
+
+```bash
+# Start Firefox with Marionette enabled
+firefox --marionette
+
+# Run the MCP server
+npx firefox-devtools-mcp --connect-existing --marionette-port 2828
+```
+
+Or set `marionette.enabled` to `true` in `about:config` (or `user.js`) to enable Marionette on every launch.
+
+BiDi-dependent features (console events, network events) are not available in connect-existing mode; all other features work normally.
+
+> **Warning:** Do not leave Marionette enabled during normal browsing. It sets
+> `navigator.webdriver = true` and changes other browser fingerprint signals,
+> which can trigger bot detection on sites protected by Cloudflare, Akamai, etc.
+> Only enable Marionette when you need MCP automation, then restart Firefox
+> normally afterward.
 
 ## Tool overview
 
@@ -134,6 +160,7 @@ npm run inspector:dev
 - Stale UIDs after navigation: take a fresh snapshot (`take_snapshot`) before using UID tools.
 - Windows 10: Error during discovery for MCP server 'firefox-devtools': MCP error -32000: Connection closed
   - **Solution 1** Call using `cmd` (For more info https://github.com/modelcontextprotocol/servers/issues/1082#issuecomment-2791786310)
+
     ```json
     "mcpServers": {
       "firefox-devtools": {
@@ -141,10 +168,12 @@ npm run inspector:dev
         "args": ["/c", "npx", "-y", "firefox-devtools-mcp@latest"]
       }
     }
-    ``` 
+    ```
+
     > **The Key Change:** On Windows, running a Node.js package via `npx` often requires the `cmd /c` prefix to be executed correctly from within another process like VSCode's extension host. Therefore, `"command": "npx"` was replaced with `"command": "cmd"`, and the actual `npx` command was moved into the `"args"` array, preceded by `"/c"`. This fix allows Windows to interpret the command correctly and launch the server.
   
   - **Solution 2** Instead of another layer of shell you can write the absolute path to `npx`:
+
     ```json
     "mcpServers": {
       "firefox-devtools": {
@@ -153,6 +182,7 @@ npm run inspector:dev
       }
     }
     ```
+
     Note: The path above is an example. You must adjust it to match the actual location of `npx` on your machine. Depending on your setup, the file extension might be `.cmd`, `.bat`, or `.exe` rather than `.ps1`. Also, ensure you use double backslashes (`\\`) as path delimiters, as required by the JSON format.
 
 ## Versioning

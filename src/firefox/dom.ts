@@ -2,12 +2,13 @@
  * DOM interactions: evaluate, element lookup, input actions
  */
 
-import { By, Key, until, type WebDriver, type WebElement } from 'selenium-webdriver';
+import { Key } from 'selenium-webdriver';
+import type { IDriver, IElement } from './core.js';
 
 export class DomInteractions {
   constructor(
-    private driver: WebDriver,
-    private resolveUid?: (uid: string) => Promise<WebElement>
+    private driver: IDriver,
+    private resolveUid?: (uid: string) => Promise<IElement>
   ) {}
 
   /**
@@ -25,12 +26,55 @@ export class DomInteractions {
     return String(html);
   }
 
+  // ============================================================================
+  // Element polling helpers (work with both WebDriver and GeckodriverHttpDriver)
+  // ============================================================================
+
+  /**
+   * Poll for an element matching a CSS selector until found or timeout.
+   */
+  private async waitForElement(selector: string, timeout = 5000): Promise<IElement> {
+    const deadline = Date.now() + timeout;
+    let lastError: Error | undefined;
+    while (Date.now() < deadline) {
+      try {
+        return await this.driver.findElement({ using: 'css selector', value: selector });
+      } catch (e) {
+        lastError = e instanceof Error ? e : new Error(String(e));
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw lastError ?? new Error(`Element not found: ${selector}`);
+  }
+
+  /**
+   * Wait until an element reports isDisplayed(), ignoring failures.
+   */
+  private async waitForVisible(el: IElement, timeout = 5000): Promise<void> {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      try {
+        if (await el.isDisplayed()) {
+          return;
+        }
+      } catch {
+        // Element may not be ready yet
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    // Visibility wait is best-effort; don't throw
+  }
+
+  // ============================================================================
+  // Selector-based input methods
+  // ============================================================================
+
   /**
    * Click element by CSS selector
    */
   async clickBySelector(selector: string): Promise<void> {
-    const el = await this.driver.wait(until.elementLocated(By.css(selector)), 5000);
-    await this.driver.wait(until.elementIsVisible(el), 5000).catch(() => {});
+    const el = await this.waitForElement(selector, 5000);
+    await this.waitForVisible(el, 5000);
     await el.click();
   }
 
@@ -38,7 +82,7 @@ export class DomInteractions {
    * Hover over element by CSS selector
    */
   async hoverBySelector(selector: string): Promise<void> {
-    const el = await this.driver.wait(until.elementLocated(By.css(selector)), 5000);
+    const el = await this.waitForElement(selector, 5000);
     await this.driver.actions({ async: true }).move({ origin: el }).perform();
   }
 
@@ -46,7 +90,7 @@ export class DomInteractions {
    * Fill input field by CSS selector
    */
   async fillBySelector(selector: string, text: string): Promise<void> {
-    const el = await this.driver.wait(until.elementLocated(By.css(selector)), 5000);
+    const el = await this.waitForElement(selector, 5000);
     try {
       await el.clear();
     } catch {
@@ -62,30 +106,22 @@ export class DomInteractions {
    */
   async dragAndDropBySelectors(sourceSelector: string, targetSelector: string): Promise<void> {
     await this.driver.executeScript(
-      (srcSel: string, tgtSel: string) => {
-        const src = document.querySelector(srcSel);
-        const tgt = document.querySelector(tgtSel);
-        if (!src || !tgt) {
-          throw new Error('dragAndDrop: element not found');
-        }
-
-        function dispatch(type: string, target: Element, dataTransfer?: DataTransfer) {
-          const evt = new DragEvent(type, {
-            bubbles: true,
-            cancelable: true,
-            dataTransfer,
-          } as DragEventInit);
-          return target.dispatchEvent(evt);
-        }
-
-        // Create DataTransfer if available
-        const dt = typeof DataTransfer !== 'undefined' ? new DataTransfer() : undefined;
-        dispatch('dragstart', src, dt);
-        dispatch('dragenter', tgt, dt);
-        dispatch('dragover', tgt, dt);
-        dispatch('drop', tgt, dt);
-        dispatch('dragend', src, dt);
-      },
+      `
+      var srcSel = arguments[0], tgtSel = arguments[1];
+      var src = document.querySelector(srcSel);
+      var tgt = document.querySelector(tgtSel);
+      if (!src || !tgt) throw new Error('dragAndDrop: element not found');
+      function dispatch(type, target, dt) {
+        var evt = new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt });
+        return target.dispatchEvent(evt);
+      }
+      var dt = typeof DataTransfer !== 'undefined' ? new DataTransfer() : undefined;
+      dispatch('dragstart', src, dt);
+      dispatch('dragenter', tgt, dt);
+      dispatch('dragover', tgt, dt);
+      dispatch('drop', tgt, dt);
+      dispatch('dragend', src, dt);
+    `,
       sourceSelector,
       targetSelector
     );
@@ -95,29 +131,25 @@ export class DomInteractions {
    * File upload: unhide if needed, then send local path to <input type=file>.
    */
   async uploadFileBySelector(selector: string, filePath: string): Promise<void> {
-    // Try to locate input element
-    const el = await this.driver.wait(until.elementLocated(By.css(selector)), 5000);
+    const el = await this.waitForElement(selector, 5000);
     // Ensure it's an <input type=file>; if hidden, unhide via JS
-    await this.driver.executeScript((sel: string) => {
-      const e = document.querySelector(sel);
-      if (!e) {
-        throw new Error('uploadFile: element not found');
-      }
-      if (e.tagName !== 'INPUT' || (e as HTMLInputElement).type !== 'file') {
+    await this.driver.executeScript(
+      `
+      var sel = arguments[0];
+      var e = document.querySelector(sel);
+      if (!e) throw new Error('uploadFile: element not found');
+      if (e.tagName !== 'INPUT' || e.type !== 'file')
         throw new Error('uploadFile: selector must target <input type=file>');
-      }
-      const style = window.getComputedStyle(e);
+      var style = window.getComputedStyle(e);
       if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-        const s = (e as HTMLElement).style;
-        s.display = 'block';
-        s.visibility = 'visible';
-        s.opacity = '1';
-        s.position = 'fixed';
-        s.left = '0px';
-        s.top = '0px';
+        var s = e.style;
+        s.display = 'block'; s.visibility = 'visible'; s.opacity = '1';
+        s.position = 'fixed'; s.left = '0px'; s.top = '0px';
         s.zIndex = '2147483647';
       }
-    }, selector);
+    `,
+      selector
+    );
     await el.sendKeys(filePath);
   }
 
@@ -134,7 +166,7 @@ export class DomInteractions {
       throw new Error('clickByUid: resolveUid callback not set. Ensure snapshot is initialized.');
     }
     const el = await this.resolveUid(uid);
-    await this.driver.wait(until.elementIsVisible(el), 5000).catch(() => {});
+    await this.waitForVisible(el, 5000);
 
     if (dblClick) {
       await this.driver.actions({ async: true }).doubleClick(el).perform();
@@ -198,28 +230,20 @@ export class DomInteractions {
 
     // Use JS drag events fallback for compatibility (Actions DnD not used)
     await this.driver.executeScript(
-      (srcEl: Element, tgtEl: Element) => {
-        if (!srcEl || !tgtEl) {
-          throw new Error('dragAndDrop: element not found');
-        }
-
-        function dispatch(type: string, target: Element, dataTransfer?: DataTransfer) {
-          const evt = new DragEvent(type, {
-            bubbles: true,
-            cancelable: true,
-            dataTransfer,
-          } as DragEventInit);
-          return target.dispatchEvent(evt);
-        }
-
-        // Create DataTransfer if available
-        const dt = typeof DataTransfer !== 'undefined' ? new DataTransfer() : undefined;
-        dispatch('dragstart', srcEl, dt);
-        dispatch('dragenter', tgtEl, dt);
-        dispatch('dragover', tgtEl, dt);
-        dispatch('drop', tgtEl, dt);
-        dispatch('dragend', srcEl, dt);
-      },
+      `
+      var srcEl = arguments[0], tgtEl = arguments[1];
+      if (!srcEl || !tgtEl) throw new Error('dragAndDrop: element not found');
+      function dispatch(type, target, dt) {
+        var evt = new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt });
+        return target.dispatchEvent(evt);
+      }
+      var dt = typeof DataTransfer !== 'undefined' ? new DataTransfer() : undefined;
+      dispatch('dragstart', srcEl, dt);
+      dispatch('dragenter', tgtEl, dt);
+      dispatch('dragover', tgtEl, dt);
+      dispatch('drop', tgtEl, dt);
+      dispatch('dragend', srcEl, dt);
+    `,
       fromEl,
       toEl
     );
@@ -257,25 +281,22 @@ export class DomInteractions {
     const el = await this.resolveUid(uid);
 
     // Ensure it's an <input type=file>; if hidden, unhide via JS
-    await this.driver.executeScript((element: Element) => {
-      if (!element) {
-        throw new Error('uploadFile: element not found');
-      }
-      if (element.tagName !== 'INPUT' || (element as HTMLInputElement).type !== 'file') {
+    await this.driver.executeScript(
+      `
+      var element = arguments[0];
+      if (!element) throw new Error('uploadFile: element not found');
+      if (element.tagName !== 'INPUT' || element.type !== 'file')
         throw new Error('uploadFile: element must be <input type=file>');
-      }
-      const style = window.getComputedStyle(element);
+      var style = window.getComputedStyle(element);
       if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-        const s = (element as HTMLElement).style;
-        s.display = 'block';
-        s.visibility = 'visible';
-        s.opacity = '1';
-        s.position = 'fixed';
-        s.left = '0px';
-        s.top = '0px';
+        var s = element.style;
+        s.display = 'block'; s.visibility = 'visible'; s.opacity = '1';
+        s.position = 'fixed'; s.left = '0px'; s.top = '0px';
         s.zIndex = '2147483647';
       }
-    }, el);
+    `,
+      el
+    );
 
     await el.sendKeys(filePath);
 

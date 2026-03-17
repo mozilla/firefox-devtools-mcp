@@ -3,7 +3,7 @@
  * Handles snapshot creation using bundled injected script
  */
 
-import type { WebDriver, WebElement } from 'selenium-webdriver';
+import type { IDriver, IElement } from '../core.js';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,12 +25,12 @@ export interface SnapshotOptions {
  * Uses bundled injected script for snapshot creation
  */
 export class SnapshotManager {
-  private driver: WebDriver;
+  private driver: IDriver;
   private resolver: UidResolver;
   private injectedScript: string | null = null;
   private currentSnapshotId = 0;
 
-  constructor(driver: WebDriver) {
+  constructor(driver: IDriver) {
     this.driver = driver;
     this.resolver = new UidResolver(driver);
   }
@@ -159,7 +159,7 @@ export class SnapshotManager {
   /**
    * Resolve UID to WebElement (with staleness check and caching)
    */
-  async resolveUidToElement(uid: string): Promise<WebElement> {
+  async resolveUidToElement(uid: string): Promise<IElement> {
     return await this.resolver.resolveUidToElement(uid);
   }
 
