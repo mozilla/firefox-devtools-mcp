@@ -6,6 +6,6 @@
     "name": "Tomáš Grasl",
     "url": "https://www.tomasgrasl.cz/"
   },
-  "repository": "https://github.com/freema/firefox-devtools-mcp",
+  "repository": "https://github.com/mozilla/firefox-devtools-mcp",
   "license": "MIT"
 }

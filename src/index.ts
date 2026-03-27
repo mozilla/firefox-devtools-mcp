@@ -208,10 +208,10 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse
   ['get_firefox_info', tools.handleGetFirefoxInfo],
   ['restart_firefox', tools.handleRestartFirefox],
 
-  // Chrome Context
-  ['list_chrome_contexts', tools.handleListChromeContexts],
-  ['select_chrome_context', tools.handleSelectChromeContext],
-  ['evaluate_chrome_script', tools.handleEvaluateChromeScript],
+  // Privileged Context
+  ['list_privileged_contexts', tools.handleListPrivilegedContexts],
+  ['select_privileged_context', tools.handleSelectPrivilegedContext],
+  ['evaluate_privileged_script', tools.handleEvaluatePrivilegedScript],
 
   // Firefox Preferences
   ['set_firefox_prefs', tools.handleSetFirefoxPrefs],
@@ -271,10 +271,10 @@ const allTools = [
   tools.getFirefoxInfoTool,
   tools.restartFirefoxTool,
 
-  // Chrome Context
-  tools.listChromeContextsTool,
-  tools.selectChromeContextTool,
-  tools.evaluateChromeScriptTool,
+  // Privileged Context
+  tools.listPrivilegedContextsTool,
+  tools.selectPrivilegedContextTool,
+  tools.evaluatePrivilegedScriptTool,
 
   // Firefox Preferences
   tools.setFirefoxPrefsTool,

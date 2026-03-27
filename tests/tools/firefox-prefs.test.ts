@@ -105,10 +105,10 @@ describe('Firefox Prefs Tool Handlers', () => {
       expect(result.content[0].text).toContain('No preferences to set');
     });
 
-    it('should return helpful error when MOZ_REMOTE_ALLOW_SYSTEM_ACCESS results in no chrome contexts', async () => {
+    it('should return helpful error when MOZ_REMOTE_ALLOW_SYSTEM_ACCESS results in no privileged contexts', async () => {
       delete process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS;
 
-      // Without MOZ_REMOTE_ALLOW_SYSTEM_ACCESS, no chrome contexts are available
+      // Without MOZ_REMOTE_ALLOW_SYSTEM_ACCESS, no privileged contexts are available
       mockSendBiDiCommand.mockResolvedValue({ contexts: [] });
 
       const mockFirefox = {
@@ -154,9 +154,7 @@ describe('Firefox Prefs Tool Handlers', () => {
       expect(mockExecuteScript).toHaveBeenCalledWith(
         'Services.prefs.setBoolPref("test.bool", true)'
       );
-      expect(mockExecuteScript).toHaveBeenCalledWith(
-        'Services.prefs.setIntPref("test.int", 42)'
-      );
+      expect(mockExecuteScript).toHaveBeenCalledWith('Services.prefs.setIntPref("test.int", 42)');
       expect(mockExecuteScript).toHaveBeenCalledWith(
         'Services.prefs.setStringPref("test.string", "hello")'
       );
@@ -194,7 +192,7 @@ describe('Firefox Prefs Tool Handlers', () => {
       expect(result.content[0].text).toContain('Failed to set 1 preference(s)');
     });
 
-    it('should return error when no chrome contexts available', async () => {
+    it('should return error when no privileged contexts available', async () => {
       process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 
       mockSendBiDiCommand.mockResolvedValue({ contexts: [] });
@@ -210,7 +208,7 @@ describe('Firefox Prefs Tool Handlers', () => {
       const result = await handleSetFirefoxPrefs({ prefs: { 'test.pref': 'value' } });
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('No chrome contexts');
+      expect(result.content[0].text).toContain('No privileged contexts');
     });
 
     it('should call getFirefox even when MOZ_REMOTE_ALLOW_SYSTEM_ACCESS not in process.env', async () => {
@@ -252,10 +250,10 @@ describe('Firefox Prefs Tool Handlers', () => {
       expect(result.content[0].text).toContain('names parameter is required');
     });
 
-    it('should return helpful error when MOZ_REMOTE_ALLOW_SYSTEM_ACCESS results in no chrome contexts', async () => {
+    it('should return helpful error when MOZ_REMOTE_ALLOW_SYSTEM_ACCESS results in no privileged contexts', async () => {
       delete process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS;
 
-      // Without MOZ_REMOTE_ALLOW_SYSTEM_ACCESS, no chrome contexts are available
+      // Without MOZ_REMOTE_ALLOW_SYSTEM_ACCESS, no privileged contexts are available
       mockSendBiDiCommand.mockResolvedValue({ contexts: [] });
 
       const mockFirefox = {
@@ -328,7 +326,7 @@ describe('Firefox Prefs Tool Handlers', () => {
       expect(result.content[0].text).toContain('(not set)');
     });
 
-    it('should return error when no chrome contexts available', async () => {
+    it('should return error when no privileged contexts available', async () => {
       process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 
       mockSendBiDiCommand.mockResolvedValue({ contexts: [] });
@@ -344,7 +342,7 @@ describe('Firefox Prefs Tool Handlers', () => {
       const result = await handleGetFirefoxPrefs({ names: ['test.pref'] });
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('No chrome contexts');
+      expect(result.content[0].text).toContain('No privileged contexts');
     });
 
     it('should call getFirefox even when MOZ_REMOTE_ALLOW_SYSTEM_ACCESS not in process.env', async () => {

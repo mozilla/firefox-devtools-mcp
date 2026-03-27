@@ -1,47 +1,47 @@
 /**
- * Chrome context management tools for MCP
+ * Privileged context management tools for MCP
  * Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1
  */
 
 import { successResponse, errorResponse } from '../utils/response-helpers.js';
 import type { McpToolResponse } from '../types/common.js';
 
-export const listChromeContextsTool = {
-  name: 'list_chrome_contexts',
+export const listPrivilegedContextsTool = {
+  name: 'list_privileged_contexts',
   description:
-    'List chrome (privileged) browsing contexts. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Use restart_firefox with env parameter to enable.',
+    'List privileged (privileged) browsing contexts. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Use restart_firefox with env parameter to enable.',
   inputSchema: {
     type: 'object',
     properties: {},
   },
 };
 
-export const selectChromeContextTool = {
-  name: 'select_chrome_context',
+export const selectPrivilegedContextTool = {
+  name: 'select_privileged_context',
   description:
-    'Select a chrome browsing context by ID and set Marionette context to chrome. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+    'Select a privileged browsing context by ID and set WebDriver Classic context to "chrome" . Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
   inputSchema: {
     type: 'object',
     properties: {
       contextId: {
         type: 'string',
-        description: 'Chrome browsing context ID from list_chrome_contexts',
+        description: 'Privileged browsing context ID from list_privileged_contexts',
       },
     },
     required: ['contextId'],
   },
 };
 
-export const evaluateChromeScriptTool = {
-  name: 'evaluate_chrome_script',
+export const evaluatePrivilegedScriptTool = {
+  name: 'evaluate_privileged_script',
   description:
-    'Evaluate JavaScript in the current chrome context. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Returns the result of the expression.',
+    'Evaluate JavaScript in the current privileged context. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Returns the result of the expression.',
   inputSchema: {
     type: 'object',
     properties: {
       expression: {
         type: 'string',
-        description: 'JavaScript expression to evaluate in the chrome context',
+        description: 'JavaScript expression to evaluate in the privileged context',
       },
     },
     required: ['expression'],
@@ -50,10 +50,10 @@ export const evaluateChromeScriptTool = {
 
 function formatContextList(contexts: any[]): string {
   if (contexts.length === 0) {
-    return '🔧 No chrome contexts found';
+    return '🔧 No privileged contexts found';
   }
 
-  const lines: string[] = [`🔧 ${contexts.length} chrome contexts`];
+  const lines: string[] = [`🔧 ${contexts.length} privileged contexts`];
   for (const ctx of contexts) {
     const id = ctx.context;
     const url = ctx.url || '(no url)';
@@ -63,7 +63,7 @@ function formatContextList(contexts: any[]): string {
   return lines.join('\n');
 }
 
-export async function handleListChromeContexts(_args: unknown): Promise<McpToolResponse> {
+export async function handleListPrivilegedContexts(_args: unknown): Promise<McpToolResponse> {
   try {
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
@@ -79,7 +79,7 @@ export async function handleListChromeContexts(_args: unknown): Promise<McpToolR
     if (error instanceof Error && error.message.includes('UnsupportedOperationError')) {
       return errorResponse(
         new Error(
-          'Chrome context access not enabled. Set MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 environment variable and restart Firefox.'
+          'Privileged context access not enabled. Set MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 environment variable and restart Firefox.'
         )
       );
     }
@@ -87,7 +87,7 @@ export async function handleListChromeContexts(_args: unknown): Promise<McpToolR
   }
 }
 
-export async function handleSelectChromeContext(args: unknown): Promise<McpToolResponse> {
+export async function handleSelectPrivilegedContext(args: unknown): Promise<McpToolResponse> {
   try {
     const { contextId } = args as { contextId: string };
 
@@ -106,20 +106,20 @@ export async function handleSelectChromeContext(args: unknown): Promise<McpToolR
     } catch (contextError) {
       return errorResponse(
         new Error(
-          `Switched to context ${contextId} but failed to set Marionette chrome context. Your Firefox build may not support chrome context or MOZ_REMOTE_ALLOW_SYSTEM_ACCESS is not set.`
+          `Switched to context ${contextId} but failed to set Marionette privileged context. Your Firefox build may not support privileged context or MOZ_REMOTE_ALLOW_SYSTEM_ACCESS is not set.`
         )
       );
     }
 
     return successResponse(
-      `✅ Switched to chrome context: ${contextId} (Marionette context set to chrome)`
+      `✅ Switched to privileged context: ${contextId} (Marionette context set to privileged)`
     );
   } catch (error) {
     return errorResponse(error as Error);
   }
 }
 
-export async function handleEvaluateChromeScript(args: unknown): Promise<McpToolResponse> {
+export async function handleEvaluatePrivilegedScript(args: unknown): Promise<McpToolResponse> {
   try {
     const { expression } = args as { expression: string };
 

@@ -145,7 +145,10 @@ export async function handleUninstallExtension(args: unknown): Promise<McpToolRe
 export const listExtensionsTool = {
   name: 'list_extensions',
   description:
-    'List installed Firefox extensions with UUIDs and background scripts. Uses chrome-privileged AddonManager API as workaround for missing webExtension.getExtensions BiDi command. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+    // MOZ_REMOTE_ALLOW_SYSTEM_ACCESS is required because the tool relies on the
+    // privileged AddonManager API as a workaround for the currently missing
+    // webExtension.getExtensions WebDriver BiDi command.
+    'List installed Firefox extensions with UUIDs and background scripts. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -164,7 +167,8 @@ export const listExtensionsTool = {
       },
       isSystem: {
         type: 'boolean',
-        description: 'Optional: Filter by system/built-in (true) or user-installed (false) extensions',
+        description:
+          'Optional: Filter by system/built-in (true) or user-installed (false) extensions',
       },
     },
   },
@@ -184,9 +188,7 @@ interface ExtensionInfo {
 
 function formatExtensionList(extensions: ExtensionInfo[], filterId?: string): string {
   if (extensions.length === 0) {
-    return filterId
-      ? `🔍 Extension not found: ${filterId}`
-      : '📦 No extensions installed';
+    return filterId ? `🔍 Extension not found: ${filterId}` : '📦 No extensions installed';
   }
 
   const lines: string[] = [
@@ -219,17 +221,18 @@ function formatExtensionList(extensions: ExtensionInfo[], filterId?: string): st
 
 export async function handleListExtensions(args: unknown): Promise<McpToolResponse> {
   try {
-    const { ids, name, isActive, isSystem } = (args as {
-      ids?: string[];
-      name?: string;
-      isActive?: boolean;
-      isSystem?: boolean;
-    }) || {};
+    const { ids, name, isActive, isSystem } =
+      (args as {
+        ids?: string[];
+        name?: string;
+        isActive?: boolean;
+        isSystem?: boolean;
+      }) || {};
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    // Get chrome contexts
+    // Get privileged ("chrome") contexts
     const result = await firefox.sendBiDiCommand('browsingContext.getTree', {
       'moz:scope': 'chrome',
     });
@@ -237,7 +240,7 @@ export async function handleListExtensions(args: unknown): Promise<McpToolRespon
     const contexts = result.contexts || [];
     if (contexts.length === 0) {
       throw new Error(
-        'No chrome contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
+        'No privileged contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
       );
     }
 

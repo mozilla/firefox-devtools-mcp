@@ -3,7 +3,7 @@
  * Windows Integration Tests Runner
  *
  * Runs integration tests directly via node to avoid vitest fork issues on Windows.
- * See: https://github.com/freema/firefox-devtools-mcp/issues/33
+ * See: https://github.com/mozilla/firefox-devtools-mcp/issues/33
  */
 
 import { FirefoxDevTools } from '../dist/index.js';
@@ -94,7 +94,7 @@ async function snapshotTests() {
   await test('should take snapshot', async () => {
     const fixturePath = `file://${fixturesPath}/simple.html`;
     await firefox.navigate(fixturePath);
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 500));
 
     const snapshot = await firefox.takeSnapshot();
     assert(snapshot, 'snapshot should exist');

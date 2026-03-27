@@ -15,7 +15,7 @@ import type { McpToolResponse } from '../types/common.js';
 export const setFirefoxPrefsTool = {
   name: 'set_firefox_prefs',
   description:
-    'Set Firefox preferences at runtime via Services.prefs API. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+    'Set Firefox preferences at runtime a privileged API. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -48,7 +48,7 @@ export async function handleSetFirefoxPrefs(args: unknown): Promise<McpToolRespo
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    // Get chrome contexts
+    // Get privileged ("chrome") contexts
     const result = await firefox.sendBiDiCommand('browsingContext.getTree', {
       'moz:scope': 'chrome',
     });
@@ -56,7 +56,7 @@ export async function handleSetFirefoxPrefs(args: unknown): Promise<McpToolRespo
     const contexts = result.contexts || [];
     if (contexts.length === 0) {
       throw new Error(
-        'No chrome contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
+        'No privileged contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
       );
     }
 
@@ -126,7 +126,7 @@ export async function handleSetFirefoxPrefs(args: unknown): Promise<McpToolRespo
 export const getFirefoxPrefsTool = {
   name: 'get_firefox_prefs',
   description:
-    'Get Firefox preference values via Services.prefs API. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+    'Get Firefox preference values via a privileged API. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -151,7 +151,7 @@ export async function handleGetFirefoxPrefs(args: unknown): Promise<McpToolRespo
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    // Get chrome contexts
+    // Get privileged ("chrome") contexts
     const result = await firefox.sendBiDiCommand('browsingContext.getTree', {
       'moz:scope': 'chrome',
     });
@@ -159,7 +159,7 @@ export async function handleGetFirefoxPrefs(args: unknown): Promise<McpToolRespo
     const contexts = result.contexts || [];
     if (contexts.length === 0) {
       throw new Error(
-        'No chrome contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
+        'No privileged contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
       );
     }
 

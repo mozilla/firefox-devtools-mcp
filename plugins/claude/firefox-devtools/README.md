@@ -78,5 +78,5 @@ The plugin works automatically when you ask about browser tasks:
 
 ## Links
 
-- [Repository](https://github.com/freema/firefox-devtools-mcp)
+- [Repository](https://github.com/mozilla/firefox-devtools-mcp)
 - [npm](https://www.npmjs.com/package/firefox-devtools-mcp)

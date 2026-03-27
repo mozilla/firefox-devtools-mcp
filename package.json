@@ -1,8 +1,8 @@
 {
-  "name": "@padenot/firefox-devtools-mcp",
+  "name": "firefox-devtools-mcp",
   "version": "0.8.1",
-  "description": "Model Context Protocol (MCP) server for Firefox DevTools automation (fork with Firefox management tools)",
-  "author": "padenot",
+  "description": "Model Context Protocol (MCP) server for Firefox DevTools automation",
+  "author": "freema",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
@@ -95,12 +95,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/padenot/firefox-devtools-mcp.git"
+    "url": "git+https://github.com/mozilla/firefox-devtools-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/padenot/firefox-devtools-mcp/issues"
+    "url": "https://github.com/mozilla/firefox-devtools-mcp/issues"
   },
-  "homepage": "https://github.com/padenot/firefox-devtools-mcp#readme",
+  "homepage": "https://github.com/mozilla/firefox-devtools-mcp#readme",
   "publishConfig": {
     "access": "public"
   }

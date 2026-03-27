@@ -39,7 +39,7 @@ Release flow
 
 Windows Integration Tests
 - On Windows, vitest has known issues with process forking when running integration tests that spawn Firefox.
-- See: https://github.com/freema/firefox-devtools-mcp/issues/33
+- See: https://github.com/mozilla/firefox-devtools-mcp/issues/33
 - To work around this, we use a separate test runner (`scripts/run-integration-tests-windows.mjs`) that runs integration tests directly via Node.js without vitest's process isolation.
 - The CI workflow detects Windows and automatically uses this runner instead of vitest for integration tests.
 - Unit tests still run via vitest on all platforms.

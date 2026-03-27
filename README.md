@@ -1,15 +1,15 @@
 # Firefox DevTools MCP
 
 [![npm version](https://badge.fury.io/js/firefox-devtools-mcp.svg)](https://www.npmjs.com/package/firefox-devtools-mcp)
-[![CI](https://github.com/freema/firefox-devtools-mcp/workflows/CI/badge.svg)](https://github.com/freema/firefox-devtools-mcp/actions/workflows/ci.yml)
+[![CI](https://github.com/mozilla/firefox-devtools-mcp/workflows/CI/badge.svg)](https://github.com/mozilla/firefox-devtools-mcp/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/freema/firefox-devtools-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/freema/firefox-devtools-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<a href="https://glama.ai/mcp/servers/@freema/firefox-devtools-mcp"><img src="https://glama.ai/mcp/servers/@freema/firefox-devtools-mcp/badge" height="223" alt="Glama"></a>
+<a href="https://glama.ai/mcp/servers/@mozilla/firefox-devtools-mcp"><img src="https://glama.ai/mcp/servers/@freema/firefox-devtools-mcp/badge" height="223" alt="Glama"></a>
 
 Model Context Protocol server for automating Firefox via WebDriver BiDi (through Selenium WebDriver). Works with Claude Code, Claude Desktop, Cursor, Cline and other MCP clients.
 
-Repository: https://github.com/freema/firefox-devtools-mcp
+Repository: https://github.com/mozilla/firefox-devtools-mcp
 
 > **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx firefox-devtools-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
 
@@ -97,6 +97,8 @@ You can pass flags or environment variables (names on the right):
 - `--marionette-port` — Marionette port for connect-existing mode, default 2828 (`MARIONETTE_PORT`)
 - `--pref name=value` — set Firefox preference at startup (repeatable, requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 
+> **Note on `--pref`:** When Firefox runs in automation, it applies [RecommendedPreferences](https://searchfox.org/firefox-main/source/remote/shared/RecommendedPreferences.sys.mjs) that modify browser behavior for testing. The `--pref` option allows overriding these defaults when needed.
+
 ### Connect to existing Firefox
 
 Use `--connect-existing` to automate your real browsing session — with cookies, logins, and open tabs intact:
@@ -119,10 +121,6 @@ BiDi-dependent features (console events, network events) are not available in co
 > Only enable Marionette when you need MCP automation, then restart Firefox
 > normally afterward.
 
-> **Note on `--pref`:** When Firefox runs in WebDriver BiDi mode, it applies [RecommendedPreferences](https://searchfox.org/firefox-main/source/remote/shared/RecommendedPreferences.sys.mjs) that modify browser behavior for testing. The `--pref` option allows overriding these defaults when needed (e.g., for Firefox development, debugging, or testing scenarios that require production-like behavior).
->
-> **Example:** `--pref "browser.ml.enable=true"` enables Firefox's ML/AI features. This is essential when using this MCP server to develop or test AI-powered features like Smart Window, since RecommendedPreferences disables it by default.
-
 ## Tool overview
 
 - Pages: list/new/navigate/select/close
@@ -131,8 +129,8 @@ BiDi-dependent features (console events, network events) are not available in co
 - Network: list/get (ID‑first, filters, always‑on capture)
 - Console: list/clear
 - Screenshot: page/by uid (with optional `saveTo` for CLI environments)
-- Script: evaluate_script (content), evaluate_chrome_script (privileged)
-- Chrome Context: list/select chrome contexts (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
+- Script: evaluate_script
+- Privileged Context: list/select privileged ("chrome") contexts, evaluate_privileged_script (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 - WebExtension: install_extension, uninstall_extension, list_extensions (list requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 - Firefox Management: get_firefox_info, get_firefox_output, restart_firefox, set_firefox_prefs, get_firefox_prefs
 - Utilities: accept/dismiss dialog, history back/forward, set viewport
@@ -204,4 +202,4 @@ npm run inspector:dev
 
 ## Author
 
-Created by [Tomáš Grasl](https://www.tomasgrasl.cz/)
+Created by [Tomáš Grasl](https://www.tomasgrasl.cz/), maintained by [Mozilla](https://www.mozilla.org).

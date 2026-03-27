@@ -26,7 +26,7 @@ async function test() {
   await firefox.navigate('https://example.com');
   console.log('✓ Navigated to example.com');
 
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   try {
     const title = await firefox.evaluate('return document.title');
@@ -52,7 +52,7 @@ async function test() {
   // Navigate to another page
   await firefox.navigate('https://mozilla.org');
   console.log('✓ Navigated to mozilla.org');
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   try {
     const title2 = await firefox.evaluate('return document.title');
@@ -64,35 +64,34 @@ async function test() {
   // Check log file
   console.log('\n--- Checking MOZ_LOG output ---');
 
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   await firefox.close();
   console.log('✓ Firefox closed');
 
   // Give a moment for log file to be flushed
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   if (existsSync(logFile)) {
     try {
       const logContent = readFileSync(logFile, 'utf8');
-      const lines = logContent.split('\n').filter(l => l.trim());
+      const lines = logContent.split('\n').filter((l) => l.trim());
       console.log(`✓ Log file exists with ${lines.length} lines`);
 
       // Check for HTTP logging
-      const httpLines = lines.filter(l => l.includes('nsHttp'));
+      const httpLines = lines.filter((l) => l.includes('nsHttp'));
       console.log(`  Found ${httpLines.length} nsHttp log lines`);
 
       if (httpLines.length > 0) {
         console.log('  Sample HTTP log lines:');
-        httpLines.slice(0, 3).forEach(line => {
+        httpLines.slice(0, 3).forEach((line) => {
           console.log(`    ${line.substring(0, 100)}`);
         });
       }
 
       // Check for timestamps
-      const timestampLines = lines.filter(l => /^\d{4}-\d{2}-\d{2}/.test(l));
+      const timestampLines = lines.filter((l) => /^\d{4}-\d{2}-\d{2}/.test(l));
       console.log(`  Found ${timestampLines.length} timestamped lines`);
-
     } catch (err) {
       console.log(`✗ Could not read log file: ${err.message}`);
     }
@@ -101,12 +100,12 @@ async function test() {
   }
 
   console.log('\n✓ All feature tests completed!');
-  console.log('\nNote: Chrome context evaluation requires:');
+  console.log('\nNote: Privileged context evaluation requires:');
   console.log('  - MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var');
   console.log('  - Using restart_firefox tool or npm run inspector');
 }
 
-test().catch(err => {
+test().catch((err) => {
   console.error('\nTest failed:', err);
   console.error(err.stack);
   process.exit(1);

@@ -135,7 +135,7 @@ describe('FirefoxCore applyPreferences', () => {
     await expect(core.applyPreferences()).rejects.toThrow('MOZ_REMOTE_ALLOW_SYSTEM_ACCESS');
   });
 
-  it('should get chrome contexts via BiDi', async () => {
+  it('should get privileged contexts via BiDi', async () => {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 
     // Setup sendBiDiCommand mock
@@ -195,7 +195,7 @@ describe('FirefoxCore applyPreferences', () => {
     });
   });
 
-  it('should throw if no chrome contexts available', async () => {
+  it('should throw if no privileged contexts available', async () => {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 
     mockSendBiDiCommand.mockResolvedValue({ contexts: [] });
@@ -236,10 +236,10 @@ describe('FirefoxCore applyPreferences', () => {
     (core as any).driver = mockGetDriver();
     (core as any).sendBiDiCommand = mockSendBiDiCommand;
 
-    await expect(core.applyPreferences()).rejects.toThrow('No chrome contexts');
+    await expect(core.applyPreferences()).rejects.toThrow('No privileged contexts');
   });
 
-  it('should switch to chrome context and execute pref scripts', async () => {
+  it('should switch to privileged context and execute pref scripts', async () => {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = '1';
 
     mockSendBiDiCommand.mockResolvedValue({
@@ -289,18 +289,14 @@ describe('FirefoxCore applyPreferences', () => {
 
     await core.applyPreferences();
 
-    // Should have switched to chrome context
+    // Should have switched to privileged context
     expect(mockSwitchToWindow).toHaveBeenCalledWith('chrome-context-id');
     expect(mockSetContext).toHaveBeenCalledWith('chrome');
 
     // Should have executed scripts for each pref
     expect(mockExecuteScript).toHaveBeenCalledTimes(3);
-    expect(mockExecuteScript).toHaveBeenCalledWith(
-      'Services.prefs.setBoolPref("bool.pref", true)'
-    );
-    expect(mockExecuteScript).toHaveBeenCalledWith(
-      'Services.prefs.setIntPref("int.pref", 42)'
-    );
+    expect(mockExecuteScript).toHaveBeenCalledWith('Services.prefs.setBoolPref("bool.pref", true)');
+    expect(mockExecuteScript).toHaveBeenCalledWith('Services.prefs.setIntPref("int.pref", 42)');
     expect(mockExecuteScript).toHaveBeenCalledWith(
       'Services.prefs.setStringPref("string.pref", "hello")'
     );

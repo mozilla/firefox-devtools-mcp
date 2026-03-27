@@ -26,6 +26,17 @@ export interface IElement {
   takeScreenshot(): Promise<string>;
 }
 
+export interface IBiDiSocket {
+  readyState: number;
+  on(event: string, listener: (data: unknown) => void): void;
+  off(event: string, listener: (data: unknown) => void): void;
+  send(data: string): void;
+}
+
+export interface IBiDi {
+  socket: IBiDiSocket;
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface IDriver {
   getTitle(): Promise<string>;
@@ -66,6 +77,7 @@ export interface IDriver {
     perform(): Promise<void>;
     clear(): Promise<void>;
   };
+  getBidi(): Promise<IBiDi>;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -423,6 +435,10 @@ class GeckodriverHttpDriver implements IDriver {
   kill(): void {
     this.gdProcess.kill();
   }
+
+  getBidi(): Promise<IBiDi> {
+    throw new Error('BiDi not available in connect-existing mode');
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -684,7 +700,7 @@ export class FirefoxCore {
       throw new Error('Driver not connected');
     }
 
-    // Get chrome contexts
+    // Get privileged ("chrome") contexts
     const result = await this.sendBiDiCommand('browsingContext.getTree', {
       'moz:scope': 'chrome',
     });
@@ -692,7 +708,7 @@ export class FirefoxCore {
     const contexts = result.contexts || [];
     if (contexts.length === 0) {
       throw new Error(
-        'No chrome contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
+        'No privileged contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
       );
     }
 
@@ -782,7 +798,7 @@ export class FirefoxCore {
     }
 
     const bidi = await this.driver.getBidi();
-    const ws: any = bidi.socket;
+    const ws = bidi.socket;
 
     // Wait for WebSocket to be ready before sending
     await this.waitForWebSocketOpen(ws);

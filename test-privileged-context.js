@@ -3,7 +3,7 @@
 import { FirefoxDevTools } from './dist/index.js';
 
 async function test() {
-  console.log('=== Test: Chrome Context Script Evaluation (headless) ===\n');
+  console.log('=== Test: Privileged Context Script Evaluation (headless) ===\n');
 
   const firefox = new FirefoxDevTools({
     headless: true,
@@ -19,7 +19,7 @@ async function test() {
   // Test content script first
   console.log('\n--- Testing content script (default context) ---');
   await firefox.navigate('https://example.com');
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   try {
     const title = await firefox.evaluate('return document.title');
@@ -28,33 +28,33 @@ async function test() {
     console.log(`✗ Content script failed: ${err.message}`);
   }
 
-  // Now test chrome context via BiDi with moz:scope
-  console.log('\n--- Testing chrome context listing ---');
+  // Now test privileged context via BiDi with moz:scope
+  console.log('\n--- Testing privileged context listing ---');
 
   try {
-    // Use BiDi to list chrome contexts with moz:scope
+    // Use BiDi to list privileged contexts with moz:scope
     const result = await firefox.sendBiDiCommand('browsingContext.getTree', {
       'moz:scope': 'chrome',
     });
 
     const contexts = result.contexts || [];
-    console.log(`✓ Listed ${contexts.length} chrome context(s) via BiDi`);
+    console.log(`✓ Listed ${contexts.length} privileged context(s) via BiDi`);
 
     if (contexts.length > 0) {
-      console.log('  Sample chrome contexts:');
-      contexts.slice(0, 3).forEach(ctx => {
+      console.log('  Sample privileged contexts:');
+      contexts.slice(0, 3).forEach((ctx) => {
         console.log(`    ${ctx.context}: ${ctx.url || '(no url)'}`);
       });
 
-      // Try to evaluate in chrome context
-      console.log('\n--- Testing chrome script execution ---');
+      // Try to evaluate in privileged context
+      console.log('\n--- Testing privileged script execution ---');
 
       const driver = firefox.getDriver();
       const firstContext = contexts[0];
 
       // Switch to chrome browsing context
       await driver.switchTo().window(firstContext.context);
-      console.log(`✓ Switched to chrome context: ${firstContext.context}`);
+      console.log(`✓ Switched to privileged context: ${firstContext.context}`);
 
       // Set Marionette context to chrome
       try {
@@ -63,31 +63,28 @@ async function test() {
 
         // Now try to evaluate chrome-privileged script
         const appName = await driver.executeScript('return Services.appinfo.name;');
-        console.log(`✓ Chrome script: Services.appinfo.name = "${appName}"`);
+        console.log(`✓ Privileged script: Services.appinfo.name = "${appName}"`);
 
         const version = await driver.executeScript('return Services.appinfo.version;');
-        console.log(`✓ Chrome script: Services.appinfo.version = "${version}"`);
+        console.log(`✓ Privileged script: Services.appinfo.version = "${version}"`);
 
         const buildID = await driver.executeScript('return Services.appinfo.appBuildID;');
-        console.log(`✓ Chrome script: Services.appinfo.appBuildID = "${buildID}"`);
+        console.log(`✓ Privileged script: Services.appinfo.appBuildID = "${buildID}"`);
 
-        console.log('\n✅ Chrome context evaluation WORKS!');
-
+        console.log('\n✅ Privileged context evaluation WORKS!');
       } catch (err) {
-        console.log(`✗ Failed to set chrome context: ${err.message}`);
-        console.log('  Your Firefox build may not support chrome context');
+        console.log(`✗ Failed to set privileged context: ${err.message}`);
+        console.log('  Your Firefox build may not support privileged context');
       }
-
     } else {
-      console.log('  No chrome contexts found (requires dev/nightly build)');
+      console.log('  No privileged contexts found (requires dev/nightly build)');
     }
-
   } catch (err) {
     if (err.message && err.message.includes('UnsupportedOperationError')) {
-      console.log('✗ Chrome context not supported by this Firefox build');
+      console.log('✗ Privileged context not supported by this Firefox build');
       console.log('  Requires Firefox Nightly or custom build');
     } else {
-      console.log(`✗ Chrome context test failed: ${err.message}`);
+      console.log(`✗ Privileged context test failed: ${err.message}`);
     }
   }
 
@@ -95,7 +92,7 @@ async function test() {
   console.log('\n✓ Test completed');
 }
 
-test().catch(err => {
+test().catch((err) => {
   console.error('\nTest failed:', err);
   console.error(err.stack);
   process.exit(1);
