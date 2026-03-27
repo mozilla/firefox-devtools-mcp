@@ -169,9 +169,6 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse
   ['select_page', tools.handleSelectPage],
   ['close_page', tools.handleClosePage],
 
-  // Script evaluation
-  ['evaluate_script', tools.handleEvaluateScript],
-
   // Console
   ['list_console_messages', tools.handleListConsoleMessages],
   ['clear_console_messages', tools.handleClearConsoleMessages],
@@ -208,19 +205,24 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse
   ['get_firefox_info', tools.handleGetFirefoxInfo],
   ['restart_firefox', tools.handleRestartFirefox],
 
-  // Privileged Context
-  ['list_privileged_contexts', tools.handleListPrivilegedContexts],
-  ['select_privileged_context', tools.handleSelectPrivilegedContext],
-  ['evaluate_privileged_script', tools.handleEvaluatePrivilegedScript],
-
-  // Firefox Preferences
-  ['set_firefox_prefs', tools.handleSetFirefoxPrefs],
-  ['get_firefox_prefs', tools.handleGetFirefoxPrefs],
-
-  // WebExtensions
+  // WebExtensions (install/uninstall use standard BiDi, no privileged context required)
   ['install_extension', tools.handleInstallExtension],
   ['uninstall_extension', tools.handleUninstallExtension],
-  ['list_extensions', tools.handleListExtensions],
+
+  // Script evaluation — requires --enable-script
+  ...(args.enableScript ? ([['evaluate_script', tools.handleEvaluateScript]] as const) : []),
+
+  // Privileged context tools — requires --enable-privileged-context
+  ...(args.enablePrivilegedContext
+    ? ([
+        ['list_privileged_contexts', tools.handleListPrivilegedContexts],
+        ['select_privileged_context', tools.handleSelectPrivilegedContext],
+        ['evaluate_privileged_script', tools.handleEvaluatePrivilegedScript],
+        ['set_firefox_prefs', tools.handleSetFirefoxPrefs],
+        ['get_firefox_prefs', tools.handleGetFirefoxPrefs],
+        ['list_extensions', tools.handleListExtensions],
+      ] as const)
+    : []),
 ]);
 
 // All tool definitions
@@ -231,9 +233,6 @@ const allTools = [
   tools.navigatePageTool,
   tools.selectPageTool,
   tools.closePageTool,
-
-  // Script evaluation
-  tools.evaluateScriptTool,
 
   // Console
   tools.listConsoleMessagesTool,
@@ -271,19 +270,24 @@ const allTools = [
   tools.getFirefoxInfoTool,
   tools.restartFirefoxTool,
 
-  // Privileged Context
-  tools.listPrivilegedContextsTool,
-  tools.selectPrivilegedContextTool,
-  tools.evaluatePrivilegedScriptTool,
-
-  // Firefox Preferences
-  tools.setFirefoxPrefsTool,
-  tools.getFirefoxPrefsTool,
-
-  // WebExtensions
+  // WebExtensions (install/uninstall use standard BiDi, no privileged context required)
   tools.installExtensionTool,
   tools.uninstallExtensionTool,
-  tools.listExtensionsTool,
+
+  // Script evaluation — requires --enable-script
+  ...(args.enableScript ? [tools.evaluateScriptTool] : []),
+
+  // Privileged context tools — requires --enable-privileged-context
+  ...(args.enablePrivilegedContext
+    ? [
+        tools.listPrivilegedContextsTool,
+        tools.selectPrivilegedContextTool,
+        tools.evaluatePrivilegedScriptTool,
+        tools.setFirefoxPrefsTool,
+        tools.getFirefoxPrefsTool,
+        tools.listExtensionsTool,
+      ]
+    : []),
 ];
 
 async function main() {

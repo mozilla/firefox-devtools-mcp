@@ -68,6 +68,30 @@ describe('parsePrefs', () => {
   });
 });
 
+describe('CLI --enable-script flag', () => {
+  it('should default to false', () => {
+    const args = parseArguments('1.0.0', ['node', 'script']);
+    expect(args.enableScript).toBe(false);
+  });
+
+  it('should be true when --enable-script is passed', () => {
+    const args = parseArguments('1.0.0', ['node', 'script', '--enable-script']);
+    expect(args.enableScript).toBe(true);
+  });
+});
+
+describe('CLI --enable-privileged-context flag', () => {
+  it('should default to false', () => {
+    const args = parseArguments('1.0.0', ['node', 'script']);
+    expect(args.enablePrivilegedContext).toBe(false);
+  });
+
+  it('should be true when --enable-privileged-context is passed', () => {
+    const args = parseArguments('1.0.0', ['node', 'script', '--enable-privileged-context']);
+    expect(args.enablePrivilegedContext).toBe(true);
+  });
+});
+
 describe('CLI --pref option', () => {
   it('should accept --pref argument', () => {
     const args = parseArguments('1.0.0', ['node', 'script', '--pref', 'test=value']);

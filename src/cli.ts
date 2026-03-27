@@ -127,6 +127,18 @@ export const cliOptions = {
       'Set Firefox preference at startup (format: name=value). Can be specified multiple times. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1.',
     alias: 'p',
   },
+  enableScript: {
+    type: 'boolean',
+    description:
+      'Enable the evaluate_script tool, which allows executing arbitrary JavaScript in the page context.',
+    default: (process.env.ENABLE_SCRIPT ?? 'false') === 'true',
+  },
+  enablePrivilegedContext: {
+    type: 'boolean',
+    description:
+      'Enable privileged context tools: list/select privileged contexts, evaluate privileged scripts, get/set Firefox prefs, and list extensions. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1.',
+    default: (process.env.ENABLE_PRIVILEGED_CONTEXT ?? 'false') === 'true',
+  },
 } satisfies Record<string, YargsOptions>;
 
 export function parseArguments(version: string, argv = process.argv) {

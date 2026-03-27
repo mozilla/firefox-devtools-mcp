@@ -96,6 +96,8 @@ You can pass flags or environment variables (names on the right):
 - `--connect-existing` — attach to an already-running Firefox instead of launching a new one (`CONNECT_EXISTING=true`)
 - `--marionette-port` — Marionette port for connect-existing mode, default 2828 (`MARIONETTE_PORT`)
 - `--pref name=value` — set Firefox preference at startup (repeatable, requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
+- `--enable-script` — enable the `evaluate_script` tool, which executes arbitrary JavaScript in the page context (`ENABLE_SCRIPT=true`)
+- `--enable-privileged-context` — enable privileged context tools: list/select privileged contexts, evaluate privileged scripts, get/set Firefox prefs, and list extensions. Requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` (`ENABLE_PRIVILEGED_CONTEXT=true`)
 
 > **Note on `--pref`:** When Firefox runs in automation, it applies [RecommendedPreferences](https://searchfox.org/firefox-main/source/remote/shared/RecommendedPreferences.sys.mjs) that modify browser behavior for testing. The `--pref` option allows overriding these defaults when needed.
 
