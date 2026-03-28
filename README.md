@@ -165,53 +165,11 @@ npm run inspector:dev
 ## Testing
 
 ```bash
-# Run all tests once (unit + integration)
-npm run test:run
-
-# Run only unit tests (fast, no Firefox needed)
-npx vitest run tests/tools tests/firefox tests/utils tests/snapshot tests/cli tests/config tests/smoke.test.ts
-
-# Run only integration tests (launches real Firefox in headless mode)
-npx vitest run tests/integration
-
-# Run the e2e scenario suite
-npx vitest run tests/integration/e2e-scenario.integration.test.ts
-
-# Watch mode (re-runs on file changes)
-npm test
+npm run test:run          # all tests once (unit + integration)
+npm test                  # watch mode
 ```
 
-### E2E scenario tests
-
-The file `tests/integration/e2e-scenario.integration.test.ts` contains end-to-end
-tests that exercise the full `FirefoxClient` API against a realistic multi-page
-web application (`tests/fixtures/e2e-app.html`).
-
-The fixture app has three pages (Todo List, Search, Registration Form) plus
-always-visible hover/double-click targets. Each `describe` block launches its own
-headless Firefox instance and tears it down after the tests.
-
-**Covered scenarios (24 tests):**
-
-| Scenario              | What it tests                                                          |
-| --------------------- | ---------------------------------------------------------------------- |
-| Todo App Workflow     | `takeSnapshot`, `fillByUid`, `clickByUid`, `evaluate`                  |
-| Click Interactions    | `clickByUid` (double-click), `hoverByUid`                              |
-| Multi-Page Navigation | SPA page switching via UID clicks                                      |
-| Browser History       | `navigateBack`, `navigateForward`                                      |
-| Viewport Resize       | `setViewportSize` + dimension verification                             |
-| Search Workflow       | fill + click + result verification                                     |
-| Form Submission       | `fillByUid`, `fillFormByUid` (batch), form submit                      |
-| Console Monitoring    | `getConsoleMessages`, `clearConsoleMessages`                           |
-| Network Monitoring    | `startNetworkMonitoring`, `getNetworkRequests`, `clearNetworkRequests` |
-| Screenshot            | `takeScreenshotPage` (base64 output)                                   |
-| Tab Management        | `createNewPage`, `selectTab`, `closeTab`, `getTabs`, `refreshTabs`     |
-| Stale UID Detection   | navigation invalidates old UIDs, `clearSnapshot`                       |
-| Error Handling        | invalid UID format, unknown UID, stale snapshot UID                    |
-
-### Known issues
-
-- **Firefox 148 startup crash on macOS ARM64** ([Bug 2027228](https://bugzilla.mozilla.org/show_bug.cgi?id=2027228)): Intermittent SIGSEGV in `RegisterFonts` thread (`RWLockImpl::writeLock()` null pointer) when launching Firefox in headless mode via Selenium. The crash is a race condition in Firefox font initialization and does not affect test results — Selenium recovers automatically. More likely to occur under fast sequential startup/shutdown cycles.
+See [docs/testing.md](docs/testing.md) for full details on running specific test suites, the e2e scenario coverage, and known issues.
 
 ## Troubleshooting
 
