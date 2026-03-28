@@ -110,6 +110,11 @@ export const cliOptions = {
     description: 'Marionette port to connect to when using --connect-existing (default: 2828)',
     default: Number(process.env.MARIONETTE_PORT ?? '2828'),
   },
+  marionetteHost: {
+    type: 'string',
+    description: 'Marionette host to connect to when using --connect-existing (default: 127.0.0.1). Also used as the BiDi WebSocket connect address when different from 127.0.0.1.',
+    default: process.env.MARIONETTE_HOST ?? '127.0.0.1',
+  },
   env: {
     type: 'array',
     description:

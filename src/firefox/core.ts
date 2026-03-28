@@ -140,7 +140,7 @@ class GeckodriverHttpDriver implements IDriver {
     this.webSocketUrl = webSocketUrl;
   }
 
-  static async connect(marionettePort: number): Promise<GeckodriverHttpDriver> {
+  static async connect(marionettePort: number, marionetteHost = '127.0.0.1'): Promise<GeckodriverHttpDriver> {
     // Find geckodriver binary via selenium-manager
     const path = await import('node:path');
     const { execFileSync } = await import('node:child_process');
@@ -179,7 +179,7 @@ class GeckodriverHttpDriver implements IDriver {
     // Use --port=0 to let the OS assign a free port atomically (geckodriver ≥0.34.0)
     const gd = spawn(
       geckodriverPath,
-      ['--connect-existing', '--marionette-port', String(marionettePort), '--port', '0'],
+      ['--connect-existing', '--marionette-host', marionetteHost, '--marionette-port', String(marionettePort), '--port', '0'],
       { stdio: ['ignore', 'pipe', 'pipe'] }
     );
 
@@ -223,7 +223,14 @@ class GeckodriverHttpDriver implements IDriver {
       throw new Error(`Failed to create session: ${JSON.stringify(json)}`);
     }
 
-    const wsUrl = json.value.capabilities.webSocketUrl as string | undefined;
+    let wsUrl = json.value.capabilities.webSocketUrl as string | undefined;
+    logDebug(`Session capabilities webSocketUrl: ${wsUrl ?? 'not present'}, marionetteHost: ${marionetteHost}`);
+    if (wsUrl && marionetteHost !== '127.0.0.1') {
+      // Rewrite the URL to connect through the remote host / tunnel.
+      const parsed = new URL(wsUrl);
+      parsed.hostname = marionetteHost;
+      wsUrl = parsed.toString();
+    }
     if (wsUrl) {
       logDebug(`BiDi WebSocket URL: ${wsUrl}`);
     } else {
@@ -476,9 +483,11 @@ class GeckodriverHttpDriver implements IDriver {
     const ws = new WebSocket(this.webSocketUrl);
     await new Promise<void>((resolve, reject) => {
       ws.on('open', resolve);
-      ws.on('error', reject);
+      ws.on('error', (e: any) => {
+        const msg = e?.message || e?.error?.message || e?.error || e?.type || JSON.stringify(e) || String(e);
+        reject(new Error(`BiDi WS to ${this.webSocketUrl}: ${msg}`));
+      });
     });
-    logDebug('BiDi WebSocket connected');
 
     let cmdId = 0;
     const subscribe = async (event: string, contexts?: string[]): Promise<void> => {
@@ -578,7 +587,8 @@ export class FirefoxCore {
       // We bypass selenium-webdriver because its BiDi auto-upgrade hangs
       // when used with geckodriver's --connect-existing mode.
       const port = this.options.marionettePort ?? 2828;
-      this.driver = await GeckodriverHttpDriver.connect(port);
+      const host = this.options.marionetteHost ?? '127.0.0.1';
+      this.driver = await GeckodriverHttpDriver.connect(port, host);
     } else {
       // Set up output file for capturing Firefox stdout/stderr
       if (this.options.logFile) {
