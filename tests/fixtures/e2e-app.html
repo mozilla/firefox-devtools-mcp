@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E2E Test Application</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 20px;
+      }
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+      }
+      .nav {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding: 10px;
+        background: #f0f0f0;
+      }
+      .nav button {
+        cursor: pointer;
+      }
+      .nav button.active {
+        font-weight: bold;
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+      }
+      .todo-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+      }
+      .todo-item.done span {
+        text-decoration: line-through;
+        color: #888;
+      }
+      .search-results {
+        margin-top: 10px;
+      }
+      .search-result {
+        padding: 8px;
+        border: 1px solid #ddd;
+        margin: 4px 0;
+      }
+      #status {
+        padding: 10px;
+        margin: 10px 0;
+        background: #e8f5e9;
+        border-radius: 4px;
+      }
+      .form-group {
+        margin: 10px 0;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: bold;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 300px;
+        padding: 6px;
+      }
+      .error {
+        color: red;
+        font-size: 12px;
+        display: none;
+      }
+      .error.visible {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="appTitle">E2E Test Application</h1>
+    <div id="status">Ready</div>
+
+    <nav class="nav">
+      <button id="navTodo" class="active" data-page="todoPage" onclick="showPage('todoPage')">
+        Todo List
+      </button>
+      <button id="navSearch" data-page="searchPage" onclick="showPage('searchPage')">Search</button>
+      <button id="navForm" data-page="formPage" onclick="showPage('formPage')">Registration</button>
+    </nav>
+
+    <!-- Interaction targets (always visible) -->
+    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ccc">
+      <button id="hoverTarget" data-testid="hover-target" style="padding: 8px 16px">
+        Hover Me
+      </button>
+      <span id="hoverResult" data-testid="hover-result"></span>
+      <button
+        id="dblClickTarget"
+        data-testid="dblclick-target"
+        style="padding: 8px 16px; margin-left: 10px"
+      >
+        Double Click Me
+      </button>
+      <span id="dblClickResult" data-testid="dblclick-result"></span>
+    </div>
+
+    <!-- Todo Page -->
+    <div id="todoPage" class="page active">
+      <h2>Todo List</h2>
+      <div style="display: flex; gap: 8px; margin-bottom: 10px">
+        <input
+          type="text"
+          id="todoInput"
+          placeholder="Add a new task..."
+          data-testid="todo-input"
+        />
+        <button id="addTodoBtn" onclick="addTodo()" data-testid="add-todo">Add</button>
+      </div>
+      <div id="todoList"></div>
+      <div style="margin-top: 10px">
+        <span id="todoCount">0 items</span>
+        <button id="clearDoneBtn" onclick="clearDone()" data-testid="clear-done">Clear Done</button>
+      </div>
+    </div>
+
+    <!-- Search Page -->
+    <div id="searchPage" class="page">
+      <h2>Search</h2>
+      <div style="display: flex; gap: 8px; margin-bottom: 10px">
+        <input type="text" id="searchInput" placeholder="Search..." data-testid="search-input" />
+        <button id="searchBtn" onclick="doSearch()" data-testid="search-btn">Search</button>
+      </div>
+      <div id="searchResults" class="search-results"></div>
+    </div>
+
+    <!-- Registration Form Page -->
+    <div id="formPage" class="page">
+      <h2>Registration</h2>
+      <form id="regForm" onsubmit="return submitForm(event);">
+        <div class="form-group">
+          <label for="regName">Full Name</label>
+          <input type="text" id="regName" name="name" data-testid="reg-name" required />
+          <div class="error" id="nameError">Name is required</div>
+        </div>
+        <div class="form-group">
+          <label for="regEmail">Email</label>
+          <input type="email" id="regEmail" name="email" data-testid="reg-email" required />
+          <div class="error" id="emailError">Valid email is required</div>
+        </div>
+        <div class="form-group">
+          <label for="regCountry">Country</label>
+          <select id="regCountry" name="country" data-testid="reg-country">
+            <option value="">Select...</option>
+            <option value="cz">Czech Republic</option>
+            <option value="at">Austria</option>
+            <option value="de">Germany</option>
+            <option value="us">United States</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="regBio">Bio</label>
+          <textarea id="regBio" name="bio" rows="3" data-testid="reg-bio"></textarea>
+        </div>
+        <button type="submit" id="regSubmitBtn" data-testid="reg-submit">Register</button>
+      </form>
+      <div id="formResult" style="margin-top: 10px"></div>
+    </div>
+
+    <script>
+      // Navigation
+      function showPage(pageId) {
+        document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+        document.querySelectorAll('.nav button').forEach((b) => b.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+        setStatus(`Navigated to ${pageId.replace('Page', '')}`);
+      }
+
+      function setStatus(msg) {
+        document.getElementById('status').textContent = msg;
+      }
+
+      // Todo functionality
+      let todos = [];
+      let todoIdCounter = 0;
+
+      function addTodo() {
+        const input = document.getElementById('todoInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        todos.push({ id: ++todoIdCounter, text, done: false });
+        input.value = '';
+        renderTodos();
+        setStatus(`Added: "${text}"`);
+      }
+
+      function toggleTodo(id) {
+        const todo = todos.find((t) => t.id === id);
+        if (todo) {
+          todo.done = !todo.done;
+          renderTodos();
+          setStatus(`${todo.done ? 'Completed' : 'Reopened'}: "${todo.text}"`);
+        }
+      }
+
+      function clearDone() {
+        const count = todos.filter((t) => t.done).length;
+        todos = todos.filter((t) => !t.done);
+        renderTodos();
+        setStatus(`Cleared ${count} done items`);
+      }
+
+      function renderTodos() {
+        const list = document.getElementById('todoList');
+        list.innerHTML = todos
+          .map(
+            (t) => `
+                <div class="todo-item ${t.done ? 'done' : ''}" data-testid="todo-${t.id}">
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTodo(${t.id})" data-testid="todo-check-${t.id}">
+                    <span>${t.text}</span>
+                </div>
+            `
+          )
+          .join('');
+        document.getElementById('todoCount').textContent =
+          `${todos.length} items (${todos.filter((t) => t.done).length} done)`;
+      }
+
+      // Search functionality
+      const searchData = [
+        { title: 'Firefox DevTools', desc: 'Browser developer tools for debugging web pages' },
+        { title: 'WebDriver BiDi', desc: 'Bidirectional protocol for browser automation' },
+        { title: 'Model Context Protocol', desc: 'Protocol for AI assistants to use tools' },
+        { title: 'Selenium WebDriver', desc: 'Browser automation framework (legacy)' },
+        { title: 'Claude Code', desc: 'AI coding assistant by Anthropic' },
+      ];
+
+      function doSearch() {
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const results = query
+          ? searchData.filter(
+              (d) => d.title.toLowerCase().includes(query) || d.desc.toLowerCase().includes(query)
+            )
+          : [];
+
+        const container = document.getElementById('searchResults');
+        if (!query) {
+          container.innerHTML = '<p>Enter a search term</p>';
+          setStatus('Search: empty query');
+          return;
+        }
+
+        container.innerHTML = results.length
+          ? results
+              .map(
+                (r, i) =>
+                  `<div class="search-result" data-testid="result-${i}"><strong>${r.title}</strong><br>${r.desc}</div>`
+              )
+              .join('')
+          : '<p data-testid="no-results">No results found</p>';
+        setStatus(`Search: ${results.length} results for "${query}"`);
+      }
+
+      // Form functionality
+      function submitForm(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+
+        const name = data.get('name');
+        const email = data.get('email');
+
+        // Validation
+        let valid = true;
+        if (!name) {
+          document.getElementById('nameError').classList.add('visible');
+          valid = false;
+        } else {
+          document.getElementById('nameError').classList.remove('visible');
+        }
+        if (!email || !email.toString().includes('@')) {
+          document.getElementById('emailError').classList.add('visible');
+          valid = false;
+        } else {
+          document.getElementById('emailError').classList.remove('visible');
+        }
+
+        if (!valid) {
+          setStatus('Form: validation failed');
+          return false;
+        }
+
+        const result = {
+          name: data.get('name'),
+          email: data.get('email'),
+          country: data.get('country'),
+          bio: data.get('bio'),
+        };
+
+        document.getElementById('formResult').innerHTML =
+          `<div data-testid="reg-success" style="color: green; font-weight: bold;">
+                    ✓ Registered: ${result.name} (${result.email})
+                </div>`;
+        setStatus(`Registered: ${result.name}`);
+        return false;
+      }
+
+      // Log to console for console monitoring tests
+      console.log('[E2E App] Application loaded');
+
+      // Hover tracking
+      document.addEventListener('DOMContentLoaded', function () {
+        var hoverTarget = document.getElementById('hoverTarget');
+        if (hoverTarget) {
+          hoverTarget.addEventListener('mouseenter', function () {
+            document.getElementById('hoverResult').textContent = 'Hovered!';
+            setStatus('Hover detected');
+          });
+          hoverTarget.addEventListener('mouseleave', function () {
+            document.getElementById('hoverResult').textContent = '';
+          });
+        }
+
+        var dblClickTarget = document.getElementById('dblClickTarget');
+        if (dblClickTarget) {
+          dblClickTarget.addEventListener('dblclick', function () {
+            document.getElementById('dblClickResult').textContent = 'Double-clicked!';
+            setStatus('Double-click detected');
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
