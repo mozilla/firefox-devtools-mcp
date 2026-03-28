@@ -8,6 +8,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdirSync, openSync, closeSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import WebSocket from 'ws';
 import type { FirefoxLaunchOptions } from './types.js';
 import { log, logDebug } from '../utils/logger.js';
 
@@ -129,11 +130,14 @@ class GeckodriverHttpDriver implements IDriver {
   private baseUrl: string;
   private sessionId: string;
   private gdProcess: ChildProcess;
+  private webSocketUrl: string | null;
+  private bidiConnection: IBiDi | null = null;
 
-  constructor(baseUrl: string, sessionId: string, gdProcess: ChildProcess) {
+  constructor(baseUrl: string, sessionId: string, gdProcess: ChildProcess, webSocketUrl: string | null) {
     this.baseUrl = baseUrl;
     this.sessionId = sessionId;
     this.gdProcess = gdProcess;
+    this.webSocketUrl = webSocketUrl;
   }
 
   static async connect(marionettePort: number): Promise<GeckodriverHttpDriver> {
@@ -206,11 +210,11 @@ class GeckodriverHttpDriver implements IDriver {
 
     const baseUrl = `http://127.0.0.1:${port}`;
 
-    // Create a WebDriver session
+    // Create a WebDriver session with BiDi opt-in
     const resp = await fetch(`${baseUrl}/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ capabilities: { alwaysMatch: {} } }),
+      body: JSON.stringify({ capabilities: { alwaysMatch: { webSocketUrl: true } } }),
     });
     const json = (await resp.json()) as {
       value: { sessionId: string; capabilities: Record<string, unknown> };
@@ -219,7 +223,14 @@ class GeckodriverHttpDriver implements IDriver {
       throw new Error(`Failed to create session: ${JSON.stringify(json)}`);
     }
 
-    return new GeckodriverHttpDriver(baseUrl, json.value.sessionId, gd);
+    const wsUrl = json.value.capabilities.webSocketUrl as string | undefined;
+    if (wsUrl) {
+      logDebug(`BiDi WebSocket URL: ${wsUrl}`);
+    } else {
+      logDebug('BiDi WebSocket URL not available (Firefox may not support it or Remote Agent is not running)');
+    }
+
+    return new GeckodriverHttpDriver(baseUrl, json.value.sessionId, gd, wsUrl ?? null);
   }
 
   private async cmd(method: string, path: string, body?: unknown): Promise<unknown> {
@@ -422,6 +433,10 @@ class GeckodriverHttpDriver implements IDriver {
   }
 
   async quit(): Promise<void> {
+    if (this.bidiConnection) {
+      (this.bidiConnection.socket as unknown as WebSocket).close();
+      this.bidiConnection = null;
+    }
     try {
       await this.cmd('DELETE', '');
     } catch {
@@ -430,13 +445,73 @@ class GeckodriverHttpDriver implements IDriver {
     this.gdProcess.kill();
   }
 
-  /** Kill the geckodriver process without closing Firefox */
-  kill(): void {
+  /** Kill the geckodriver process without closing Firefox.
+   *  Deletes the session first so Marionette accepts new connections. */
+  async kill(): Promise<void> {
+    if (this.bidiConnection) {
+      (this.bidiConnection.socket as unknown as WebSocket).close();
+      this.bidiConnection = null;
+    }
+    try {
+      await this.cmd('DELETE', '');
+    } catch {
+      // ignore
+    }
     this.gdProcess.kill();
   }
 
-  getBidi(): Promise<IBiDi> {
-    throw new Error('BiDi not available in connect-existing mode');
+  /**
+   * Return a BiDi handle. Opens a WebSocket to Firefox's Remote Agent on
+   * first call, using the webSocketUrl returned in the session capabilities.
+   */
+  async getBidi(): Promise<IBiDi> {
+    if (this.bidiConnection) return this.bidiConnection;
+    if (!this.webSocketUrl) {
+      throw new Error(
+        'BiDi is not available: no webSocketUrl in session capabilities. ' +
+        'Ensure Firefox was started with --remote-debugging-port.'
+      );
+    }
+
+    const ws = new WebSocket(this.webSocketUrl);
+    await new Promise<void>((resolve, reject) => {
+      ws.on('open', resolve);
+      ws.on('error', reject);
+    });
+    logDebug('BiDi WebSocket connected');
+
+    let cmdId = 0;
+    const subscribe = async (event: string, contexts?: string[]): Promise<void> => {
+      const msg: Record<string, unknown> = {
+        id: ++cmdId,
+        method: 'session.subscribe',
+        params: { events: [event] },
+      };
+      if (contexts) msg.params = { events: [event], contexts };
+      ws.send(JSON.stringify(msg));
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error(`BiDi subscribe timeout for ${event}`)), 5000);
+        const onMsg = (data: WebSocket.Data) => {
+          try {
+            const payload = JSON.parse(data.toString());
+            if (payload.id === cmdId) {
+              clearTimeout(timeout);
+              ws.off('message', onMsg);
+              if (payload.error) {
+                reject(new Error(`BiDi subscribe error: ${payload.error}`));
+              } else {
+                resolve();
+              }
+            }
+          } catch { /* ignore parse errors from event messages */ }
+        };
+        ws.on('message', onMsg);
+      });
+      logDebug(`BiDi subscribed to ${event}`);
+    };
+
+    this.bidiConnection = { subscribe, socket: ws as unknown as IBiDiSocket } as any;
+    return this.bidiConnection;
   }
 }
 
@@ -640,7 +715,7 @@ export class FirefoxCore {
    */
   reset(): void {
     if (this.driver && this.options.connectExisting && 'kill' in this.driver) {
-      (this.driver as { kill(): void }).kill();
+      (this.driver as { kill(): Promise<void> }).kill();
     }
     this.driver = null;
     this.currentContextId = null;
@@ -762,7 +837,7 @@ export class FirefoxCore {
   async close(): Promise<void> {
     if (this.driver) {
       if (this.options.connectExisting && 'kill' in this.driver) {
-        (this.driver as { kill(): void }).kill();
+        await (this.driver as { kill(): Promise<void> }).kill();
       } else if ('quit' in this.driver) {
         await (this.driver as { quit(): Promise<void> }).quit();
       }

@@ -358,6 +358,23 @@ async function main() {
 
   log('Firefox DevTools MCP server running on stdio');
   log('Ready to accept tool requests');
+
+  // Graceful shutdown: clean up the Marionette session so Firefox
+  // accepts new connections. Without this, the session stays locked.
+  const cleanup = async () => {
+    if (firefox) {
+      try {
+        await firefox.close();
+      } catch {
+        // ignore
+      }
+    }
+    process.exit(0);
+  };
+  process.on('SIGTERM', cleanup);
+  process.on('SIGINT', cleanup);
+  process.stdin.on('end', cleanup);
+  process.stdin.on('close', cleanup);
 }
 
 // Only run main() if this file is executed directly (not imported)

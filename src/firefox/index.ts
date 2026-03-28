@@ -74,12 +74,20 @@ export class FirefoxClient {
       (id: string) => this.core.setCurrentContextId(id)
     );
 
-    // Subscribe to console and network events for ALL contexts (not just current)
-    if (this.consoleEvents) {
-      await this.consoleEvents.subscribe(undefined);
-    }
-    if (this.networkEvents) {
-      await this.networkEvents.subscribe(undefined);
+    // Subscribe to console and network events for ALL contexts (not just current).
+    // BiDi may not be available (e.g., connect-existing without Remote Agent).
+    // Treat subscription failure as non-fatal so Classic WebDriver still works.
+    try {
+      if (this.consoleEvents) {
+        await this.consoleEvents.subscribe(undefined);
+      }
+      if (this.networkEvents) {
+        await this.networkEvents.subscribe(undefined);
+      }
+    } catch (e) {
+      console.error(`[firefox-devtools-mcp] BiDi subscription failed (non-fatal): ${e}`);
+      this.consoleEvents = undefined as any;
+      this.networkEvents = undefined as any;
     }
   }
 
