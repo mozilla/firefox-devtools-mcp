@@ -7,16 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-03-29
+
+### Fixed
+- `SERVER_VERSION` now reads from `package.json` dynamically instead of hardcoded value
+- Connect-existing mode: session cleanup, BiDi support, `--marionette-host` parameter
+- Resolved 11 security vulnerabilities in dependencies
+
+### Changed
+- Removed fragile `process.on` handlers in test setup that masked real errors
+- Added unit tests for connect-existing mode (BiDi, session cleanup, reconnect)
+
+## [0.9.0] - 2026-03-28
+
 ### Added
-- Merged features from Mozilla's temporary fork (https://github.com/padenot/firefox-devtools-mcp):
-  - Add tool to evaluate JS against the content page
-  - Add tool to install, uninstall and list webextensions
-  - Add tool to restart Firefox
-  - Add tool to read and write preferences
-  - Improved support for reusing existing profile folder
-  - Support for MOZ_LOG
-  - Support privileged context
-  - Support for sending WebDriver BiDi commands
+- Merged features from Mozilla's fork (PR #46):
+  - Content script evaluation (`--enable-script` flag)
+  - Privileged context support (`--enable-privileged-context` flag)
+  - WebExtension tools: install, uninstall, and list extensions
+  - Firefox restart tool with runtime reconfiguration
+  - Preferences configuration via CLI (`--pref`) and runtime tools
+  - Environment variables and output capture (`--env`, `--output-file`)
+  - WebDriver BiDi command support
+  - MOZ_LOG integration
+- Repository adopted by Mozilla
+
+### Changed
+- Script evaluation and privileged context are now opt-in via CLI flags
+- Author updated to Mozilla
+- Removed non-English documentation files
 
 ## [0.8.1] - 2026-03-17
 
@@ -205,6 +224,8 @@ Released on npm, see GitHub releases for details.
 - UID-based element referencing system
 - Headless mode support
 
+[0.9.1]: https://github.com/mozilla/firefox-devtools-mcp/compare/0.9.0...0.9.1
+[0.9.0]: https://github.com/mozilla/firefox-devtools-mcp/compare/0.8.1...0.9.0
 [0.7.1]: https://github.com/mozilla/firefox-devtools-mcp/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mozilla/firefox-devtools-mcp/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/mozilla/firefox-devtools-mcp/compare/v0.6.0...v0.6.1
