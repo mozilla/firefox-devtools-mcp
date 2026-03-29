@@ -35,6 +35,7 @@ export interface IBiDiSocket {
 
 export interface IBiDi {
   socket: IBiDiSocket;
+  subscribe?: (event: string, contexts?: string[]) => Promise<void>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -133,14 +134,22 @@ class GeckodriverHttpDriver implements IDriver {
   private webSocketUrl: string | null;
   private bidiConnection: IBiDi | null = null;
 
-  constructor(baseUrl: string, sessionId: string, gdProcess: ChildProcess, webSocketUrl: string | null) {
+  constructor(
+    baseUrl: string,
+    sessionId: string,
+    gdProcess: ChildProcess,
+    webSocketUrl: string | null
+  ) {
     this.baseUrl = baseUrl;
     this.sessionId = sessionId;
     this.gdProcess = gdProcess;
     this.webSocketUrl = webSocketUrl;
   }
 
-  static async connect(marionettePort: number, marionetteHost = '127.0.0.1'): Promise<GeckodriverHttpDriver> {
+  static async connect(
+    marionettePort: number,
+    marionetteHost = '127.0.0.1'
+  ): Promise<GeckodriverHttpDriver> {
     // Find geckodriver binary via selenium-manager
     const path = await import('node:path');
     const { execFileSync } = await import('node:child_process');
@@ -181,7 +190,15 @@ class GeckodriverHttpDriver implements IDriver {
     // Use --port=0 to let the OS assign a free port atomically (geckodriver ≥0.34.0)
     const gd = spawn(
       geckodriverPath,
-      ['--connect-existing', '--marionette-host', marionetteHost, '--marionette-port', String(marionettePort), '--port', '0'],
+      [
+        '--connect-existing',
+        '--marionette-host',
+        marionetteHost,
+        '--marionette-port',
+        String(marionettePort),
+        '--port',
+        '0',
+      ],
       { stdio: ['ignore', 'pipe', 'pipe'] }
     );
 
@@ -226,7 +243,9 @@ class GeckodriverHttpDriver implements IDriver {
     }
 
     let wsUrl = json.value.capabilities.webSocketUrl as string | undefined;
-    logDebug(`Session capabilities webSocketUrl: ${wsUrl ?? 'not present'}, marionetteHost: ${marionetteHost}`);
+    logDebug(
+      `Session capabilities webSocketUrl: ${wsUrl ?? 'not present'}, marionetteHost: ${marionetteHost}`
+    );
     if (wsUrl && marionetteHost !== '127.0.0.1') {
       // Rewrite the URL to connect through the remote host / tunnel.
       const parsed = new URL(wsUrl);
@@ -236,7 +255,9 @@ class GeckodriverHttpDriver implements IDriver {
     if (wsUrl) {
       logDebug(`BiDi WebSocket URL: ${wsUrl}`);
     } else {
-      logDebug('BiDi WebSocket URL not available (Firefox may not support it or Remote Agent is not running)');
+      logDebug(
+        'BiDi WebSocket URL not available (Firefox may not support it or Remote Agent is not running)'
+      );
     }
 
     return new GeckodriverHttpDriver(baseUrl, json.value.sessionId, gd, wsUrl ?? null);
@@ -474,11 +495,13 @@ class GeckodriverHttpDriver implements IDriver {
    * first call, using the webSocketUrl returned in the session capabilities.
    */
   async getBidi(): Promise<IBiDi> {
-    if (this.bidiConnection) return this.bidiConnection;
+    if (this.bidiConnection) {
+      return this.bidiConnection;
+    }
     if (!this.webSocketUrl) {
       throw new Error(
         'BiDi is not available: no webSocketUrl in session capabilities. ' +
-        'Ensure Firefox was started with --remote-debugging-port.'
+          'Ensure Firefox was started with --remote-debugging-port.'
       );
     }
 
@@ -486,7 +509,8 @@ class GeckodriverHttpDriver implements IDriver {
     await new Promise<void>((resolve, reject) => {
       ws.on('open', resolve);
       ws.on('error', (e: any) => {
-        const msg = e?.message || e?.error?.message || e?.error || e?.type || JSON.stringify(e) || String(e);
+        const msg =
+          e?.message || e?.error?.message || e?.error || e?.type || JSON.stringify(e) || String(e);
         reject(new Error(`BiDi WS to ${this.webSocketUrl}: ${msg}`));
       });
     });
@@ -498,13 +522,18 @@ class GeckodriverHttpDriver implements IDriver {
         method: 'session.subscribe',
         params: { events: [event] },
       };
-      if (contexts) msg.params = { events: [event], contexts };
+      if (contexts) {
+        msg.params = { events: [event], contexts };
+      }
       ws.send(JSON.stringify(msg));
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error(`BiDi subscribe timeout for ${event}`)), 5000);
+        const timeout = setTimeout(
+          () => reject(new Error(`BiDi subscribe timeout for ${event}`)),
+          5000
+        );
         const onMsg = (data: WebSocket.Data) => {
           try {
-            const payload = JSON.parse(data.toString());
+            const payload = JSON.parse(String(data));
             if (payload.id === cmdId) {
               clearTimeout(timeout);
               ws.off('message', onMsg);
@@ -514,15 +543,18 @@ class GeckodriverHttpDriver implements IDriver {
                 resolve();
               }
             }
-          } catch { /* ignore parse errors from event messages */ }
+          } catch {
+            /* ignore parse errors from event messages */
+          }
         };
         ws.on('message', onMsg);
       });
       logDebug(`BiDi subscribed to ${event}`);
     };
 
-    this.bidiConnection = { subscribe, socket: ws as unknown as IBiDiSocket } as any;
-    return this.bidiConnection;
+    const conn: IBiDi = { subscribe, socket: ws as unknown as IBiDiSocket };
+    this.bidiConnection = conn;
+    return conn;
   }
 }
 
@@ -727,7 +759,7 @@ export class FirefoxCore {
    */
   reset(): void {
     if (this.driver && this.options.connectExisting && 'kill' in this.driver) {
-      (this.driver as { kill(): Promise<void> }).kill();
+      void (this.driver as { kill(): Promise<void> }).kill();
     }
     this.driver = null;
     this.currentContextId = null;

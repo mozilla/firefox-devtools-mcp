@@ -39,7 +39,6 @@ import { FirefoxDevTools } from './firefox/index.js';
 import type { FirefoxLaunchOptions } from './firefox/types.js';
 import * as tools from './tools/index.js';
 import type { McpToolResponse } from './types/common.js';
-import { FirefoxDisconnectedError } from './utils/errors.js';
 
 // Export for direct usage in scripts
 export { FirefoxDevTools } from './firefox/index.js';
@@ -373,11 +372,12 @@ async function main() {
     await server.close();
     process.exit(0);
   };
-  process.on('SIGTERM', cleanup);
-  process.on('SIGINT', cleanup);
+  const onSignal = () => void cleanup();
+  process.on('SIGTERM', onSignal);
+  process.on('SIGINT', onSignal);
   // StdioServerTransport does not fire onclose on stdin EOF.
-  process.stdin.on('end', cleanup);
-  process.stdin.on('close', cleanup);
+  process.stdin.on('end', onSignal);
+  process.stdin.on('close', onSignal);
 }
 
 // Only run main() if this file is executed directly (not imported)
