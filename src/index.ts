@@ -98,11 +98,11 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
   if (firefox) {
     const isConnected = await firefox.isConnected();
     if (!isConnected) {
-      log('Firefox connection lost - browser was closed or disconnected');
+      log('Firefox connection lost, reconnecting...');
       resetFirefox();
-      throw new FirefoxDisconnectedError('Browser was closed');
+    } else {
+      return firefox;
     }
-    return firefox;
   }
 
   // No existing instance - create new connection
@@ -142,6 +142,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
       acceptInsecureCerts: args.acceptInsecureCerts,
       connectExisting: args.connectExisting,
       marionettePort: args.marionettePort,
+      marionetteHost: args.marionetteHost,
       env: envVars,
       logFile: args.outputFile ?? undefined,
       prefs,
@@ -358,6 +359,25 @@ async function main() {
 
   log('Firefox DevTools MCP server running on stdio');
   log('Ready to accept tool requests');
+
+  // Clean up the Marionette session so Firefox accepts new connections.
+  // Without this, the session stays locked after the MCP client disconnects.
+  const cleanup = async () => {
+    if (firefox) {
+      try {
+        await firefox.close();
+      } catch {
+        // ignore
+      }
+    }
+    await server.close();
+    process.exit(0);
+  };
+  process.on('SIGTERM', cleanup);
+  process.on('SIGINT', cleanup);
+  // StdioServerTransport does not fire onclose on stdin EOF.
+  process.stdin.on('end', cleanup);
+  process.stdin.on('close', cleanup);
 }
 
 // Only run main() if this file is executed directly (not imported)
