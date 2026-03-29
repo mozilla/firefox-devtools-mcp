@@ -2,8 +2,12 @@
  * Unit tests for constants
  */
 
+import { createRequire } from 'node:module';
 import { describe, it, expect } from 'vitest';
 import { SERVER_NAME, SERVER_VERSION } from '../../src/config/constants.js';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../../package.json') as { version: string };
 
 describe('Constants', () => {
   describe('SERVER_NAME', () => {
@@ -23,7 +27,7 @@ describe('Constants', () => {
     });
 
     it('should match package.json version', () => {
-      expect(SERVER_VERSION).toBe('0.7.1');
+      expect(SERVER_VERSION).toBe(pkg.version);
     });
 
     it('should be a non-empty string', () => {

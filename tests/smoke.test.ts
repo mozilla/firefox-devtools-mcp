@@ -5,8 +5,12 @@
  * More comprehensive integration tests should be added as the project matures.
  */
 
+import { createRequire } from 'node:module';
 import { describe, it, expect } from 'vitest';
 import { SERVER_NAME, SERVER_VERSION } from '../src/config/constants.js';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json') as { version: string };
 
 describe('Smoke Tests', () => {
   describe('Constants', () => {
@@ -16,7 +20,7 @@ describe('Smoke Tests', () => {
 
     it('should have valid server version', () => {
       expect(SERVER_VERSION).toMatch(/^\d+\.\d+\.\d+/);
-      expect(SERVER_VERSION).toBe('0.7.1');
+      expect(SERVER_VERSION).toBe(pkg.version);
     });
   });
 
