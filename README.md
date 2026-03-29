@@ -205,3 +205,8 @@ npm run inspector:dev
 ## Author
 
 Maintained by [Mozilla](https://www.mozilla.org).
+
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/freema-firefox-devtools-mcp).
+
