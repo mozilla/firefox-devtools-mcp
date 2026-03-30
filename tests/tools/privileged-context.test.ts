@@ -45,7 +45,7 @@ describe('Privileged context state consistency', () => {
     }));
   });
 
-  it('select_privileged_context should update currentContextId (BUG: it does not)', async () => {
+  it('select_privileged_context should update currentContextId', async () => {
     const { handleSelectPrivilegedContext } = await import(
       '../../src/tools/privileged-context.js'
     );
@@ -55,12 +55,12 @@ describe('Privileged context state consistency', () => {
     expect(mockSwitchToWindow).toHaveBeenCalledWith('chrome-context-id');
     expect(mockSetContext).toHaveBeenCalledWith('chrome');
 
-    // BUG: select_privileged_context does NOT call setCurrentContextId
-    // so currentContextId stays as 'original-content-context'
+    // select_privileged_context should call setCurrentContextId and update
+    // currentContextId to 'chrome-context-id'
     expect(mockSetCurrentContextId).toHaveBeenCalledWith('chrome-context-id');
   });
 
-  it('set_firefox_prefs after select_privileged_context should not revert to old context (BUG: it does)', async () => {
+  it('set_firefox_prefs after select_privileged_context should not revert to old context', async () => {
     const { handleSelectPrivilegedContext } = await import(
       '../../src/tools/privileged-context.js'
     );
@@ -71,24 +71,17 @@ describe('Privileged context state consistency', () => {
     // User selects privileged context
     await handleSelectPrivilegedContext({ contextId: 'chrome-context-id' });
 
-    // BUG: currentContextId is still 'original-content-context' because
-    // select_privileged_context never called setCurrentContextId.
-    // So when set_firefox_prefs saves originalContextId, it gets the wrong value.
     mockExecuteScript.mockResolvedValue(undefined);
     mockSwitchToWindow.mockClear();
     mockSetContext.mockClear();
 
+    // Call set_firefox_prefs which requires privileged context.
     await handleSetFirefoxPrefs({ prefs: { 'browser.ml.enable': true } });
 
-    // The finally block in set_firefox_prefs restores to originalContextId.
-    // Because currentContextId was never updated, it restores to
-    // 'original-content-context' — silently undoing the privileged context selection.
     const setContextCalls = mockSetContext.mock.calls;
     const lastSetContext = setContextCalls[setContextCalls.length - 1];
 
-    // BUG: last setContext call is 'content' — it reverted the privileged context
-    // After fix: the tool should detect we're already in a privileged context
-    // and restore back to it (or at minimum, currentContextId should be correct)
+    // Check that the context has not switched to content unexpectedly.
     expect(lastSetContext[0]).not.toBe('content');
   });
 });
