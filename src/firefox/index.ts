@@ -71,7 +71,7 @@ export class FirefoxClient {
     this.pages = new PageManagement(
       driver,
       () => this.core.getCurrentContextId(),
-      (id: string) => this.core.setCurrentContextId(id)
+      (id: string) => this.setCurrentContextId(id)
     );
 
     // Subscribe to console and network events for ALL contexts (not just current)
