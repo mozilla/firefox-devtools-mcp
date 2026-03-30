@@ -317,6 +317,109 @@ describe('GeckodriverHttpDriver session cleanup', () => {
   });
 });
 
+describe('GeckodriverElement W3C serialization', () => {
+  const W3C_ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
+
+  let mockFetch: ReturnType<typeof vi.fn>;
+  let fetchCallBodies: unknown[];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+
+    fetchCallBodies = [];
+
+    const mockGdProcess = {
+      stdout: { on: vi.fn() },
+      stderr: { on: vi.fn() },
+      on: vi.fn(),
+      kill: vi.fn(),
+    };
+
+    vi.doMock('node:child_process', async (importOriginal) => {
+      const original = (await importOriginal()) as typeof import('node:child_process');
+      return {
+        ...original,
+        spawn: vi.fn(() => {
+          setTimeout(() => {
+            const onData = mockGdProcess.stderr.on.mock.calls.find(
+              (c: unknown[]) => c[0] === 'data'
+            );
+            if (onData) {
+              (onData[1] as Function)(Buffer.from('Listening on 127.0.0.1:4444'));
+            }
+          }, 5);
+          return mockGdProcess;
+        }),
+      };
+    });
+
+    mockFetch = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      if (opts?.body) {
+        fetchCallBodies.push(JSON.parse(opts.body as string));
+      }
+      // Return W3C element reference for /element endpoint, session info otherwise
+      const isElementRequest = url.endsWith('/element');
+      return Promise.resolve({
+        json: () =>
+          Promise.resolve({
+            value: isElementRequest
+              ? { [W3C_ELEMENT_KEY]: 'found-element-id' }
+              : { sessionId: 'mock-session-id', capabilities: {} },
+          }),
+      });
+    });
+    vi.stubGlobal('fetch', mockFetch);
+    vi.doMock('ws', () => ({ default: vi.fn() }));
+  });
+
+  async function createDriver() {
+    const { FirefoxCore } = await import('@/firefox/core.js');
+    const core = new FirefoxCore({
+      headless: true,
+      connectExisting: true,
+      marionettePort: 2828,
+    });
+    await core.connect();
+    return core.getDriver();
+  }
+
+  it('findElement should return element that serializes to W3C format', async () => {
+    const driver = await createDriver();
+    const el = await driver.findElement({ using: 'css selector', value: '#test' });
+
+    const json = JSON.parse(JSON.stringify(el));
+    expect(json).toEqual({ [W3C_ELEMENT_KEY]: 'found-element-id' });
+  });
+
+  it('executeScript should send W3C element reference in args', async () => {
+    const driver = await createDriver();
+    const el = await driver.findElement({ using: 'css selector', value: '#test' });
+
+    fetchCallBodies = [];
+    await driver.executeScript('arguments[0].scrollIntoView()', el);
+
+    const execBody = fetchCallBodies.find(
+      (b: any) => b.script === 'arguments[0].scrollIntoView()'
+    ) as any;
+    expect(execBody).toBeDefined();
+    expect(execBody.args[0]).toEqual({ [W3C_ELEMENT_KEY]: 'found-element-id' });
+  });
+
+  it('actions().move({ origin: el }) should send W3C element reference', async () => {
+    const driver = await createDriver();
+    const el = await driver.findElement({ using: 'css selector', value: '#test' });
+
+    fetchCallBodies = [];
+    await driver.actions({ async: true }).move({ origin: el }).perform();
+
+    const actionsBody = fetchCallBodies.find((b: any) => b.actions) as any;
+    expect(actionsBody).toBeDefined();
+    const moveAction = actionsBody.actions[0].actions[0];
+    expect(moveAction.origin).toEqual({ [W3C_ELEMENT_KEY]: 'found-element-id' });
+  });
+});
+
 describe('FirefoxCore connect-existing with marionetteHost', () => {
   it('should pass marionetteHost to options', async () => {
     const { FirefoxCore } = await import('@/firefox/core.js');

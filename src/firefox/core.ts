@@ -82,6 +82,11 @@ export interface IDriver {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+// W3C WebDriver element identifier — the spec-defined key used to represent
+// element references in the JSON wire protocol.
+// See https://www.w3.org/TR/webdriver2/#elements
+const W3C_ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
+
 // ---------------------------------------------------------------------------
 // GeckodriverElement — wraps a raw WebDriver element reference for HTTP API
 // ---------------------------------------------------------------------------
@@ -111,6 +116,10 @@ class GeckodriverElement implements IElement {
 
   async takeScreenshot(): Promise<string> {
     return (await this.cmd('GET', `/element/${this.elementId}/screenshot`)) as string;
+  }
+
+  toJSON(): Record<string, string> {
+    return { [W3C_ELEMENT_KEY]: this.elementId };
   }
 }
 
