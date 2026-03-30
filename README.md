@@ -202,6 +202,15 @@ npm run inspector:dev
 
 - GitHub Actions for CI, Release, and npm publish are included. See docs/ci-and-release.md for details and required secrets.
 
+## Issues and Contributing
+
+Issues are tracked on [Bugzilla](https://bugzilla.mozilla.org) under **product: Developer Infrastructure**, **component: AI for Development**.
+
+- [File a new issue](https://bugzilla.mozilla.org/enter_bug.cgi?format=__default__&blocked=2026717&product=Developer%20Infrastructure&component=AI%20for%20Development)
+- [Meta bug (tracks all firefox-devtools-mcp issues)](https://bugzilla.mozilla.org/show_bug.cgi?id=2026717)
+
+For questions and discussion, join the [#firefox-devtools-mcp Matrix room](https://chat.mozilla.org/#/room/#firefox-devtools-mcp:mozilla.org).
+
 ## Author
 
 Maintained by [Mozilla](https://www.mozilla.org).
