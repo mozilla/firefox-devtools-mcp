@@ -32,24 +32,6 @@ headless Firefox instance and tears it down after the tests.
 All tests are self-contained (no ordering dependencies) and use active polling
 (`waitFor`) instead of fixed sleeps for async BiDi events.
 
-### Covered scenarios (24 tests)
-
-| Scenario              | What it tests                                                          |
-| --------------------- | ---------------------------------------------------------------------- |
-| Todo App Workflow     | `takeSnapshot`, `fillByUid`, `clickByUid`, `evaluate`                  |
-| Click Interactions    | `clickByUid` (double-click), `hoverByUid`                              |
-| Multi-Page Navigation | SPA page switching via UID clicks                                      |
-| Browser History       | `navigateBack`, `navigateForward`                                      |
-| Viewport Resize       | `setViewportSize` + relative dimension verification                    |
-| Search Workflow       | fill + click + result verification                                     |
-| Form Submission       | `fillByUid`, `fillFormByUid` (batch), form submit                      |
-| Console Monitoring    | `getConsoleMessages`, `clearConsoleMessages`                           |
-| Network Monitoring    | `startNetworkMonitoring`, `getNetworkRequests`, `clearNetworkRequests` |
-| Screenshot            | `takeScreenshotPage` (base64 output)                                   |
-| Tab Management        | `createNewPage`, `selectTab`, `closeTab`, `getTabs`, `refreshTabs`     |
-| Stale UID Detection   | navigation invalidates old UIDs, `clearSnapshot`                       |
-| Error Handling        | invalid UID format, unknown UID, stale snapshot UID                    |
-
 ### Design principles
 
 - **Self-contained**: each test navigates to its own page, no inter-test dependencies

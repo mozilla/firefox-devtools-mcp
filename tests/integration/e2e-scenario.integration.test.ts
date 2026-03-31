@@ -60,16 +60,14 @@ describe('E2E Scenario: Todo App Workflow', () => {
     expect(snapshot.text).toContain('E2E Test Application');
     expect(snapshot.json.uidMap.length).toBeGreaterThan(0);
 
-    const statusEl = snapshot.json.uidMap.find(
-      (e) => e.css.includes('#status') || e.css.includes('id="status"')
-    );
+    const statusEl = snapshot.json.uidMap.find((e) => e.css.includes('#status'));
     expect(statusEl).toBeDefined();
   }, 10000);
 
   it('should add todo items via UID-based interaction', async () => {
     const todoInput = await waitForElementInSnapshot(
       firefox,
-      (e) => e.css.includes('#todoInput') || e.css.includes('data-testid="todo-input"'),
+      (e) => e.css.includes('#todoInput'),
       5000
     );
 
@@ -77,7 +75,7 @@ describe('E2E Scenario: Todo App Workflow', () => {
 
     const addBtn = await waitForElementInSnapshot(
       firefox,
-      (e) => e.css.includes('#addTodoBtn') || e.css.includes('data-testid="add-todo"'),
+      (e) => e.css.includes('#addTodoBtn'),
       5000
     );
     await firefox.clickByUid(addBtn.uid);
@@ -85,13 +83,9 @@ describe('E2E Scenario: Todo App Workflow', () => {
 
     // Add second todo
     const snapshot2 = await firefox.takeSnapshot();
-    const todoInput2 = snapshot2.json.uidMap.find(
-      (e) => e.css.includes('#todoInput') || e.css.includes('data-testid="todo-input"')
-    );
+    const todoInput2 = snapshot2.json.uidMap.find((e) => e.css.includes('#todoInput'));
     await firefox.fillByUid(todoInput2!.uid, 'Review PR');
-    const addBtn2 = snapshot2.json.uidMap.find(
-      (e) => e.css.includes('#addTodoBtn') || e.css.includes('data-testid="add-todo"')
-    );
+    const addBtn2 = snapshot2.json.uidMap.find((e) => e.css.includes('#addTodoBtn'));
     await firefox.clickByUid(addBtn2!.uid);
     await waitForPageLoad(200);
 
@@ -128,7 +122,7 @@ describe('E2E Scenario: Click Interactions', () => {
   it('should double-click element by UID', async () => {
     const dblBtn = await waitForElementInSnapshot(
       firefox,
-      (e) => e.css.includes('#dblClickTarget') || e.css.includes('data-testid="dblclick-target"'),
+      (e) => e.css.includes('#dblClickTarget'),
       5000
     );
 
@@ -144,7 +138,7 @@ describe('E2E Scenario: Click Interactions', () => {
   it('should hover over element by UID', async () => {
     const hoverBtn = await waitForElementInSnapshot(
       firefox,
-      (e) => e.css.includes('#hoverTarget') || e.css.includes('data-testid="hover-target"'),
+      (e) => e.css.includes('#hoverTarget'),
       5000
     );
 
@@ -320,14 +314,10 @@ describe('E2E Scenario: Search Workflow', () => {
     await waitForPageLoad(200);
 
     let snapshot = await firefox.takeSnapshot();
-    const searchInput = snapshot.json.uidMap.find(
-      (e) => e.css.includes('#searchInput') || e.css.includes('data-testid="search-input"')
-    );
+    const searchInput = snapshot.json.uidMap.find((e) => e.css.includes('#searchInput'));
     await firefox.fillByUid(searchInput!.uid, 'bidi');
 
-    const searchBtn = snapshot.json.uidMap.find(
-      (e) => e.css.includes('#searchBtn') || e.css.includes('data-testid="search-btn"')
-    );
+    const searchBtn = snapshot.json.uidMap.find((e) => e.css.includes('#searchBtn'));
     await firefox.clickByUid(searchBtn!.uid);
     await waitForPageLoad(200);
 
@@ -346,15 +336,11 @@ describe('E2E Scenario: Search Workflow', () => {
     await waitForPageLoad(200);
 
     let snapshot = await firefox.takeSnapshot();
-    const searchInput = snapshot.json.uidMap.find(
-      (e) => e.css.includes('#searchInput') || e.css.includes('data-testid="search-input"')
-    );
+    const searchInput = snapshot.json.uidMap.find((e) => e.css.includes('#searchInput'));
 
     await firefox.fillByUid(searchInput!.uid, 'nonexistent-xyz');
 
-    const searchBtn = snapshot.json.uidMap.find(
-      (e) => e.css.includes('#searchBtn') || e.css.includes('data-testid="search-btn"')
-    );
+    const searchBtn = snapshot.json.uidMap.find((e) => e.css.includes('#searchBtn'));
     await firefox.clickByUid(searchBtn!.uid);
     await waitForPageLoad(200);
 
@@ -511,7 +497,7 @@ describe('E2E Scenario: Network Monitoring', () => {
     // Click the fetch GET button
     const fetchBtn = await waitForElementInSnapshot(
       firefox,
-      (e) => e.css.includes('#fetchGet') || e.css.includes('fetchGet'),
+      (e) => e.css.includes('#fetchGet'),
       5000
     );
     await firefox.clickByUid(fetchBtn.uid);
@@ -539,7 +525,7 @@ describe('E2E Scenario: Network Monitoring', () => {
 
     const fetchBtn = await waitForElementInSnapshot(
       firefox,
-      (e) => e.css.includes('#fetchGet') || e.css.includes('fetchGet'),
+      (e) => e.css.includes('#fetchGet'),
       5000
     );
     await firefox.clickByUid(fetchBtn.uid);
