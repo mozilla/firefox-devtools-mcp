@@ -48,9 +48,8 @@ describe('Smoke Tests', () => {
 
   describe('Tool schemas', () => {
     it('should have valid inputSchema for pages tools', async () => {
-      const { listPagesTool, selectPageTool, navigatePageTool } = await import(
-        '../src/tools/pages.js'
-      );
+      const { listPagesTool, selectPageTool, navigatePageTool } =
+        await import('../src/tools/pages.js');
 
       expect(listPagesTool.inputSchema).toBeDefined();
       expect(listPagesTool.inputSchema.type).toBe('object');

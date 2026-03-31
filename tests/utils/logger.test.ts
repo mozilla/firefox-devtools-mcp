@@ -20,9 +20,7 @@ describe('Logger Utilities', () => {
   describe('log', () => {
     it('should log messages with prefix', () => {
       log('Test message');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[firefox-devtools-mcp] Test message'
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-devtools-mcp] Test message');
     });
 
     it('should log messages with additional arguments', () => {
@@ -85,27 +83,21 @@ describe('Logger Utilities', () => {
       process.env.DEBUG = '*';
       logDebug('Debug message');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[firefox-devtools-mcp] DEBUG: Debug message'
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-devtools-mcp] DEBUG: Debug message');
     });
 
     it('should log when DEBUG includes firefox-devtools', () => {
       process.env.DEBUG = 'firefox-devtools';
       logDebug('Debug message');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[firefox-devtools-mcp] DEBUG: Debug message'
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-devtools-mcp] DEBUG: Debug message');
     });
 
     it('should log when DEBUG includes firefox-devtools with other modules', () => {
       process.env.DEBUG = 'app,firefox-devtools,other';
       logDebug('Debug message');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[firefox-devtools-mcp] DEBUG: Debug message'
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-devtools-mcp] DEBUG: Debug message');
     });
 
     it('should not log when DEBUG does not include firefox-devtools', () => {

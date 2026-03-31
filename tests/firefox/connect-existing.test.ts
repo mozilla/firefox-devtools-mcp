@@ -78,10 +78,7 @@ describe('GeckodriverHttpDriver BiDi support', () => {
 
     // Mock fetch for session creation
     const wsUrl = opts?.webSocketUrl ?? null;
-    vi.doMock(
-      'node:module',
-      async (importOriginal) => await importOriginal()
-    );
+    vi.doMock('node:module', async (importOriginal) => await importOriginal());
 
     // We need to mock global fetch
     const mockFetch = vi.fn().mockResolvedValue({
@@ -129,9 +126,7 @@ describe('GeckodriverHttpDriver BiDi support', () => {
     const { core } = await createConnectExistingCore({ webSocketUrl: undefined });
     const driver = core.getDriver();
 
-    await expect(driver.getBidi()).rejects.toThrow(
-      /BiDi is not available.*webSocketUrl/
-    );
+    await expect(driver.getBidi()).rejects.toThrow(/BiDi is not available.*webSocketUrl/);
   });
 
   it('should open WebSocket and return BiDi handle', async () => {
@@ -178,9 +173,7 @@ describe('GeckodriverHttpDriver BiDi support', () => {
 
     // Simulate response
     if (wsEventListeners['message']) {
-      wsEventListeners['message'].forEach((h) =>
-        h(JSON.stringify({ id: sent.id, result: {} }))
-      );
+      wsEventListeners['message'].forEach((h) => h(JSON.stringify({ id: sent.id, result: {} })));
     }
 
     await expect(subscribePromise).resolves.toBeUndefined();

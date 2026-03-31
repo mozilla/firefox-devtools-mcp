@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
-import { isVisible, isRelevant, isFocusable, isInteractive } from '@/firefox/snapshot/injected/elementCollector.js';
+import {
+  isVisible,
+  isRelevant,
+  isFocusable,
+  isInteractive,
+} from '@/firefox/snapshot/injected/elementCollector.js';
 
 beforeAll(() => {
   // jsdom getComputedStyle returns '' for opacity (browsers return '1')
@@ -81,7 +86,17 @@ describe('elementCollector', () => {
     });
 
     it('returns true for interactive tags', () => {
-      for (const tag of ['button', 'input', 'select', 'textarea', 'a', 'img', 'video', 'audio', 'iframe']) {
+      for (const tag of [
+        'button',
+        'input',
+        'select',
+        'textarea',
+        'a',
+        'img',
+        'video',
+        'audio',
+        'iframe',
+      ]) {
         const el = createElement(tag);
         expect(isRelevant(el)).toBe(true);
       }

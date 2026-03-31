@@ -4,7 +4,12 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createTestFirefox, closeFirefox, waitForElementInSnapshot, waitForPageLoad } from '../helpers/firefox.js';
+import {
+  createTestFirefox,
+  closeFirefox,
+  waitForElementInSnapshot,
+  waitForPageLoad,
+} from '../helpers/firefox.js';
 import type { FirefoxClient } from '@/firefox/index.js';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

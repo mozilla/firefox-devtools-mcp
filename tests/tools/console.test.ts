@@ -3,10 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  listConsoleMessagesTool,
-  clearConsoleMessagesTool,
-} from '../../src/tools/console.js';
+import { listConsoleMessagesTool, clearConsoleMessagesTool } from '../../src/tools/console.js';
 
 describe('Console Tools', () => {
   describe('Tool Definitions', () => {

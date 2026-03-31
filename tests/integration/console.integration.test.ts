@@ -4,7 +4,13 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createTestFirefox, closeFirefox, waitFor, waitForElementInSnapshot, waitForPageLoad } from '../helpers/firefox.js';
+import {
+  createTestFirefox,
+  closeFirefox,
+  waitFor,
+  waitForElementInSnapshot,
+  waitForPageLoad,
+} from '../helpers/firefox.js';
 import type { FirefoxClient } from '@/firefox/index.js';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -69,11 +75,11 @@ describe('Console Capture Integration Tests', () => {
 
     await firefox.clickByUid(logInfoBtn.uid);
 
-      // Wait for console message
-      await waitFor(async () => {
-        const messages = await firefox.getConsoleMessages();
-        return messages.some((msg) => msg.text.includes('Info message from button'));
-      }, 5000);
+    // Wait for console message
+    await waitFor(async () => {
+      const messages = await firefox.getConsoleMessages();
+      return messages.some((msg) => msg.text.includes('Info message from button'));
+    }, 5000);
 
     const messages = await firefox.getConsoleMessages();
     const buttonMessage = messages.find((msg) => msg.text.includes('Info message from button'));
@@ -100,11 +106,11 @@ describe('Console Capture Integration Tests', () => {
 
     await firefox.clickByUid(logWarnBtn.uid);
 
-      // Wait for console message
-      await waitFor(async () => {
-        const messages = await firefox.getConsoleMessages();
-        return messages.some((msg) => msg.text.includes('Warning message from button'));
-      }, 5000);
+    // Wait for console message
+    await waitFor(async () => {
+      const messages = await firefox.getConsoleMessages();
+      return messages.some((msg) => msg.text.includes('Warning message from button'));
+    }, 5000);
 
     const messages = await firefox.getConsoleMessages();
     const warnMessage = messages.find((msg) => msg.text.includes('Warning message from button'));
@@ -131,11 +137,11 @@ describe('Console Capture Integration Tests', () => {
 
     await firefox.clickByUid(logErrorBtn.uid);
 
-      // Wait for console message
-      await waitFor(async () => {
-        const messages = await firefox.getConsoleMessages();
-        return messages.some((msg) => msg.text.includes('Error message from button'));
-      }, 5000);
+    // Wait for console message
+    await waitFor(async () => {
+      const messages = await firefox.getConsoleMessages();
+      return messages.some((msg) => msg.text.includes('Error message from button'));
+    }, 5000);
 
     const messages = await firefox.getConsoleMessages();
     const errorMessage = messages.find((msg) => msg.text.includes('Error message from button'));

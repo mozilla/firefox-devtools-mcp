@@ -190,9 +190,7 @@ describe('FirefoxCore sendBiDiCommand WebSocket readiness', () => {
 
     // ASSERT: send() should now have been called
     expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend).toHaveBeenCalledWith(
-      expect.stringContaining('"method":"test.method"')
-    );
+    expect(mockSend).toHaveBeenCalledWith(expect.stringContaining('"method":"test.method"'));
 
     // Simulate response to complete the promise
     if (eventListeners['message']) {
@@ -236,9 +234,7 @@ describe('FirefoxCore sendBiDiCommand WebSocket readiness', () => {
     const waitForWebSocketOpen = (core as any).waitForWebSocketOpen.bind(core);
 
     // ASSERT: should reject with timeout error (using 50ms timeout for fast test)
-    await expect(waitForWebSocketOpen(mockWs, 50)).rejects.toThrow(
-      /timeout.*websocket/i
-    );
+    await expect(waitForWebSocketOpen(mockWs, 50)).rejects.toThrow(/timeout.*websocket/i);
   });
 
   it('should throw error when WebSocket is CLOSING', async () => {

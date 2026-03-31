@@ -63,7 +63,8 @@ describe('snapshot.injected - createSnapshot', () => {
 
   describe('selector option', () => {
     it('scopes to matched element', () => {
-      document.body.innerHTML = '<div id="app"><button>Inside</button></div><button>Outside</button>';
+      document.body.innerHTML =
+        '<div id="app"><button>Inside</button></div><button>Outside</button>';
 
       const result = createSnapshot(1, { selector: '#app' });
       expect(result.tree).not.toBeNull();

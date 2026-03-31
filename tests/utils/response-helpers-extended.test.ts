@@ -3,11 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  successResponse,
-  errorResponse,
-  jsonResponse,
-} from '../../src/utils/response-helpers.js';
+import { successResponse, errorResponse, jsonResponse } from '../../src/utils/response-helpers.js';
 
 describe('Response Helpers - Extended', () => {
   describe('successResponse', () => {

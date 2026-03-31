@@ -54,13 +54,7 @@ describe('parsePrefs', () => {
 
   // Multiple prefs
   it('should parse multiple preferences', () => {
-    expect(
-      parsePrefs([
-        'bool.pref=true',
-        'int.pref=42',
-        'string.pref=hello',
-      ])
-    ).toEqual({
+    expect(parsePrefs(['bool.pref=true', 'int.pref=42', 'string.pref=hello'])).toEqual({
       'bool.pref': true,
       'int.pref': 42,
       'string.pref': 'hello',

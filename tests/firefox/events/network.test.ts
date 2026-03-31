@@ -91,9 +91,7 @@ describe('NetworkEvents Header Parsing', () => {
     });
 
     it('should NOT return [object Object] for BiDi header values', () => {
-      const headers = [
-        { name: 'Host', value: { type: 'string', value: 'www.example.com' } },
-      ];
+      const headers = [{ name: 'Host', value: { type: 'string', value: 'www.example.com' } }];
 
       const result = parseHeaders(headers);
 
@@ -152,9 +150,7 @@ describe('NetworkEvents Header Parsing', () => {
     });
 
     it('should handle BiDi bytes format (binary data)', () => {
-      const headers = [
-        { name: 'X-Binary', value: { type: 'base64', bytes: 'SGVsbG8gV29ybGQ=' } },
-      ];
+      const headers = [{ name: 'X-Binary', value: { type: 'base64', bytes: 'SGVsbG8gV29ybGQ=' } }];
 
       const result = parseHeaders(headers);
 
@@ -208,9 +204,7 @@ describe('NetworkEvents Header Parsing', () => {
     });
 
     it('should handle numeric values in BiDi format', () => {
-      const headers = [
-        { name: 'Content-Length', value: { type: 'string', value: 12345 } },
-      ];
+      const headers = [{ name: 'Content-Length', value: { type: 'string', value: 12345 } }];
 
       const result = parseHeaders(headers);
 
@@ -234,9 +228,7 @@ describe('NetworkEvents Header Parsing', () => {
     });
 
     it('should handle array with null and undefined items', () => {
-      const headers = [
-        { name: 'X-Array-Mixed', value: ['valid', null, undefined, 'another', ''] },
-      ];
+      const headers = [{ name: 'X-Array-Mixed', value: ['valid', null, undefined, 'another', ''] }];
 
       const result = parseHeaders(headers);
 
@@ -327,7 +319,9 @@ describe('NetworkEvents Header Parsing', () => {
 
       const result = parseHeaders(headers);
 
-      expect(result['x-custom-object']).toBe('{"custom":"property","another":123,"nested":{"deep":true}}');
+      expect(result['x-custom-object']).toBe(
+        '{"custom":"property","another":123,"nested":{"deep":true}}'
+      );
     });
 
     it('should handle deeply nested value extraction', () => {

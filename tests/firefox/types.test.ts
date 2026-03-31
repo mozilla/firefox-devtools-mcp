@@ -9,10 +9,10 @@ describe('FirefoxLaunchOptions', () => {
   it('should accept prefs field', () => {
     const options: FirefoxLaunchOptions = {
       headless: true,
-      prefs: { 'a': 'b', 'num': 42, 'bool': true },
+      prefs: { a: 'b', num: 42, bool: true },
     };
     expect(options.prefs).toBeDefined();
-    expect(options.prefs).toEqual({ 'a': 'b', 'num': 42, 'bool': true });
+    expect(options.prefs).toEqual({ a: 'b', num: 42, bool: true });
   });
 
   it('should accept empty prefs object', () => {

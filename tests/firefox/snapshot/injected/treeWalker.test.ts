@@ -78,12 +78,13 @@ describe('treeWalker', () => {
       const result = walkTree(document.body, 1);
       expect(result.tree).not.toBeNull();
       // Button should bubble up through irrelevant <aside> to body
-      const hasButton = result.tree!.children.some(c => c.tag === 'button');
+      const hasButton = result.tree!.children.some((c) => c.tag === 'button');
       expect(hasButton).toBe(true);
     });
 
     it('bubbles deeply nested relevant child up', () => {
-      document.body.innerHTML = '<aside><aside><aside><button>Deep</button></aside></aside></aside>';
+      document.body.innerHTML =
+        '<aside><aside><aside><button>Deep</button></aside></aside></aside>';
 
       const result = walkTree(document.body, 1);
       expect(result.tree).not.toBeNull();
@@ -100,9 +101,9 @@ describe('treeWalker', () => {
 
       const result = walkTree(document.body, 1);
       expect(result.tree).not.toBeNull();
-      const nav = result.tree!.children.find(c => c.tag === 'nav');
+      const nav = result.tree!.children.find((c) => c.tag === 'nav');
       expect(nav).toBeDefined();
-      const btn = nav!.children.find(c => c.tag === 'button');
+      const btn = nav!.children.find((c) => c.tag === 'button');
       expect(btn).toBeDefined();
     });
   });

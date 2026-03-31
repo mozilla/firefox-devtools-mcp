@@ -39,16 +39,16 @@ describe('Privileged context state consistency', () => {
         getCurrentContextId: () => mockCurrentContextId,
         setCurrentContextId: mockSetCurrentContextId,
         sendBiDiCommand: vi.fn().mockResolvedValue({
-          contexts: [{ context: 'chrome-context-id', url: 'chrome://browser/content/browser.xhtml' }],
+          contexts: [
+            { context: 'chrome-context-id', url: 'chrome://browser/content/browser.xhtml' },
+          ],
         }),
       }),
     }));
   });
 
   it('select_privileged_context should update currentContextId', async () => {
-    const { handleSelectPrivilegedContext } = await import(
-      '../../src/tools/privileged-context.js'
-    );
+    const { handleSelectPrivilegedContext } = await import('../../src/tools/privileged-context.js');
 
     await handleSelectPrivilegedContext({ contextId: 'chrome-context-id' });
 
@@ -61,12 +61,8 @@ describe('Privileged context state consistency', () => {
   });
 
   it('set_firefox_prefs after select_privileged_context should not revert to old context', async () => {
-    const { handleSelectPrivilegedContext } = await import(
-      '../../src/tools/privileged-context.js'
-    );
-    const { handleSetFirefoxPrefs } = await import(
-      '../../src/tools/firefox-prefs.js'
-    );
+    const { handleSelectPrivilegedContext } = await import('../../src/tools/privileged-context.js');
+    const { handleSetFirefoxPrefs } = await import('../../src/tools/firefox-prefs.js');
 
     // User selects privileged context
     await handleSelectPrivilegedContext({ contextId: 'chrome-context-id' });

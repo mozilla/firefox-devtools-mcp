@@ -9,7 +9,9 @@ import type { FirefoxLaunchOptions } from '@/firefox/types.js';
 /**
  * Creates a headless Firefox client for testing
  */
-export async function createTestFirefox(options?: Partial<FirefoxLaunchOptions>): Promise<FirefoxClient> {
+export async function createTestFirefox(
+  options?: Partial<FirefoxLaunchOptions>
+): Promise<FirefoxClient> {
   const defaultOptions: FirefoxLaunchOptions = {
     headless: true,
     enableBidiLogging: false,

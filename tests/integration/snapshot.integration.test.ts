@@ -4,7 +4,12 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createTestFirefox, closeFirefox, waitForElementInSnapshot, waitForPageLoad } from '../helpers/firefox.js';
+import {
+  createTestFirefox,
+  closeFirefox,
+  waitForElementInSnapshot,
+  waitForPageLoad,
+} from '../helpers/firefox.js';
 import type { FirefoxClient } from '@/firefox/index.js';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -161,9 +166,9 @@ describe('Snapshot Integration Tests', () => {
     // Using :has() with unclosed parenthesis should trigger an exception
     const invalidSelector = '#test:has(';
 
-    await expect(
-      firefox.takeSnapshot({ selector: invalidSelector })
-    ).rejects.toThrow(/Invalid selector syntax/);
+    await expect(firefox.takeSnapshot({ selector: invalidSelector })).rejects.toThrow(
+      /Invalid selector syntax/
+    );
   }, 10000);
 
   it('should exclude children of hidden parents even in includeAll mode', async () => {
@@ -176,7 +181,8 @@ describe('Snapshot Integration Tests', () => {
 
     // Check that elements inside hidden parent are NOT in snapshot
     const hasHiddenButton = snapshot.json.uidMap.some(
-      (entry) => entry.css.includes('buttonInHiddenDiv') || entry.css.includes('id="buttonInHiddenDiv"')
+      (entry) =>
+        entry.css.includes('buttonInHiddenDiv') || entry.css.includes('id="buttonInHiddenDiv"')
     );
     const hasHiddenText = snapshot.json.uidMap.some(
       (entry) => entry.css.includes('textInHiddenDiv') || entry.css.includes('id="textInHiddenDiv"')
@@ -232,7 +238,9 @@ describe('Snapshot Integration Tests', () => {
 
     // Check that button inside visibility:hidden parent is NOT in snapshot
     const hasInvisibleButton = snapshot.json.uidMap.some(
-      (entry) => entry.css.includes('buttonInInvisibleDiv') || entry.css.includes('id="buttonInInvisibleDiv"')
+      (entry) =>
+        entry.css.includes('buttonInInvisibleDiv') ||
+        entry.css.includes('id="buttonInInvisibleDiv"')
     );
 
     expect(hasInvisibleButton).toBe(false);
