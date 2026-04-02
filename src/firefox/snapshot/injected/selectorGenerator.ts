@@ -20,7 +20,7 @@ export function generateCssSelector(el: Element): string {
   const path: string[] = [];
   let current: Element | null = el;
 
-  while (current && current.nodeType === Node.ELEMENT_NODE) {
+  while (current?.nodeType === Node.ELEMENT_NODE) {
     let selector = current.nodeName.toLowerCase();
 
     // Check for preferred ID attributes
@@ -79,7 +79,7 @@ export function generateCssSelector(el: Element): string {
     current = current.parentElement;
 
     // Stop at body
-    if (current && current.nodeName.toLowerCase() === 'body') {
+    if (current?.nodeName.toLowerCase() === 'body') {
       path.unshift('body');
       break;
     }
@@ -101,7 +101,7 @@ export function generateXPath(el: Element): string {
   const path: string[] = [];
   let current: Element | null = el;
 
-  while (current && current.nodeType === Node.ELEMENT_NODE) {
+  while (current?.nodeType === Node.ELEMENT_NODE) {
     const tagName = current.nodeName.toLowerCase();
 
     // Count position among siblings of same tag
@@ -130,7 +130,7 @@ export function generateXPath(el: Element): string {
     current = current.parentElement;
 
     // Stop at html
-    if (current && current.nodeName.toLowerCase() === 'html') {
+    if (current?.nodeName.toLowerCase() === 'html') {
       path.unshift('html');
       break;
     }

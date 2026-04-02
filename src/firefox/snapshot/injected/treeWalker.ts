@@ -101,7 +101,7 @@ export function walkTree(
             childResults.push(iframeResult.node);
           }
         }
-      } catch (e) {
+      } catch {
         // Cross-origin error - will be handled when creating node
       }
     } else {
@@ -179,7 +179,7 @@ export function walkTree(
           node.frameSrc = iframe.src;
           node.crossOrigin = true;
         }
-      } catch (e) {
+      } catch {
         // Cross-origin error - add placeholder
         node.isIframe = true;
         node.frameSrc = (el as HTMLIFrameElement).src;

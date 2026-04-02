@@ -533,6 +533,7 @@ class GeckodriverHttpDriver implements IDriver {
         );
         const onMsg = (data: WebSocket.Data) => {
           try {
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
             const payload = JSON.parse(String(data));
             if (payload.id === cmdId) {
               clearTimeout(timeout);
@@ -748,7 +749,7 @@ export class FirefoxCore {
     try {
       await this.driver.getWindowHandle();
       return true;
-    } catch (error) {
+    } catch {
       logDebug('Connection check failed: Firefox is not responsive');
       return false;
     }
@@ -851,7 +852,7 @@ export class FirefoxCore {
               resolve(payload.result);
             }
           }
-        } catch (err) {
+        } catch {
           // ignore parse errors
         }
       };

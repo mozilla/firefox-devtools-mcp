@@ -53,7 +53,7 @@ export class NetworkEvents {
     try {
       await bidi.subscribe('browsingContext.load', contextId ? [contextId] : undefined);
       await bidi.subscribe('browsingContext.domContentLoaded', contextId ? [contextId] : undefined);
-    } catch (err) {
+    } catch {
       logDebug(
         'Navigation events subscription skipped (may not be available in this Firefox version)'
       );
@@ -153,7 +153,7 @@ export class NetworkEvents {
 
           this.requestStartTimes.delete(requestId);
         }
-      } catch (err) {
+      } catch {
         // Ignore parse errors
       }
     });
@@ -310,6 +310,7 @@ export class NetworkEvents {
           return null;
         }
       }
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
       return String(value);
     };
 

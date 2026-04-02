@@ -37,7 +37,7 @@ const MAX_DIRECT_TEXT_CONTENT = 500;
  * Checks current element and all ancestors up to documentElement
  */
 export function isVisible(el: Element): boolean {
-  if (!el || el.nodeType !== Node.ELEMENT_NODE) {
+  if (el?.nodeType !== Node.ELEMENT_NODE) {
     return false;
   }
 
@@ -56,7 +56,7 @@ export function isVisible(el: Element): boolean {
       ) {
         return false;
       }
-    } catch (e) {
+    } catch {
       return false;
     }
     current = current.parentElement;
@@ -72,7 +72,7 @@ function getDirectTextContent(el: Element): string {
   let text = '';
   for (let i = 0; i < el.childNodes.length; i++) {
     const node = el.childNodes[i];
-    if (node && node.nodeType === Node.TEXT_NODE) {
+    if (node?.nodeType === Node.TEXT_NODE) {
       text += node.textContent || '';
     }
   }
@@ -100,7 +100,7 @@ function hasInteractiveDescendant(el: Element): boolean {
  * Filters out hidden/irrelevant elements
  */
 export function isRelevant(el: Element): boolean {
-  if (!el || el.nodeType !== Node.ELEMENT_NODE) {
+  if (el?.nodeType !== Node.ELEMENT_NODE) {
     return false;
   }
 

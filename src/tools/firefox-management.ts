@@ -292,7 +292,7 @@ export async function handleRestartFirefox(input: unknown) {
       // Close current instance (ignore errors - we're restarting anyway)
       try {
         await currentFirefox.close();
-      } catch (error) {
+      } catch {
         // Ignore close errors - we'll reset anyway
       }
       resetFirefox();

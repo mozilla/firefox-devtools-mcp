@@ -4,6 +4,7 @@
 
 declare module 'selenium-webdriver/firefox.js' {
   export * from 'selenium-webdriver/firefox';
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   import firefox = require('selenium-webdriver/firefox');
   export default firefox;
 }

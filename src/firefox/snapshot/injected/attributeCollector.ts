@@ -61,7 +61,7 @@ export function getTextContent(el: Element): string | undefined {
   let text = '';
   for (let i = 0; i < el.childNodes.length; i++) {
     const node = el.childNodes[i];
-    if (node && node.nodeType === Node.TEXT_NODE) {
+    if (node?.nodeType === Node.TEXT_NODE) {
       text += node.textContent || '';
     }
   }
@@ -150,7 +150,7 @@ export function getComputedProperties(el: Element): ComputedProperties {
     const opacity = parseFloat(style.opacity);
     computed.visible =
       style.display !== 'none' && style.visibility !== 'hidden' && opacity !== 0 && !isNaN(opacity);
-  } catch (e) {
+  } catch {
     computed.visible = false;
   }
 

@@ -112,7 +112,7 @@ export async function handleSelectPrivilegedContext(args: unknown): Promise<McpT
 
     try {
       await driver.setContext('chrome');
-    } catch (contextError) {
+    } catch {
       return errorResponse(
         new Error(
           `Switched to context ${contextId} but failed to set Marionette privileged context. Your Firefox build may not support privileged context or MOZ_REMOTE_ALLOW_SYSTEM_ACCESS is not set.`

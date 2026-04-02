@@ -13,7 +13,7 @@ if (process.env.NODE_ENV !== 'production') {
     if (result.parsed) {
       console.error('📋 Loaded .env file for development');
     }
-  } catch (error) {
+  } catch {
     // dotenv not required in production
   }
 }
@@ -392,7 +392,7 @@ try {
   const realModulePath = realpathSync(modulePath);
   const realScriptPath = scriptPath ? realpathSync(scriptPath) : '';
   isMainModule = realModulePath === realScriptPath;
-} catch (error) {
+} catch {
   // If realpath fails (e.g., file doesn't exist), fall back to simple comparison
   isMainModule = modulePath === scriptPath;
 }

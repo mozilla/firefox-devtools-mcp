@@ -44,7 +44,7 @@ export function createSnapshot(
           };
         }
         rootElement = selected;
-      } catch (error: any) {
+      } catch {
         return {
           tree: null,
           uidMap: [],
@@ -68,7 +68,7 @@ export function createSnapshot(
     }
 
     return result;
-  } catch (error: any) {
+  } catch {
     return {
       tree: null,
       uidMap: [],
