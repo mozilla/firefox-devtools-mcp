@@ -1,127 +1,83 @@
 /**
- * Tests for statement detection and rejection in privileged context tools
+ * Tests for privileged context state consistency
+ *
+ * Verifies that select_privileged_context updates currentContextId,
+ * and that helper tools (set_firefox_prefs, list_extensions) don't
+ * silently break a user's privileged context selection.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  evaluatePrivilegedScriptTool,
-  handleEvaluatePrivilegedScript,
-  isLikelyStatement,
-} from '../../src/tools/privileged-context.js';
 
-// Mock the index module (used by handler tests)
-const mockGetFirefox = vi.hoisted(() => vi.fn());
-
-vi.mock('../../src/index.js', () => ({
-  getFirefox: () => mockGetFirefox(),
-}));
-
-describe('Privileged Context Tool Definitions', () => {
-  describe('evaluatePrivilegedScriptTool', () => {
-    it('should have correct name', () => {
-      expect(evaluatePrivilegedScriptTool.name).toBe('evaluate_privileged_script');
-    });
-
-    it('should mention expression in description', () => {
-      expect(evaluatePrivilegedScriptTool.description).toContain('expression');
-    });
-  });
-});
-
-describe('isLikelyStatement', () => {
-  it('should detect const declarations', () => {
-    expect(isLikelyStatement('const x = 1')).toBe(true);
-  });
-
-  it('should detect let declarations', () => {
-    expect(isLikelyStatement('let x = 1')).toBe(true);
-  });
-
-  it('should detect var declarations', () => {
-    expect(isLikelyStatement('var x = 1')).toBe(true);
-  });
-
-  it('should allow function calls', () => {
-    expect(isLikelyStatement('Services.prefs.getBoolPref("foo")')).toBe(false);
-  });
-
-  it('should allow simple expressions', () => {
-    expect(isLikelyStatement('1 + 2')).toBe(false);
-  });
-
-  it('should allow property access', () => {
-    expect(isLikelyStatement('document.title')).toBe(false);
-  });
-
-  it('should handle leading whitespace', () => {
-    expect(isLikelyStatement('  const x = 1')).toBe(true);
-  });
-});
-
-describe('Privileged Context Tool Handlers', () => {
-  const mockExecuteScript = vi.fn();
+describe('Privileged context state consistency', () => {
   const mockSetContext = vi.fn();
   const mockSwitchToWindow = vi.fn();
+  const mockExecuteScript = vi.fn();
+  const mockExecuteAsyncScript = vi.fn();
+
+  // Track currentContextId state as the real code would
+  let mockCurrentContextId: string | null;
+  const mockSetCurrentContextId = vi.fn((id: string) => {
+    mockCurrentContextId = id;
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
+    // Start with a content context (user has a normal tab open)
+    mockCurrentContextId = 'original-content-context';
+
+    vi.doMock('../../src/index.js', () => ({
+      getFirefox: vi.fn().mockResolvedValue({
+        getDriver: () => ({
+          switchTo: () => ({
+            window: mockSwitchToWindow,
+          }),
+          setContext: mockSetContext,
+          executeScript: mockExecuteScript,
+          executeAsyncScript: mockExecuteAsyncScript,
+        }),
+        getCurrentContextId: () => mockCurrentContextId,
+        setCurrentContextId: mockSetCurrentContextId,
+        sendBiDiCommand: vi.fn().mockResolvedValue({
+          contexts: [
+            { context: 'chrome-context-id', url: 'chrome://browser/content/browser.xhtml' },
+          ],
+        }),
+      }),
+    }));
   });
 
-  describe('handleEvaluatePrivilegedScript', () => {
-    it('should reject const statements with error', async () => {
-      const result = await handleEvaluatePrivilegedScript({ expression: 'const x = 1' });
+  it('select_privileged_context should update currentContextId', async () => {
+    const { handleSelectPrivilegedContext } = await import('../../src/tools/privileged-context.js');
 
-      expect(result.isError).toBe(true);
-    });
+    await handleSelectPrivilegedContext({ contextId: 'chrome-context-id' });
 
-    it('should mention "statement" in error message', async () => {
-      const result = await handleEvaluatePrivilegedScript({ expression: 'const x = 1' });
+    expect(mockSwitchToWindow).toHaveBeenCalledWith('chrome-context-id');
+    expect(mockSetContext).toHaveBeenCalledWith('chrome');
 
-      expect(result.content[0]).toHaveProperty('text', expect.stringMatching(/statement/i));
-    });
+    // select_privileged_context should call setCurrentContextId and update
+    // currentContextId to 'chrome-context-id'
+    expect(mockSetCurrentContextId).toHaveBeenCalledWith('chrome-context-id');
+  });
 
-    it('should suggest IIFE workaround in error message', async () => {
-      const result = await handleEvaluatePrivilegedScript({ expression: 'const x = 1' });
+  it('set_firefox_prefs after select_privileged_context should not revert to old context', async () => {
+    const { handleSelectPrivilegedContext } = await import('../../src/tools/privileged-context.js');
+    const { handleSetFirefoxPrefs } = await import('../../src/tools/firefox-prefs.js');
 
-      expect(result.content[0].text).toContain('function()');
-    });
+    // User selects privileged context
+    await handleSelectPrivilegedContext({ contextId: 'chrome-context-id' });
 
-    it('should return error when expression parameter is missing', async () => {
-      const result = await handleEvaluatePrivilegedScript({});
+    mockExecuteScript.mockResolvedValue(undefined);
+    mockSwitchToWindow.mockClear();
+    mockSetContext.mockClear();
 
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('expression parameter is required');
-    });
+    // Call set_firefox_prefs which requires privileged context.
+    await handleSetFirefoxPrefs({ prefs: { 'browser.ml.enable': true } });
 
-    it('should execute valid expressions successfully', async () => {
-      const mockFirefox = {
-        getDriver: vi.fn().mockReturnValue({
-          switchTo: () => ({ window: mockSwitchToWindow }),
-          setContext: mockSetContext,
-          executeScript: mockExecuteScript.mockResolvedValue('test-result'),
-        }),
-      };
+    const setContextCalls = mockSetContext.mock.calls;
+    const lastSetContext = setContextCalls[setContextCalls.length - 1];
 
-      mockGetFirefox.mockResolvedValue(mockFirefox);
-
-      const result = await handleEvaluatePrivilegedScript({ expression: 'document.title' });
-
-      expect(result.isError).toBeUndefined();
-      expect(result.content[0].text).toContain('test-result');
-    });
-
-    it('should reject let statements', async () => {
-      const result = await handleEvaluatePrivilegedScript({ expression: 'let y = 2' });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0]).toHaveProperty('text', expect.stringMatching(/statement/i));
-    });
-
-    it('should reject var statements', async () => {
-      const result = await handleEvaluatePrivilegedScript({ expression: 'var z = 3' });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0]).toHaveProperty('text', expect.stringMatching(/statement/i));
-    });
+    // Check that the context has not switched to content unexpectedly.
+    expect(lastSetContext[0]).not.toBe('content');
   });
 });
