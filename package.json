@@ -59,7 +59,7 @@
     "node": ">=20.19.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.17.1",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "geckodriver": "6.0.2",
     "selenium-webdriver": "4.36.0",
     "ws": "8.18.3",
