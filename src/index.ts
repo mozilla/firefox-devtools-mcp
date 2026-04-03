@@ -154,7 +154,13 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
     log('Firefox DevTools connection established');
     return firefox;
   } catch (error) {
-    // Connection failed, clean up the failed instance
+    // Clean up before discarding — ensures the geckodriver process is killed
+    // and the Marionette session is released. Without this, a failure during
+    // BiDi setup (after the WebDriver session is already established) would
+    // leave geckodriver running with an active Marionette session, causing
+    // "Connection attempt denied because an active session has been found"
+    // on the next connect attempt.
+    await firefox.close().catch(() => {});
     firefox = null;
     throw error;
   }

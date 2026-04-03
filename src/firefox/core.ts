@@ -2,20 +2,17 @@
  * Core WebDriver + BiDi connection management
  */
 
-import { Builder, Browser } from 'selenium-webdriver';
+import { Builder, Browser, Capabilities } from 'selenium-webdriver';
 import firefox from 'selenium-webdriver/firefox.js';
-import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdirSync, openSync, closeSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import WebSocket from 'ws';
 import type { FirefoxLaunchOptions } from './types.js';
 import { log, logDebug } from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
 // Shared driver interface — the minimal surface used by all consumers
 // (DomInteractions, PageManagement, SnapshotManager, UidResolver).
-// Both selenium WebDriver and GeckodriverHttpDriver satisfy this contract.
 // ---------------------------------------------------------------------------
 
 export interface IElement {
@@ -82,529 +79,59 @@ export interface IDriver {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-// W3C WebDriver element identifier — the spec-defined key used to represent
-// element references in the JSON wire protocol.
-// See https://www.w3.org/TR/webdriver2/#elements
-const W3C_ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
-
 // ---------------------------------------------------------------------------
-// GeckodriverElement — wraps a raw WebDriver element reference for HTTP API
-// ---------------------------------------------------------------------------
-
-class GeckodriverElement implements IElement {
-  constructor(
-    private cmd: (method: string, path: string, body?: unknown) => Promise<unknown>,
-    private elementId: string
-  ) {}
-
-  async click(): Promise<void> {
-    await this.cmd('POST', `/element/${this.elementId}/click`, {});
-  }
-
-  async clear(): Promise<void> {
-    await this.cmd('POST', `/element/${this.elementId}/clear`, {});
-  }
-
-  async sendKeys(...args: Array<string | number>): Promise<void> {
-    const text = args.join('');
-    await this.cmd('POST', `/element/${this.elementId}/value`, { text });
-  }
-
-  async isDisplayed(): Promise<boolean> {
-    return (await this.cmd('GET', `/element/${this.elementId}/displayed`)) as boolean;
-  }
-
-  async takeScreenshot(): Promise<string> {
-    return (await this.cmd('GET', `/element/${this.elementId}/screenshot`)) as string;
-  }
-
-  toJSON(): Record<string, string> {
-    return { [W3C_ELEMENT_KEY]: this.elementId };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// GeckodriverHttpDriver
+// Geckodriver binary finder — used only for --connect-existing mode
 // ---------------------------------------------------------------------------
 
 /**
- * Thin wrapper around geckodriver HTTP API that implements the subset of
- * WebDriver interface used by firefox-devtools-mcp.
- *
- * This exists because selenium-webdriver's Driver.createSession() tries to
- * auto-upgrade to BiDi WebSocket, which hangs when connecting to an existing
- * Firefox instance. By talking directly to geckodriver's HTTP API we avoid
- * the BiDi issue entirely.
+ * Finds the geckodriver binary path via selenium-manager.
+ * Uses --driver (not --browser) to avoid downloading Firefox, which is
+ * already running in connect-existing mode.
  */
-class GeckodriverHttpDriver implements IDriver {
-  private baseUrl: string;
-  private sessionId: string;
-  private gdProcess: ChildProcess;
-  private webSocketUrl: string | null;
-  private bidiConnection: IBiDi | null = null;
-
-  constructor(
-    baseUrl: string,
-    sessionId: string,
-    gdProcess: ChildProcess,
-    webSocketUrl: string | null
-  ) {
-    this.baseUrl = baseUrl;
-    this.sessionId = sessionId;
-    this.gdProcess = gdProcess;
-    this.webSocketUrl = webSocketUrl;
-  }
-
-  static async connect(
-    marionettePort: number,
-    marionetteHost = '127.0.0.1'
-  ): Promise<GeckodriverHttpDriver> {
-    // Find geckodriver binary via selenium-manager
-    const path = await import('node:path');
-    const { execFileSync } = await import('node:child_process');
-
-    let geckodriverPath: string;
-    try {
-      // selenium-manager ships with selenium-webdriver and resolves/downloads geckodriver.
-      // Use --driver instead of --browser to skip downloading Firefox, which is
-      // already running externally in connect-existing mode.
-      const { createRequire } = await import('node:module');
-      const require = createRequire(import.meta.url);
-      const swPkg = require.resolve('selenium-webdriver/package.json');
-      const swDir = path.dirname(swPkg);
-      const platform =
-        process.platform === 'win32'
-          ? 'windows'
-          : process.platform === 'darwin'
-            ? 'macos'
-            : 'linux';
-      const ext = process.platform === 'win32' ? '.exe' : '';
-      const smBin = path.join(swDir, 'bin', platform, `selenium-manager${ext}`);
-      const result = JSON.parse(
-        execFileSync(smBin, ['--driver', 'geckodriver', '--output', 'json'], { encoding: 'utf-8' })
-      );
-      geckodriverPath = result.result.driver_path;
-    } catch {
-      // Fallback: walk the selenium cache directory to find any geckodriver binary
-      const os = await import('node:os');
-      const fs = await import('node:fs');
-      const cacheBase = path.join(os.homedir(), '.cache/selenium/geckodriver');
-      geckodriverPath = findGeckodriverInCache(fs, path, cacheBase);
-      if (!geckodriverPath) {
-        throw new Error('Cannot find geckodriver binary. Ensure selenium-webdriver is installed.');
-      }
-    }
-    logDebug(`Using geckodriver: ${geckodriverPath}`);
-
-    // Use --port=0 to let the OS assign a free port atomically (geckodriver ≥0.34.0)
-    const gd = spawn(
-      geckodriverPath,
-      [
-        '--connect-existing',
-        '--marionette-host',
-        marionetteHost,
-        '--marionette-port',
-        String(marionettePort),
-        '--port',
-        '0',
-      ],
-      { stdio: ['ignore', 'pipe', 'pipe'] }
-    );
-
-    // Wait for geckodriver to start listening and extract the assigned port
-    const port = await new Promise<number>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Geckodriver startup timeout')), 10000);
-      const onData = (data: Buffer) => {
-        const msg = data.toString();
-        logDebug(`[geckodriver] ${msg.trim()}`);
-        const match = msg.match(/Listening on\s+\S+:(\d+)/);
-        if (match?.[1]) {
-          clearTimeout(timeout);
-          resolve(parseInt(match[1], 10));
-        }
-      };
-      // Listen on both stdout and stderr — geckodriver's output stream varies by version/platform
-      gd.stdout?.on('data', onData);
-      gd.stderr?.on('data', onData);
-      gd.on('error', (err) => {
-        clearTimeout(timeout);
-        reject(err);
-      });
-      gd.on('exit', (code) => {
-        clearTimeout(timeout);
-        reject(new Error(`Geckodriver exited with code ${code}`));
-      });
-    });
-
-    const baseUrl = `http://127.0.0.1:${port}`;
-
-    // Create a WebDriver session with BiDi opt-in
-    const resp = await fetch(`${baseUrl}/session`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ capabilities: { alwaysMatch: { webSocketUrl: true } } }),
-    });
-    const json = (await resp.json()) as {
-      value: { sessionId: string; capabilities: Record<string, unknown> };
-    };
-    if (!json.value?.sessionId) {
-      throw new Error(`Failed to create session: ${JSON.stringify(json)}`);
-    }
-
-    let wsUrl = json.value.capabilities.webSocketUrl as string | undefined;
-    logDebug(
-      `Session capabilities webSocketUrl: ${wsUrl ?? 'not present'}, marionetteHost: ${marionetteHost}`
-    );
-    if (wsUrl && marionetteHost !== '127.0.0.1') {
-      // Rewrite the URL to connect through the remote host / tunnel.
-      const parsed = new URL(wsUrl);
-      parsed.hostname = marionetteHost;
-      wsUrl = parsed.toString();
-    }
-    if (wsUrl) {
-      logDebug(`BiDi WebSocket URL: ${wsUrl}`);
-    } else {
-      logDebug(
-        'BiDi WebSocket URL not available (Firefox may not support it or Remote Agent is not running)'
-      );
-    }
-
-    return new GeckodriverHttpDriver(baseUrl, json.value.sessionId, gd, wsUrl ?? null);
-  }
-
-  private async cmd(method: string, path: string, body?: unknown): Promise<unknown> {
-    const url = `${this.baseUrl}/session/${this.sessionId}${path}`;
-    const opts: RequestInit = {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-    };
-    if (body !== undefined) {
-      opts.body = JSON.stringify(body);
-    }
-    const resp = await fetch(url, opts);
-    const json = (await resp.json()) as { value: unknown };
-    if (json.value && typeof json.value === 'object' && 'error' in json.value) {
-      const err = json.value as Record<string, string>;
-      throw new Error(`${err.error}: ${err.message}`);
-    }
-    return json.value;
-  }
-
-  // WebDriver-compatible methods used by the rest of the codebase
-  async getTitle(): Promise<string> {
-    return (await this.cmd('GET', '/title')) as string;
-  }
-  async getCurrentUrl(): Promise<string> {
-    return (await this.cmd('GET', '/url')) as string;
-  }
-  async getWindowHandle(): Promise<string> {
-    return (await this.cmd('GET', '/window')) as string;
-  }
-  async getAllWindowHandles(): Promise<string[]> {
-    return (await this.cmd('GET', '/window/handles')) as string[];
-  }
-  async get(url: string): Promise<void> {
-    await this.cmd('POST', '/url', { url });
-  }
-  async getPageSource(): Promise<string> {
-    return (await this.cmd('GET', '/source')) as string;
-  }
-  async executeScript<T>(script: string, ...args: unknown[]): Promise<T> {
-    return (await this.cmd('POST', '/execute/sync', { script, args })) as T;
-  }
-  async executeAsyncScript<T>(script: string, ...args: unknown[]): Promise<T> {
-    return (await this.cmd('POST', '/execute/async', { script, args })) as T;
-  }
-  async takeScreenshot(): Promise<string> {
-    return (await this.cmd('GET', '/screenshot')) as string;
-  }
-  async close(): Promise<void> {
-    await this.cmd('DELETE', '/window');
-  }
-  async getSession(): Promise<{ getId(): string }> {
-    return { getId: () => this.sessionId };
-  }
-
-  // Element finding
-  async findElement(locator: Record<string, unknown>): Promise<GeckodriverElement> {
-    // Accept selenium By objects (which have using/value) and raw {using, value} objects
-    const loc = locator as { using?: string; value?: string };
-    const using = loc.using ?? 'css selector';
-    const value = loc.value ?? '';
-    const result = (await this.cmd('POST', '/element', { using, value })) as Record<string, string>;
-    // WebDriver protocol returns { "element-xxx": "id" } or { ELEMENT: "id" }
-    const elementId = Object.values(result)[0]!;
-    return new GeckodriverElement(this.cmd.bind(this), elementId);
-  }
-
-  async findElements(locator: Record<string, unknown>): Promise<GeckodriverElement[]> {
-    const loc = locator as { using?: string; value?: string };
-    const using = loc.using ?? 'css selector';
-    const value = loc.value ?? '';
-    const results = (await this.cmd('POST', '/elements', { using, value })) as Array<
-      Record<string, string>
-    >;
-    return results.map((r) => new GeckodriverElement(this.cmd.bind(this), Object.values(r)[0]!));
-  }
-
-  // Polling wait — compatible with selenium's Condition objects and plain functions.
-  // Used by dom.ts helpers for element location and visibility polling.
-  async wait<T>(
-    condition:
-      | { fn: (driver: any) => T | Promise<T | null> | null }
-      | ((driver: any) => T | Promise<T | null> | null),
-    timeout = 5000
-  ): Promise<T> {
-    const fn = typeof condition === 'function' ? condition : condition.fn;
-    const deadline = Date.now() + timeout;
-    let lastError: Error | undefined;
-    while (Date.now() < deadline) {
-      try {
-        const result = await fn(this);
-        if (result) {
-          return result;
-        }
-      } catch (e) {
-        lastError = e instanceof Error ? e : new Error(String(e));
-      }
-      await new Promise((r) => setTimeout(r, 100));
-    }
-    throw lastError ?? new Error(`wait() timed out after ${timeout}ms`);
-  }
-
-  switchTo() {
-    return {
-      window: async (handle: string): Promise<void> => {
-        await this.cmd('POST', '/window', { handle });
-      },
-      newWindow: async (type: string): Promise<{ handle: string }> => {
-        return (await this.cmd('POST', '/window/new', { type })) as { handle: string };
-      },
-      alert: async () => {
-        return {
-          accept: async (): Promise<void> => {
-            await this.cmd('POST', '/alert/accept');
-          },
-          dismiss: async (): Promise<void> => {
-            await this.cmd('POST', '/alert/dismiss');
-          },
-          getText: async (): Promise<string> => {
-            return (await this.cmd('GET', '/alert/text')) as string;
-          },
-          sendKeys: async (text: string): Promise<void> => {
-            await this.cmd('POST', '/alert/text', { text });
-          },
-        };
-      },
-    };
-  }
-
-  navigate() {
-    return {
-      back: async (): Promise<void> => {
-        await this.cmd('POST', '/back');
-      },
-      forward: async (): Promise<void> => {
-        await this.cmd('POST', '/forward');
-      },
-      refresh: async (): Promise<void> => {
-        await this.cmd('POST', '/refresh');
-      },
-    };
-  }
-
-  manage() {
-    return {
-      window: () => {
-        return {
-          setRect: async (rect: { width: number; height: number }): Promise<void> => {
-            await this.cmd('POST', '/window/rect', rect);
-          },
-        };
-      },
-    };
-  }
-
-  actions(_opts?: { async?: boolean }) {
-    // Accumulate action sequences for the W3C Actions API
-    const actionSequences: unknown[] = [];
-    const builder = {
-      move: (opts: { x?: number; y?: number; origin?: unknown }) => {
-        actionSequences.push({
-          type: 'pointer',
-          id: 'mouse',
-          parameters: { pointerType: 'mouse' },
-          actions: [{ type: 'pointerMove', ...opts }],
-        });
-        return builder;
-      },
-      click: () => {
-        const last = actionSequences[actionSequences.length - 1] as
-          | { actions: unknown[] }
-          | undefined;
-        if (last) {
-          last.actions.push({ type: 'pointerDown', button: 0 }, { type: 'pointerUp', button: 0 });
-        }
-        return builder;
-      },
-      doubleClick: (_el?: unknown) => {
-        const last = actionSequences[actionSequences.length - 1] as
-          | { actions: unknown[] }
-          | undefined;
-        if (last) {
-          last.actions.push(
-            { type: 'pointerDown', button: 0 },
-            { type: 'pointerUp', button: 0 },
-            { type: 'pointerDown', button: 0 },
-            { type: 'pointerUp', button: 0 }
-          );
-        }
-        return builder;
-      },
-      perform: async (): Promise<void> => {
-        await this.cmd('POST', '/actions', { actions: actionSequences });
-      },
-      clear: async (): Promise<void> => {
-        await this.cmd('DELETE', '/actions');
-      },
-    };
-    return builder;
-  }
-
-  async quit(): Promise<void> {
-    if (this.bidiConnection) {
-      (this.bidiConnection.socket as unknown as WebSocket).close();
-      this.bidiConnection = null;
-    }
-    try {
-      await this.cmd('DELETE', '');
-    } catch {
-      // ignore
-    }
-    this.gdProcess.kill();
-  }
-
-  /** Kill the geckodriver process without closing Firefox.
-   *  Deletes the session first so Marionette accepts new connections. */
-  async kill(): Promise<void> {
-    if (this.bidiConnection) {
-      (this.bidiConnection.socket as unknown as WebSocket).close();
-      this.bidiConnection = null;
-    }
-    try {
-      await this.cmd('DELETE', '');
-    } catch {
-      // ignore
-    }
-    this.gdProcess.kill();
-  }
-
-  /**
-   * Return a BiDi handle. Opens a WebSocket to Firefox's Remote Agent on
-   * first call, using the webSocketUrl returned in the session capabilities.
-   */
-  async getBidi(): Promise<IBiDi> {
-    if (this.bidiConnection) {
-      return this.bidiConnection;
-    }
-    if (!this.webSocketUrl) {
-      throw new Error(
-        'BiDi is not available: no webSocketUrl in session capabilities. ' +
-          'Ensure Firefox was started with --remote-debugging-port.'
-      );
-    }
-
-    const ws = new WebSocket(this.webSocketUrl);
-    await new Promise<void>((resolve, reject) => {
-      ws.on('open', resolve);
-      ws.on('error', (e: any) => {
-        const msg =
-          e?.message || e?.error?.message || e?.error || e?.type || JSON.stringify(e) || String(e);
-        reject(new Error(`BiDi WS to ${this.webSocketUrl}: ${msg}`));
-      });
-    });
-
-    let cmdId = 0;
-    const subscribe = async (event: string, contexts?: string[]): Promise<void> => {
-      const msg: Record<string, unknown> = {
-        id: ++cmdId,
-        method: 'session.subscribe',
-        params: { events: [event] },
-      };
-      if (contexts) {
-        msg.params = { events: [event], contexts };
-      }
-      ws.send(JSON.stringify(msg));
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(
-          () => reject(new Error(`BiDi subscribe timeout for ${event}`)),
-          5000
-        );
-        const onMsg = (data: WebSocket.Data) => {
-          try {
-            // eslint-disable-next-line @typescript-eslint/no-base-to-string
-            const payload = JSON.parse(String(data));
-            if (payload.id === cmdId) {
-              clearTimeout(timeout);
-              ws.off('message', onMsg);
-              if (payload.error) {
-                reject(new Error(`BiDi subscribe error: ${payload.error}`));
-              } else {
-                resolve();
-              }
-            }
-          } catch {
-            /* ignore parse errors from event messages */
-          }
-        };
-        ws.on('message', onMsg);
-      });
-      logDebug(`BiDi subscribed to ${event}`);
-    };
-
-    const conn: IBiDi = { subscribe, socket: ws as unknown as IBiDiSocket };
-    this.bidiConnection = conn;
-    return conn;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Geckodriver cache walker — finds any geckodriver binary cross-platform
-// ---------------------------------------------------------------------------
-
-function findGeckodriverInCache(
-  fs: typeof import('node:fs'),
-  path: typeof import('node:path'),
-  cacheBase: string
-): string {
-  const ext = process.platform === 'win32' ? '.exe' : '';
-  const binaryName = `geckodriver${ext}`;
+async function findGeckodriver(): Promise<string> {
+  const path = await import('node:path');
+  const { execFileSync } = await import('node:child_process');
 
   try {
-    if (!fs.existsSync(cacheBase)) {
-      return '';
-    }
-
-    // Walk: cacheBase/<platform>/<version>/geckodriver[.exe]
-    for (const platformDir of fs.readdirSync(cacheBase)) {
-      const platformPath = path.join(cacheBase, platformDir);
-      if (!fs.statSync(platformPath).isDirectory()) {
-        continue;
-      }
-
-      // Sort version dirs descending so we prefer the newest
-      const versionDirs = fs.readdirSync(platformPath).sort().reverse();
-      for (const versionDir of versionDirs) {
-        const candidate = path.join(platformPath, versionDir, binaryName);
-        if (fs.existsSync(candidate)) {
-          return candidate;
+    const { createRequire } = await import('node:module');
+    const require = createRequire(import.meta.url);
+    const swPkg = require.resolve('selenium-webdriver/package.json');
+    const swDir = path.dirname(swPkg);
+    const platform =
+      process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'macos' : 'linux';
+    const ext = process.platform === 'win32' ? '.exe' : '';
+    const smBin = path.join(swDir, 'bin', platform, `selenium-manager${ext}`);
+    const result = JSON.parse(
+      execFileSync(smBin, ['--driver', 'geckodriver', '--output', 'json'], { encoding: 'utf-8' })
+    );
+    return result.result.driver_path as string;
+  } catch {
+    // Fallback: walk the selenium cache directory to find any geckodriver binary
+    const os = await import('node:os');
+    const fs = await import('node:fs');
+    const cacheBase = path.join(os.homedir(), '.cache/selenium/geckodriver');
+    const ext = process.platform === 'win32' ? '.exe' : '';
+    const binaryName = `geckodriver${ext}`;
+    try {
+      if (fs.existsSync(cacheBase)) {
+        for (const platformDir of fs.readdirSync(cacheBase)) {
+          const platformPath = path.join(cacheBase, platformDir);
+          if (!fs.statSync(platformPath).isDirectory()) {
+            continue;
+          }
+          for (const versionDir of fs.readdirSync(platformPath).sort().reverse()) {
+            const candidate = path.join(platformPath, versionDir, binaryName);
+            if (fs.existsSync(candidate)) {
+              return candidate;
+            }
+          }
         }
       }
+    } catch {
+      // ignore permission errors
     }
-  } catch {
-    // Ignore permission errors etc.
+    throw new Error('Cannot find geckodriver binary. Ensure selenium-webdriver is installed.');
   }
-  return '';
 }
 
 export class FirefoxCore {
@@ -627,12 +154,46 @@ export class FirefoxCore {
     }
 
     if (this.options.connectExisting) {
-      // Connect to existing Firefox via geckodriver HTTP API directly.
-      // We bypass selenium-webdriver because its BiDi auto-upgrade hangs
-      // when used with geckodriver's --connect-existing mode.
       const port = this.options.marionettePort ?? 2828;
       const host = this.options.marionetteHost ?? '127.0.0.1';
-      this.driver = await GeckodriverHttpDriver.connect(port, host);
+
+      // Find geckodriver binary (--driver avoids downloading Firefox via selenium-manager)
+      const geckodriverPath = await findGeckodriver();
+      logDebug(`Using geckodriver: ${geckodriverPath}`);
+
+      // Build a geckodriver service that connects to the running Firefox.
+      // ServiceBuilder already knows about --connect-existing and skips --websocket-port.
+      const serviceBuilder = new firefox.ServiceBuilder(geckodriverPath);
+      serviceBuilder.addArguments('--connect-existing', `--marionette-port=${port}`);
+
+      // Use minimal capabilities: only request webSocketUrl for BiDi.
+      // Deliberately avoid firefox.Options() here — its constructor sets
+      // moz:firefoxOptions.prefs.remote.active-protocols = 1, which geckodriver
+      // may apply to the running Firefox via Marionette. Changing that preference
+      // on a live Firefox can disrupt the Remote Agent and leave the Marionette
+      // session in a locked state that blocks reconnection.
+      const caps = new Capabilities();
+      caps.set('webSocketUrl', true);
+
+      // createSession() returns synchronously; the session is established async under the hood.
+      // Passing geckodriverPath to ServiceBuilder prevents getBinaryPaths() from running,
+      // which would otherwise invoke selenium-manager with --browser firefox.
+      const seleniumDriver = firefox.Driver.createSession(caps, serviceBuilder.build());
+      this.driver = seleniumDriver as unknown as IDriver;
+
+      // For remote Firefox, rewrite webSocketUrl hostname in the session capabilities.
+      // Selenium only rewrites localhost→127.0.0.1; arbitrary hosts need explicit patching.
+      // Session.getCapabilities() returns the same Capabilities object every time, so
+      // calling caps.set() here is seen by the lazy getBidi() call that comes later.
+      if (host !== '127.0.0.1') {
+        const caps = await seleniumDriver.getCapabilities();
+        const wsUrl = caps.get('webSocketUrl') as string | undefined;
+        if (wsUrl) {
+          const parsed = new URL(wsUrl);
+          parsed.hostname = host;
+          caps.set('webSocketUrl', parsed.toString());
+        }
+      }
     } else {
       // Set up output file for capturing Firefox stdout/stderr
       if (this.options.logFile) {
@@ -768,8 +329,15 @@ export class FirefoxCore {
    * Reset driver state (used when Firefox is detected as closed)
    */
   reset(): void {
-    if (this.driver && this.options.connectExisting && 'kill' in this.driver) {
-      void (this.driver as { kill(): Promise<void> }).kill();
+    if (this.driver) {
+      const d = this.driver as any;
+      if (d._bidiConnection) {
+        d._bidiConnection.close();
+        d._bidiConnection = undefined;
+      }
+      if ('quit' in this.driver) {
+        void (this.driver as { quit(): Promise<void> }).quit();
+      }
     }
     this.driver = null;
     this.currentContextId = null;
@@ -890,9 +458,19 @@ export class FirefoxCore {
    */
   async close(): Promise<void> {
     if (this.driver) {
-      if (this.options.connectExisting && 'kill' in this.driver) {
-        await (this.driver as { kill(): Promise<void> }).kill();
-      } else if ('quit' in this.driver) {
+      // Selenium's quit() skips closing the BiDi WebSocket when onQuit_ is set
+      // (it returns early before reaching the _bidiConnection.close() branch).
+      // We must close it first: geckodriver may not release the Marionette session
+      // until the BiDi connection is cleanly terminated, which would leave Firefox's
+      // Marionette locked and prevent reconnection.
+      const d = this.driver as any;
+      if (d._bidiConnection) {
+        d._bidiConnection.close();
+        d._bidiConnection = undefined;
+      }
+      // In connect-existing mode, geckodriver's DELETE /session releases Marionette
+      // without terminating Firefox (since geckodriver was started with --connect-existing).
+      if ('quit' in this.driver) {
         await (this.driver as { quit(): Promise<void> }).quit();
       }
       this.driver = null;
