@@ -27,7 +27,7 @@ export class DomInteractions {
   }
 
   // ============================================================================
-  // Element polling helpers (work with both WebDriver and GeckodriverHttpDriver)
+  // Element polling helpers
   // ============================================================================
 
   /**

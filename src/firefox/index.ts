@@ -4,6 +4,7 @@
 
 import type { FirefoxLaunchOptions, ConsoleMessage } from './types.js';
 import { FirefoxCore, type IElement } from './core.js';
+import { logDebug } from '../utils/logger.js';
 import { ConsoleEvents, NetworkEvents } from './events/index.js';
 import { DomInteractions } from './dom.js';
 import { PageManagement } from './pages.js';
@@ -44,10 +45,11 @@ export class FirefoxClient {
       }
     };
 
-    // Initialize event modules with lifecycle hooks
-    // BiDi-dependent modules (console/network events) require a full WebDriver with
-    // BiDi support. When using --connect-existing, we bypass selenium's BiDi layer
-    // so these modules are not available.
+    // Initialize event modules with lifecycle hooks.
+    // BiDi (console/network events) is available in both launch and connect-existing
+    // modes, provided Firefox has its Remote Agent running. If webSocketUrl is absent
+    // from the session capabilities (e.g. Firefox started without --remote-debugging-port),
+    // the subscribe calls below will fail gracefully and the modules will be disabled.
     const hasBidi = 'getBidi' in driver && typeof driver.getBidi === 'function';
 
     if (hasBidi) {
@@ -74,12 +76,26 @@ export class FirefoxClient {
       (id: string) => this.core.setCurrentContextId(id)
     );
 
-    // Subscribe to console and network events for ALL contexts (not just current)
+    // Subscribe to console and network events for ALL contexts (not just current).
+    // Failures here are non-fatal: Firefox may not have the Remote Agent / BiDi
+    // enabled (e.g. launched with --marionette only, no --remote-debugging-port),
+    // in which case webSocketUrl is absent from capabilities and getBidi() throws.
+    // We degrade gracefully so all non-BiDi tools still work.
     if (this.consoleEvents) {
-      await this.consoleEvents.subscribe(undefined);
+      try {
+        await this.consoleEvents.subscribe(undefined);
+      } catch {
+        logDebug('Console events unavailable (BiDi not supported by this Firefox session)');
+        this.consoleEvents = null;
+      }
     }
     if (this.networkEvents) {
-      await this.networkEvents.subscribe(undefined);
+      try {
+        await this.networkEvents.subscribe(undefined);
+      } catch {
+        logDebug('Network events unavailable (BiDi not supported by this Firefox session)');
+        this.networkEvents = null;
+      }
     }
   }
 
@@ -186,14 +202,18 @@ export class FirefoxClient {
 
   async getConsoleMessages(): Promise<ConsoleMessage[]> {
     if (!this.consoleEvents) {
-      throw new Error('Console events not available in connect-existing mode (requires BiDi)');
+      throw new Error(
+        'Console events not available (Firefox Remote Agent not running — start Firefox with --remote-debugging-port to enable BiDi)'
+      );
     }
     return this.consoleEvents.getMessages();
   }
 
   clearConsoleMessages(): void {
     if (!this.consoleEvents) {
-      throw new Error('Console events not available in connect-existing mode (requires BiDi)');
+      throw new Error(
+        'Console events not available (Firefox Remote Agent not running — start Firefox with --remote-debugging-port to enable BiDi)'
+      );
     }
     this.consoleEvents.clearMessages();
   }
@@ -294,28 +314,36 @@ export class FirefoxClient {
 
   async startNetworkMonitoring(): Promise<void> {
     if (!this.networkEvents) {
-      throw new Error('Network events not available in connect-existing mode (requires BiDi)');
+      throw new Error(
+        'Network events not available (Firefox Remote Agent not running — start Firefox with --remote-debugging-port to enable BiDi)'
+      );
     }
     this.networkEvents.startMonitoring();
   }
 
   async stopNetworkMonitoring(): Promise<void> {
     if (!this.networkEvents) {
-      throw new Error('Network events not available in connect-existing mode (requires BiDi)');
+      throw new Error(
+        'Network events not available (Firefox Remote Agent not running — start Firefox with --remote-debugging-port to enable BiDi)'
+      );
     }
     this.networkEvents.stopMonitoring();
   }
 
   async getNetworkRequests(): Promise<any[]> {
     if (!this.networkEvents) {
-      throw new Error('Network events not available in connect-existing mode (requires BiDi)');
+      throw new Error(
+        'Network events not available (Firefox Remote Agent not running — start Firefox with --remote-debugging-port to enable BiDi)'
+      );
     }
     return this.networkEvents.getRequests();
   }
 
   clearNetworkRequests(): void {
     if (!this.networkEvents) {
-      throw new Error('Network events not available in connect-existing mode (requires BiDi)');
+      throw new Error(
+        'Network events not available (Firefox Remote Agent not running — start Firefox with --remote-debugging-port to enable BiDi)'
+      );
     }
     this.networkEvents.clearRequests();
   }
