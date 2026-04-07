@@ -3,14 +3,14 @@
  * Handles UID validation, resolution to selectors/elements, and element caching
  */
 
-import type { IDriver, IElement } from '../core.js';
+import { By, WebDriver, WebElement } from 'selenium-webdriver';
 import { logDebug } from '../../utils/logger.js';
 import type { UidEntry } from './types.js';
 
-interface IElementCacheEntry {
+interface WebElementCacheEntry {
   selector: string;
   xpath?: string;
-  cachedElement: IElement;
+  cachedElement: WebElement;
   snapshotId: number;
   timestamp: number;
 }
@@ -21,10 +21,10 @@ interface IElementCacheEntry {
  */
 export class UidResolver {
   private uidToEntry = new Map<string, UidEntry>();
-  private elementCache = new Map<string, IElementCacheEntry>();
+  private elementCache = new Map<string, WebElementCacheEntry>();
   private currentSnapshotId = 0;
 
-  constructor(private driver: IDriver) {}
+  constructor(private driver: WebDriver) {}
 
   /**
    * Update current snapshot ID
@@ -98,7 +98,7 @@ export class UidResolver {
    * Resolve UID to element (with staleness check and caching)
    * Tries CSS first, falls back to XPath
    */
-  async resolveUidToElement(uid: string): Promise<IElement> {
+  async resolveUidToElement(uid: string): Promise<WebElement> {
     this.validateUid(uid);
 
     const entry = this.uidToEntry.get(uid);
@@ -122,7 +122,7 @@ export class UidResolver {
 
     // Try CSS selector first
     try {
-      const element = await this.driver.findElement({ using: 'css selector', value: entry.css });
+      const element = await this.driver.findElement(By.css(entry.css));
 
       // Update cache
       this.elementCache.set(uid, {
@@ -142,7 +142,7 @@ export class UidResolver {
       const xpathSelector = entry.xpath;
       if (xpathSelector) {
         try {
-          const element = await this.driver.findElement({ using: 'xpath', value: xpathSelector });
+          const element = await this.driver.findElement(By.xpath(xpathSelector));
 
           // Update cache
           this.elementCache.set(uid, {

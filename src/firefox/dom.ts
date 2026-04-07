@@ -2,13 +2,12 @@
  * DOM interactions: evaluate, element lookup, input actions
  */
 
-import { Key } from 'selenium-webdriver';
-import type { IDriver, IElement } from './core.js';
+import { By, Key, WebDriver, WebElement } from 'selenium-webdriver';
 
 export class DomInteractions {
   constructor(
-    private driver: IDriver,
-    private resolveUid?: (uid: string) => Promise<IElement>
+    private driver: WebDriver,
+    private resolveUid?: (uid: string) => Promise<WebElement>
   ) {}
 
   /**
@@ -33,12 +32,12 @@ export class DomInteractions {
   /**
    * Poll for an element matching a CSS selector until found or timeout.
    */
-  private async waitForElement(selector: string, timeout = 5000): Promise<IElement> {
+  private async waitForElement(selector: string, timeout = 5000): Promise<WebElement> {
     const deadline = Date.now() + timeout;
     let lastError: Error | undefined;
     while (Date.now() < deadline) {
       try {
-        return await this.driver.findElement({ using: 'css selector', value: selector });
+        return await this.driver.findElement(By.css(selector));
       } catch (e) {
         lastError = e instanceof Error ? e : new Error(String(e));
       }
@@ -50,7 +49,7 @@ export class DomInteractions {
   /**
    * Wait until an element reports isDisplayed(), ignoring failures.
    */
-  private async waitForVisible(el: IElement, timeout = 5000): Promise<void> {
+  private async waitForVisible(el: WebElement, timeout = 5000): Promise<void> {
     const deadline = Date.now() + timeout;
     while (Date.now() < deadline) {
       try {

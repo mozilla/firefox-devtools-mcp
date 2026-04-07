@@ -2,82 +2,13 @@
  * Core WebDriver + BiDi connection management
  */
 
-import { Builder, Browser, Capabilities } from 'selenium-webdriver';
+import { Builder, Browser, Capabilities, WebDriver } from 'selenium-webdriver';
 import firefox from 'selenium-webdriver/firefox.js';
 import { mkdirSync, openSync, closeSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { FirefoxLaunchOptions } from './types.js';
 import { log, logDebug } from '../utils/logger.js';
-
-// ---------------------------------------------------------------------------
-// Shared driver interface — the minimal surface used by all consumers
-// (DomInteractions, PageManagement, SnapshotManager, UidResolver).
-// ---------------------------------------------------------------------------
-
-export interface IElement {
-  click(): Promise<void>;
-  clear(): Promise<void>;
-  sendKeys(...args: Array<string | number>): Promise<void>;
-  isDisplayed(): Promise<boolean>;
-  takeScreenshot(): Promise<string>;
-}
-
-export interface IBiDiSocket {
-  readyState: number;
-  on(event: string, listener: (data: unknown) => void): void;
-  off(event: string, listener: (data: unknown) => void): void;
-  send(data: string): void;
-}
-
-export interface IBiDi {
-  socket: IBiDiSocket;
-  subscribe?: (event: string, contexts?: string[]) => Promise<void>;
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export interface IDriver {
-  getTitle(): Promise<string>;
-  getCurrentUrl(): Promise<string>;
-  getWindowHandle(): Promise<string>;
-  getAllWindowHandles(): Promise<string[]>;
-  get(url: string): Promise<void>;
-  getPageSource(): Promise<string>;
-  executeScript<T>(script: string | ((...a: any[]) => any), ...args: unknown[]): Promise<T>;
-  executeAsyncScript<T>(script: string | ((...a: any[]) => any), ...args: unknown[]): Promise<T>;
-  takeScreenshot(): Promise<string>;
-  close(): Promise<void>;
-  findElement(locator: any): Promise<IElement>;
-  switchTo(): {
-    window(handle: string): Promise<void>;
-    newWindow(type: string): Promise<{ handle: string }>;
-    alert(): Promise<{
-      accept(): Promise<void>;
-      dismiss(): Promise<void>;
-      getText(): Promise<string>;
-      sendKeys(text: string): Promise<void>;
-    }>;
-  };
-  navigate(): {
-    back(): Promise<void>;
-    forward(): Promise<void>;
-    refresh(): Promise<void>;
-  };
-  manage(): {
-    window(): {
-      setRect(rect: { width: number; height: number }): Promise<void>;
-    };
-  };
-  actions(opts?: { async?: boolean }): {
-    move(opts: { x?: number; y?: number; origin?: unknown }): any;
-    click(): any;
-    doubleClick(el?: unknown): any;
-    perform(): Promise<void>;
-    clear(): Promise<void>;
-  };
-  getBidi(): Promise<IBiDi>;
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ---------------------------------------------------------------------------
 // Geckodriver binary finder — used only for --connect-existing mode
@@ -135,7 +66,7 @@ async function findGeckodriver(): Promise<string> {
 }
 
 export class FirefoxCore {
-  private driver: IDriver | null = null;
+  private driver: WebDriver | null = null;
   private currentContextId: string | null = null;
   private originalEnv: Record<string, string | undefined> = {};
   private logFilePath: string | undefined;
@@ -177,8 +108,7 @@ export class FirefoxCore {
       // createSession() returns synchronously; the session is established async under the hood.
       // Passing geckodriverPath to ServiceBuilder prevents getBinaryPaths() from running,
       // which would otherwise invoke selenium-manager with --browser firefox.
-      const seleniumDriver = firefox.Driver.createSession(caps, serviceBuilder.build());
-      this.driver = seleniumDriver as unknown as IDriver;
+      this.driver = firefox.Driver.createSession(caps, serviceBuilder.build());
     } else {
       // Set up output file for capturing Firefox stdout/stderr
       if (this.options.logFile) {
@@ -255,12 +185,11 @@ export class FirefoxCore {
         log(`📝 Capturing Firefox output to: ${this.logFilePath}`);
       }
 
-      // selenium WebDriver satisfies IDriver structurally at runtime
-      this.driver = (await new Builder()
+      this.driver = await new Builder()
         .forBrowser(Browser.FIREFOX)
         .setFirefoxOptions(firefoxOptions)
         .setFirefoxService(serviceBuilder)
-        .build()) as unknown as IDriver;
+        .build();
     }
 
     log(
@@ -285,7 +214,7 @@ export class FirefoxCore {
   /**
    * Get driver instance (throw if not connected)
    */
-  getDriver(): IDriver {
+  getDriver(): WebDriver {
     if (!this.driver) {
       throw new Error('Driver not connected');
     }
@@ -395,7 +324,9 @@ export class FirefoxCore {
     }
 
     const bidi = await this.driver.getBidi();
-    const ws = bidi.socket;
+    // bidi.socket is a Node.js `ws` WebSocket (EventEmitter-style), but typed as browser WebSocket
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ws = bidi.socket as any;
 
     // Wait for WebSocket to be ready before sending
     await this.waitForWebSocketOpen(ws);

@@ -3,7 +3,8 @@
  */
 
 import type { FirefoxLaunchOptions, ConsoleMessage } from './types.js';
-import { FirefoxCore, type IElement } from './core.js';
+import { WebElement } from 'selenium-webdriver';
+import { FirefoxCore } from './core.js';
 import { logDebug } from '../utils/logger.js';
 import { ConsoleEvents, NetworkEvents } from './events/index.js';
 import { DomInteractions } from './dom.js';
@@ -366,7 +367,7 @@ export class FirefoxClient {
     return this.snapshot.resolveUidToSelector(uid);
   }
 
-  async resolveUidToElement(uid: string): Promise<IElement> {
+  async resolveUidToElement(uid: string): Promise<WebElement> {
     if (!this.snapshot) {
       throw new Error('Not connected');
     }

@@ -2,12 +2,12 @@
  * Page/Tab/Window management
  */
 
-import type { IDriver } from './core.js';
+import { WebDriver } from 'selenium-webdriver';
 import { log } from '../utils/logger.js';
 
 export class PageManagement {
   constructor(
-    private driver: IDriver,
+    private driver: WebDriver,
     private getCurrentContextId: () => string | null,
     private setCurrentContextId: (id: string) => void
   ) {}
