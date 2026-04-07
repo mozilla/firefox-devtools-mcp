@@ -4,20 +4,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
 
-describe('FirefoxCore connect-existing with marionetteHost', () => {
-  it('should pass marionetteHost to options', async () => {
-    const { FirefoxCore } = await import('@/firefox/core.js');
-    const core = new FirefoxCore({
-      headless: true,
-      connectExisting: true,
-      marionettePort: 2828,
-      marionetteHost: '192.168.1.100',
-    });
-
-    expect(core.getOptions().marionetteHost).toBe('192.168.1.100');
-  });
-});
-
 describe('getFirefox() reconnect behavior', () => {
   it('should reconnect when connection is lost instead of throwing', async () => {
     vi.resetModules();

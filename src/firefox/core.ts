@@ -155,7 +155,6 @@ export class FirefoxCore {
 
     if (this.options.connectExisting) {
       const port = this.options.marionettePort ?? 2828;
-      const host = this.options.marionetteHost ?? '127.0.0.1';
 
       // Find geckodriver binary (--driver avoids downloading Firefox via selenium-manager)
       const geckodriverPath = await findGeckodriver();
@@ -180,20 +179,6 @@ export class FirefoxCore {
       // which would otherwise invoke selenium-manager with --browser firefox.
       const seleniumDriver = firefox.Driver.createSession(caps, serviceBuilder.build());
       this.driver = seleniumDriver as unknown as IDriver;
-
-      // For remote Firefox, rewrite webSocketUrl hostname in the session capabilities.
-      // Selenium only rewrites localhost→127.0.0.1; arbitrary hosts need explicit patching.
-      // Session.getCapabilities() returns the same Capabilities object every time, so
-      // calling caps.set() here is seen by the lazy getBidi() call that comes later.
-      if (host !== '127.0.0.1') {
-        const caps = await seleniumDriver.getCapabilities();
-        const wsUrl = caps.get('webSocketUrl') as string | undefined;
-        if (wsUrl) {
-          const parsed = new URL(wsUrl);
-          parsed.hostname = host;
-          caps.set('webSocketUrl', parsed.toString());
-        }
-      }
     } else {
       // Set up output file for capturing Firefox stdout/stderr
       if (this.options.logFile) {
