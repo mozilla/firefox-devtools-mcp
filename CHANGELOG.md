@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-04-16
+
+### Added
+- `evaluate_privileged_script` now detects `const`/`let`/`var` statements and rejects them with a helpful error message suggesting IIFE workaround
+- BiDi console and network events now degrade gracefully when Firefox Remote Agent is not running, instead of crashing
+- Comprehensive e2e scenario integration tests covering the full `FirefoxClient` API
+- Unit tests for privileged context state consistency and statement detection
+- Testing documentation (`docs/testing.md`)
+
+### Fixed
+- Privileged context state not preserved across tool calls: `set_firefox_prefs` and `list_extensions` no longer silently revert a privileged context selection
+- Session cleanup on connection failure: `getFirefox()` now closes the failed instance to prevent zombie geckodriver processes and Marionette session locks
+
+### Changed
+- **Breaking:** Removed `--marionette-host` CLI parameter (connect-existing mode now uses localhost only)
+- Rewrote connect-existing mode to use Selenium's native `--connect-existing` feature via `ServiceBuilder`, replacing the custom `GeckodriverHttpDriver` HTTP client (~530 lines removed)
+- Replaced custom `IDriver`/`IElement`/`IBiDi` interfaces with native `WebDriver`/`WebElement` from selenium-webdriver
+- Improved error messages for BiDi-dependent features (console/network) to suggest `--remote-debugging-port`
+- Pinned all dependency versions for build reproducibility
+- Updated dependencies: `@modelcontextprotocol/sdk` 1.29.0, `tsup` 8.5.0, `tsx` 4.21.0, `typescript-eslint` 8.58.0
+
 ## [0.9.1] - 2026-03-29
 
 ### Fixed
@@ -224,6 +245,7 @@ Released on npm, see GitHub releases for details.
 - UID-based element referencing system
 - Headless mode support
 
+[0.9.2]: https://github.com/mozilla/firefox-devtools-mcp/compare/0.9.1...0.9.2
 [0.9.1]: https://github.com/mozilla/firefox-devtools-mcp/compare/0.9.0...0.9.1
 [0.9.0]: https://github.com/mozilla/firefox-devtools-mcp/compare/0.8.1...0.9.0
 [0.7.1]: https://github.com/mozilla/firefox-devtools-mcp/compare/v0.7.0...v0.7.1

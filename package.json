@@ -1,6 +1,6 @@
 {
   "name": "firefox-devtools-mcp",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Model Context Protocol (MCP) server for Firefox DevTools automation",
   "author": "Mozilla",
   "license": "MIT",
