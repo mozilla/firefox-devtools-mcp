@@ -177,7 +177,7 @@ See [docs/testing.md](docs/testing.md) for full details on running specific test
 - First run is slow: Selenium sets up the BiDi session; subsequent runs are faster.
 - Stale UIDs after navigation: take a fresh snapshot (`take_snapshot`) before using UID tools.
 - Windows 10: Error during discovery for MCP server 'firefox-devtools': MCP error -32000: Connection closed
-  - **Solution 1** Call using `cmd` (For more info https://github.com/modelcontextprotocol/servers/issues/1082#issuecomment-2791786310)
+  - **Solution 1** Wrap with `cmd /c` ([details](https://github.com/modelcontextprotocol/servers/issues/1082#issuecomment-2791786310)):
 
     ```json
     "mcpServers": {
@@ -188,9 +188,7 @@ See [docs/testing.md](docs/testing.md) for full details on running specific test
     }
     ```
 
-    > **The Key Change:** On Windows, running a Node.js package via `npx` often requires the `cmd /c` prefix to be executed correctly from within another process like VSCode's extension host. Therefore, `"command": "npx"` was replaced with `"command": "cmd"`, and the actual `npx` command was moved into the `"args"` array, preceded by `"/c"`. This fix allows Windows to interpret the command correctly and launch the server.
-
-  - **Solution 2** Instead of another layer of shell you can write the absolute path to `npx`:
+  - **Solution 2** Use the absolute path to `npx` (adjust extension — `.cmd`, `.bat`, `.exe`, or `.ps1` — to match your setup):
 
     ```json
     "mcpServers": {
@@ -200,8 +198,6 @@ See [docs/testing.md](docs/testing.md) for full details on running specific test
       }
     }
     ```
-
-    Note: The path above is an example. You must adjust it to match the actual location of `npx` on your machine. Depending on your setup, the file extension might be `.cmd`, `.bat`, or `.exe` rather than `.ps1`. Also, ensure you use double backslashes (`\\`) as path delimiters, as required by the JSON format.
 
 ## Versioning
 
