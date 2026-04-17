@@ -9,6 +9,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { FirefoxLaunchOptions } from './types.js';
 import { log, logDebug } from '../utils/logger.js';
+import { resolveProfilePath } from './profile.js';
 
 // ---------------------------------------------------------------------------
 // Geckodriver binary finder — used only for --connect-existing mode
@@ -155,10 +156,14 @@ export class FirefoxCore {
         firefoxOptions.addArguments(...this.options.args);
       }
       if (this.options.profilePath) {
+        // Resolve to a dedicated MCP subfolder to avoid exposing a real user profile.
+        // resolveProfilePath creates the directory on first use and warns when the
+        // provided path already looks like a real Firefox profile.
+        const resolvedProfilePath = resolveProfilePath(this.options.profilePath);
         // Use Firefox's native --profile argument for reliable profile loading
         // (Selenium's setProfile() copies to temp dir which can be unreliable)
-        firefoxOptions.addArguments('--profile', this.options.profilePath);
-        log(`📁 Using Firefox profile: ${this.options.profilePath}`);
+        firefoxOptions.addArguments('--profile', resolvedProfilePath);
+        log(`📁 Using Firefox profile: ${resolvedProfilePath}`);
       }
       if (this.options.acceptInsecureCerts) {
         firefoxOptions.setAcceptInsecureCerts(true);

@@ -118,9 +118,18 @@ describe('FirefoxCore connect() profile handling', () => {
       })),
       Browser: { FIREFOX: 'firefox' },
     }));
+
+    // Mock node:fs so profile.ts doesn't touch the real filesystem
+    vi.doMock('node:fs', () => ({
+      existsSync: vi.fn().mockReturnValue(false),
+      mkdirSync: vi.fn(),
+      copyFileSync: vi.fn(),
+      openSync: vi.fn().mockReturnValue(3),
+      closeSync: vi.fn(),
+    }));
   });
 
-  it('should pass profile path via --profile argument instead of setProfile', async () => {
+  it('should pass the MCP-specific profile subfolder via --profile argument instead of setProfile', async () => {
     const { FirefoxCore } = await import('@/firefox/core.js');
 
     const profilePath = '/path/to/test/profile';
@@ -134,7 +143,11 @@ describe('FirefoxCore connect() profile handling', () => {
     // Assert: setProfile should NOT be called (it copies to temp dir)
     expect(mockSetProfile).not.toHaveBeenCalled();
 
-    expect(mockAddArguments).toHaveBeenCalledWith('--profile', profilePath);
+    // The MCP uses a dedicated subfolder, not the raw profilePath
+    expect(mockAddArguments).toHaveBeenCalledWith(
+      '--profile',
+      '/path/to/test/profile/firefox_devtools_mcp_profile'
+    );
   });
 });
 
