@@ -39,6 +39,7 @@ import { FirefoxDevTools } from './firefox/index.js';
 import type { FirefoxLaunchOptions } from './firefox/types.js';
 import * as tools from './tools/index.js';
 import type { McpToolResponse } from './types/common.js';
+import { errorResponse } from './utils/response-helpers.js';
 
 // Export for direct usage in scripts
 export { FirefoxDevTools } from './firefox/index.js';
@@ -57,6 +58,8 @@ export const args = parseArguments(SERVER_VERSION);
 // Global context (lazy initialized on first tool call)
 let firefox: FirefoxDevTools | null = null;
 let nextLaunchOptions: FirefoxLaunchOptions | null = null;
+// Warning generated during Firefox startup, surfaced in the first tool response.
+let pendingWarning: string | null = null;
 
 /**
  * Reset Firefox instance (used when disconnection is detected)
@@ -66,6 +69,7 @@ export function resetFirefox(): void {
     firefox.reset();
     firefox = null;
   }
+  pendingWarning = null;
   log('Firefox instance reset - will reconnect on next tool call');
 }
 
@@ -151,6 +155,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
   try {
     await firefox.connect();
     log('Firefox DevTools connection established');
+    pendingWarning = firefox.getAndClearProfileWarning();
     return firefox;
   } catch (error) {
     // Clean up before discarding — ensures the geckodriver process is killed
@@ -341,7 +346,20 @@ async function main() {
     }
 
     try {
-      return await handler(args);
+      const result = await handler(args);
+      if (pendingWarning) {
+        // Return as isError so that agents acting as MCP clients (e.g. Claude)
+        // surface the message to the user.
+        // Also note the operation completed so the agent does not retry.
+        const operationNote =
+          result.content[0]?.type === 'text'
+            ? `\n\n[Note: The operation also completed — ${result.content[0].text}]`
+            : '';
+        const warning = pendingWarning;
+        pendingWarning = null;
+        return errorResponse(`${warning}${operationNote}`);
+      }
+      return result;
     } catch (error) {
       logError(`Error executing tool ${name}`, error);
       throw error;

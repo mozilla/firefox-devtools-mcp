@@ -72,6 +72,7 @@ export class FirefoxCore {
   private originalEnv: Record<string, string | undefined> = {};
   private logFilePath: string | undefined;
   private logFileFd: number | undefined;
+  private profileWarning: string | null = null;
 
   constructor(private options: FirefoxLaunchOptions) {}
 
@@ -159,7 +160,8 @@ export class FirefoxCore {
         // Resolve to a dedicated MCP subfolder to avoid exposing a real user profile.
         // resolveProfilePath creates the directory on first use and warns when the
         // provided path already looks like a real Firefox profile.
-        const resolvedProfilePath = resolveProfilePath(this.options.profilePath);
+        const { path: resolvedProfilePath, warning } = resolveProfilePath(this.options.profilePath);
+        this.profileWarning = warning;
         // Use Firefox's native --profile argument for reliable profile loading
         // (Selenium's setProfile() copies to temp dir which can be unreliable)
         firefoxOptions.addArguments('--profile', resolvedProfilePath);
@@ -282,6 +284,16 @@ export class FirefoxCore {
    */
   getLogFilePath(): string | undefined {
     return this.logFilePath;
+  }
+
+  /**
+   * Get and clear the profile warning generated during connect() (if any).
+   * Consumed once by the first tool response so the MCP client surfaces it to the user.
+   */
+  getAndClearProfileWarning(): string | null {
+    const warning = this.profileWarning;
+    this.profileWarning = null;
+    return warning;
   }
 
   /**
