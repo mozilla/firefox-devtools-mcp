@@ -55,7 +55,19 @@ describe('resolveProfilePath', () => {
   it('returns the MCP subfolder path', () => {
     mockExistsSync.mockReturnValue(false);
     const result = resolveProfilePath('/custom/profiles');
-    expect(result).toBe(`/custom/profiles${SEP}${MCP_PROFILE_DIR_NAME}`);
+    expect(result.path).toBe(`/custom/profiles${SEP}${MCP_PROFILE_DIR_NAME}`);
+  });
+
+  it('returns null warning for a non-Firefox directory', () => {
+    mockExistsSync.mockReturnValue(false);
+    const result = resolveProfilePath('/custom/profiles');
+    expect(result.warning).toBeNull();
+  });
+
+  it('returns a warning when the parent looks like a real Firefox profile', () => {
+    mockExistsSync.mockImplementation((p: unknown) => String(p).endsWith('prefs.js'));
+    const result = resolveProfilePath('/real/profile');
+    expect(result.warning).toMatch(/looks like an existing Firefox profile/);
   });
 
   it('creates the MCP subfolder when it does not exist yet', () => {

@@ -451,6 +451,14 @@ export class FirefoxClient {
   }
 
   /**
+   * Get and clear the profile warning generated during connect() (if any).
+   * Consumed once so the MCP client surfaces it to the user in the first tool response.
+   */
+  getAndClearProfileWarning(): string | null {
+    return this.core.getAndClearProfileWarning();
+  }
+
+  /**
    * Get current launch options
    */
   getOptions(): FirefoxLaunchOptions {
