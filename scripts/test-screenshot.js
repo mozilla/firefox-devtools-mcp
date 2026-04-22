@@ -39,7 +39,7 @@ async function main() {
   console.log('📷 Testing Screenshot Functionality...\n');
 
   const firefox = new FirefoxDevTools({
-    firefoxPath: undefined,
+    firefoxPath: process.env.FIREFOX_PATH,
     headless: false,
     startUrl: 'about:blank',
   });

@@ -1,4 +1,4 @@
-import { FirefoxDevTools } from './dist/index.js';
+import { FirefoxDevTools } from '../dist/index.js';
 
 async function main() {
   const firefox = new FirefoxDevTools({

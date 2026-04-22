@@ -33,9 +33,15 @@
     "test:watch": "vitest watch",
     "test:ui": "vitest --ui",
     "test:tools": "node scripts/test-bidi-devtools.js",
-    "test:input": "node scripts/test-input-tools.js",
-    "test:screenshot": "node scripts/test-screenshot.js",
+    "test:console": "node scripts/test-console.js",
     "test:dialog": "node scripts/test-dialog.js",
+    "test:firefox-temp": "node scripts/test-firefox-temp.js",
+    "test:input": "node scripts/test-input-tools.js",
+    "test:lifecycle": "node scripts/test-lifecycle-hooks.js",
+    "test:mozlog": "node scripts/test-mozlog.js",
+    "test:navigation": "node scripts/test-navigation.js",
+    "test:privileged": "node scripts/test-privileged-context.js",
+    "test:screenshot": "node scripts/test-screenshot.js",
     "test:integration:win": "node scripts/run-integration-tests-windows.mjs"
   },
   "keywords": [

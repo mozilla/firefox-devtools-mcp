@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { FirefoxDevTools } from './dist/index.js';
+import { FirefoxDevTools } from '../dist/index.js';
 import { readFileSync, existsSync } from 'fs';
 
 async function test() {
@@ -10,7 +10,7 @@ async function test() {
 
   const firefox = new FirefoxDevTools({
     headless: true,
-    firefoxPath: process.env.HOME + '/firefox/firefox',
+    firefoxPath: process.env.FIREFOX_PATH,
     env: {
       MOZ_LOG: 'timestamp,sync,nsHttp:5',
     },

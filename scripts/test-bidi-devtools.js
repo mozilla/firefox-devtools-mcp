@@ -19,7 +19,7 @@ async function main() {
   console.log('🧪 Testing BiDi-based FirefoxDevTools...\n');
 
   const options = {
-    firefoxPath: undefined, // Auto-detect
+    firefoxPath: process.env.FIREFOX_PATH,
     headless: false,
     profilePath: undefined,
     viewport: { width: 1280, height: 720 },

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-import { FirefoxDevTools } from './dist/index.js';
+import { FirefoxDevTools } from '../dist/index.js';
 
 async function test() {
   console.log('=== Test: Start Firefox and navigate ===\n');
 
   const firefox = new FirefoxDevTools({
     headless: false,
-    firefoxPath: process.env.HOME + '/firefox/firefox',
+    firefoxPath: process.env.FIREFOX_PATH,
   });
 
   await firefox.connect();

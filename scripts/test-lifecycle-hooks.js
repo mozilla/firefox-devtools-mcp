@@ -8,6 +8,7 @@ async function testLifecycleHooks() {
 
   const client = new FirefoxDevTools({
     headless: true,
+    firefoxPath: process.env.FIREFOX_PATH,
     args: ['--width=1280', '--height=720'],
   });
 

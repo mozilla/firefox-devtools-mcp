@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-import { FirefoxDevTools } from './dist/index.js';
+import { FirefoxDevTools } from '../dist/index.js';
 
 async function test() {
   console.log('=== Test: Privileged Context Script Evaluation (headless) ===\n');
 
   const firefox = new FirefoxDevTools({
     headless: true,
-    firefoxPath: process.env.HOME + '/firefox/firefox',
+    firefoxPath: process.env.FIREFOX_PATH,
     env: {
       MOZ_REMOTE_ALLOW_SYSTEM_ACCESS: '1',
     },

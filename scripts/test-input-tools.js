@@ -17,7 +17,7 @@ async function main() {
   console.log('🧪 Testing UID-based input tools...\n');
 
   const firefox = new FirefoxDevTools({
-    firefoxPath: undefined,
+    firefoxPath: process.env.FIREFOX_PATH,
     headless: false,
     startUrl: 'about:blank',
   });
