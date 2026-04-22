@@ -11,7 +11,7 @@ async function main() {
   console.log('📝 Testing Console Message Handling...\n');
 
   const firefox = new FirefoxDevTools({
-    firefoxPath: undefined,
+    firefoxPath: process.env.FIREFOX_PATH,
     headless: false,
     viewport: { width: 1024, height: 768 },
   });

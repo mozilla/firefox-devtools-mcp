@@ -10,7 +10,7 @@ async function main() {
   console.log('💬 Testing Dialog Handling (Task 23)...\n');
 
   const firefox = new FirefoxDevTools({
-    firefoxPath: undefined,
+    firefoxPath: process.env.FIREFOX_PATH,
     headless: false,
     viewport: { width: 1024, height: 768 },
   });
