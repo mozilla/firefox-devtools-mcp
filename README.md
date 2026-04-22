@@ -162,14 +162,7 @@ npx @modelcontextprotocol/inspector node dist/index.js --headless --viewport 128
 npm run inspector:dev
 ```
 
-## Testing
-
-```bash
-npm run test:run          # all tests once (unit + integration)
-npm test                  # watch mode
-```
-
-See [docs/testing.md](docs/testing.md) for full details on running specific test suites, the e2e scenario coverage, and known issues.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on local development, testing, and CI.
 
 ## Troubleshooting
 
@@ -203,18 +196,9 @@ See [docs/testing.md](docs/testing.md) for full details on running specific test
 
 - Pre‑1.0 API: versions start at `0.x`. Use `@latest` with npx for the newest release.
 
-## CI and Release
+## Contributing
 
-- GitHub Actions for CI, Release, and npm publish are included. See docs/ci-and-release.md for details and required secrets.
-
-## Issues and Contributing
-
-Issues are tracked on [Bugzilla](https://bugzilla.mozilla.org) under **product: Developer Infrastructure**, **component: AI for Development**.
-
-- [File a new issue](https://bugzilla.mozilla.org/enter_bug.cgi?format=__default__&blocked=2026717&product=Developer%20Infrastructure&component=AI%20for%20Development)
-- [Meta bug (tracks all firefox-devtools-mcp issues)](https://bugzilla.mozilla.org/show_bug.cgi?id=2026717)
-
-For questions and discussion, join the [#firefox-devtools-mcp Matrix room](https://chat.mozilla.org/#/room/#firefox-devtools-mcp:mozilla.org).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to file issues, run tests, and work on the project locally.
 
 ## Author
 
