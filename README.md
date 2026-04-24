@@ -13,6 +13,8 @@ Repository: https://github.com/mozilla/firefox-devtools-mcp
 
 > **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx firefox-devtools-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
 
+> **Security**: Browser MCP servers carry inherent risks — always use a dedicated Firefox profile, avoid untrusted sites, and be aware of prompt injection. See [SECURITY.md](SECURITY.md) for details and how to report vulnerabilities.
+
 ## Requirements
 
 - Node.js ≥ 20.19.0
