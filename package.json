@@ -11,8 +11,10 @@
     "firefox-devtools-mcp": "./dist/index.js"
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/index.privileged.ts",
     "build": "tsup",
+    "build:privileged": "node scripts/generate-internal-package.mjs && tsup --config tsup.config.privileged.ts",
+    "build:all": "npm run build && npm run build:privileged",
     "start": "node dist/index.js",
     "setup": "node scripts/setup-mcp-config.js",
     "clean": "rm -rf dist",
@@ -25,7 +27,7 @@
     "check:all": "npm run check && npm run test:run && npm run build",
     "prepublishOnly": "npm run clean && npm run build",
     "inspector": "npx @modelcontextprotocol/inspector node dist/index.js",
-    "inspector:dev": "NODE_ENV=development npx @modelcontextprotocol/inspector npx tsx src/index.ts",
+    "inspector:dev": "NODE_ENV=development npx @modelcontextprotocol/inspector npx tsx src/index.privileged.ts",
     "test": "vitest",
     "test:run": "vitest run",
     "test:unit": "vitest run --exclude 'tests/integration/**'",

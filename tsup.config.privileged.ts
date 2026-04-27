@@ -1,10 +1,10 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig([
-  // Main MCP server build
+  // Privileged MCP server build (includes --enable-privileged-context)
   {
-    entry: { index: 'src/index.public.ts' },
-    outDir: 'dist',
+    entry: { index: 'src/index.privileged.ts' },
+    outDir: 'dist.internal',
     format: ['esm'],
     target: 'node20',
     bundle: true,
@@ -22,7 +22,7 @@ export default defineConfig([
     entry: {
       'snapshot.injected': 'src/firefox/snapshot/injected/snapshot.injected.ts',
     },
-    outDir: 'dist',
+    outDir: 'dist.internal',
     format: ['iife'],
     target: 'es2020',
     bundle: true,
@@ -32,6 +32,6 @@ export default defineConfig([
     dts: false,
     platform: 'browser',
     globalName: '__SnapshotInjected',
-    onSuccess: 'echo "✅ Build completed successfully!"',
+    onSuccess: 'echo "Internal build completed successfully!"',
   },
 ]);
