@@ -1,23 +1,3 @@
-#!/usr/bin/env node
-
-/**
- * Firefox DevTools MCP Server
- * Model Context Protocol server for Firefox browser automation via WebDriver BiDi
- */
-
-// Load .env file in development mode
-if (process.env.NODE_ENV !== 'production') {
-  try {
-    const { config } = await import('dotenv');
-    const result = config();
-    if (result.parsed) {
-      console.error('Loaded .env file for development');
-    }
-  } catch {
-    // dotenv not required in production
-  }
-}
-
 import { version } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
@@ -34,16 +14,15 @@ import {
 
 import { SERVER_NAME, SERVER_VERSION } from './config/constants.js';
 import { log, logError, logDebug } from './utils/logger.js';
-import { parseArguments, parsePrefs } from './cli.js';
+import { parsePrefs } from './cli.js';
+import type { parseArguments } from './cli.js';
 import { FirefoxDevTools } from './firefox/index.js';
 import type { FirefoxLaunchOptions } from './firefox/types.js';
 import * as tools from './tools/index.js';
 import type { McpToolResponse } from './types/common.js';
 import { errorResponse } from './utils/response-helpers.js';
 
-// Export for direct usage in scripts
-export { FirefoxDevTools } from './firefox/index.js';
-export { FirefoxDisconnectedError, isDisconnectionError } from './utils/errors.js';
+type Args = ReturnType<typeof parseArguments>;
 
 // Validate Node.js version
 const [major] = version.substring(1).split('.').map(Number);
@@ -52,8 +31,8 @@ if (!major || major < 20) {
   process.exit(1);
 }
 
-// Parse CLI arguments
-export const args = parseArguments(SERVER_VERSION);
+// Set by run() before the server starts; initialized to satisfy the type checker.
+export let args = {} as Args;
 
 // Global context (lazy initialized on first tool call)
 let firefox: FirefoxDevTools | null = null;
@@ -170,137 +149,158 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
   }
 }
 
-// Tool handler mapping
-const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse>>([
-  // Pages
-  ['list_pages', tools.handleListPages],
-  ['new_page', tools.handleNewPage],
-  ['navigate_page', tools.handleNavigatePage],
-  ['select_page', tools.handleSelectPage],
-  ['close_page', tools.handleClosePage],
+export async function run(
+  parseArgsFn: (version: string) => Args,
+  importMetaUrl: string
+): Promise<void> {
+  // Only run if this entry file is executed directly (not imported as a library).
+  // We need to normalize both paths to handle different execution contexts (npx, node, etc.)
+  const modulePath = fileURLToPath(importMetaUrl);
+  const scriptPath = process.argv[1] ? resolve(process.argv[1]) : '';
+  let isMainModule = false;
+  try {
+    const realModulePath = realpathSync(modulePath);
+    const realScriptPath = scriptPath ? realpathSync(scriptPath) : '';
+    isMainModule = realModulePath === realScriptPath;
+  } catch {
+    isMainModule = modulePath === scriptPath;
+  }
+  if (!isMainModule) {
+    return;
+  }
 
-  // Console
-  ['list_console_messages', tools.handleListConsoleMessages],
-  ['clear_console_messages', tools.handleClearConsoleMessages],
+  args = parseArgsFn(SERVER_VERSION);
 
-  // Network
-  ['list_network_requests', tools.handleListNetworkRequests],
-  ['get_network_request', tools.handleGetNetworkRequest],
+  // Tool handler mapping
+  const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse>>([
+    // Pages
+    ['list_pages', tools.handleListPages],
+    ['new_page', tools.handleNewPage],
+    ['navigate_page', tools.handleNavigatePage],
+    ['select_page', tools.handleSelectPage],
+    ['close_page', tools.handleClosePage],
 
-  // Snapshot
-  ['take_snapshot', tools.handleTakeSnapshot],
-  ['resolve_uid_to_selector', tools.handleResolveUidToSelector],
-  ['clear_snapshot', tools.handleClearSnapshot],
+    // Console
+    ['list_console_messages', tools.handleListConsoleMessages],
+    ['clear_console_messages', tools.handleClearConsoleMessages],
 
-  // Input
-  ['click_by_uid', tools.handleClickByUid],
-  ['hover_by_uid', tools.handleHoverByUid],
-  ['fill_by_uid', tools.handleFillByUid],
-  ['drag_by_uid_to_uid', tools.handleDragByUidToUid],
-  ['fill_form_by_uid', tools.handleFillFormByUid],
-  ['upload_file_by_uid', tools.handleUploadFileByUid],
+    // Network
+    ['list_network_requests', tools.handleListNetworkRequests],
+    ['get_network_request', tools.handleGetNetworkRequest],
 
-  // Screenshot
-  ['screenshot_page', tools.handleScreenshotPage],
-  ['screenshot_by_uid', tools.handleScreenshotByUid],
+    // Snapshot
+    ['take_snapshot', tools.handleTakeSnapshot],
+    ['resolve_uid_to_selector', tools.handleResolveUidToSelector],
+    ['clear_snapshot', tools.handleClearSnapshot],
 
-  // Utilities
-  ['accept_dialog', tools.handleAcceptDialog],
-  ['dismiss_dialog', tools.handleDismissDialog],
-  ['navigate_history', tools.handleNavigateHistory],
-  ['set_viewport_size', tools.handleSetViewportSize],
+    // Input
+    ['click_by_uid', tools.handleClickByUid],
+    ['hover_by_uid', tools.handleHoverByUid],
+    ['fill_by_uid', tools.handleFillByUid],
+    ['drag_by_uid_to_uid', tools.handleDragByUidToUid],
+    ['fill_form_by_uid', tools.handleFillFormByUid],
+    ['upload_file_by_uid', tools.handleUploadFileByUid],
 
-  // Firefox Management
-  ['get_firefox_output', tools.handleGetFirefoxLogs],
-  ['get_firefox_info', tools.handleGetFirefoxInfo],
-  ['restart_firefox', tools.handleRestartFirefox],
+    // Screenshot
+    ['screenshot_page', tools.handleScreenshotPage],
+    ['screenshot_by_uid', tools.handleScreenshotByUid],
 
-  // WebExtensions (install/uninstall use standard BiDi, no privileged context required)
-  ['install_extension', tools.handleInstallExtension],
-  ['uninstall_extension', tools.handleUninstallExtension],
+    // Utilities
+    ['accept_dialog', tools.handleAcceptDialog],
+    ['dismiss_dialog', tools.handleDismissDialog],
+    ['navigate_history', tools.handleNavigateHistory],
+    ['set_viewport_size', tools.handleSetViewportSize],
 
-  // Script evaluation — requires --enable-script
-  ...(args.enableScript ? ([['evaluate_script', tools.handleEvaluateScript]] as const) : []),
+    // Firefox Management
+    ['get_firefox_output', tools.handleGetFirefoxLogs],
+    ['get_firefox_info', tools.handleGetFirefoxInfo],
+    ['restart_firefox', tools.handleRestartFirefox],
 
-  // Privileged context tools — requires --enable-privileged-context
-  ...(args.enablePrivilegedContext
-    ? ([
-        ['list_privileged_contexts', tools.handleListPrivilegedContexts],
-        ['select_privileged_context', tools.handleSelectPrivilegedContext],
-        ['evaluate_privileged_script', tools.handleEvaluatePrivilegedScript],
-        ['set_firefox_prefs', tools.handleSetFirefoxPrefs],
-        ['get_firefox_prefs', tools.handleGetFirefoxPrefs],
-        ['list_extensions', tools.handleListExtensions],
-      ] as const)
-    : []),
-]);
+    // WebExtensions (install/uninstall use standard BiDi, no privileged context required)
+    ['install_extension', tools.handleInstallExtension],
+    ['uninstall_extension', tools.handleUninstallExtension],
 
-// All tool definitions
-const allTools = [
-  // Pages
-  tools.listPagesTool,
-  tools.newPageTool,
-  tools.navigatePageTool,
-  tools.selectPageTool,
-  tools.closePageTool,
+    // Script evaluation — requires --enable-script
+    ...(args.enableScript ? ([['evaluate_script', tools.handleEvaluateScript]] as const) : []),
 
-  // Console
-  tools.listConsoleMessagesTool,
-  tools.clearConsoleMessagesTool,
+    // Privileged context tools — requires --enable-privileged-context
+    ...(args.enablePrivilegedContext
+      ? ([
+          ['list_privileged_contexts', tools.handleListPrivilegedContexts],
+          ['select_privileged_context', tools.handleSelectPrivilegedContext],
+          ['evaluate_privileged_script', tools.handleEvaluatePrivilegedScript],
+          ['set_firefox_prefs', tools.handleSetFirefoxPrefs],
+          ['get_firefox_prefs', tools.handleGetFirefoxPrefs],
+          ['list_extensions', tools.handleListExtensions],
+        ] as const)
+      : []),
+  ]);
 
-  // Network
-  tools.listNetworkRequestsTool,
-  tools.getNetworkRequestTool,
+  // All tool definitions
+  const allTools = [
+    // Pages
+    tools.listPagesTool,
+    tools.newPageTool,
+    tools.navigatePageTool,
+    tools.selectPageTool,
+    tools.closePageTool,
 
-  // Snapshot
-  tools.takeSnapshotTool,
-  tools.resolveUidToSelectorTool,
-  tools.clearSnapshotTool,
+    // Console
+    tools.listConsoleMessagesTool,
+    tools.clearConsoleMessagesTool,
 
-  // Input
-  tools.clickByUidTool,
-  tools.hoverByUidTool,
-  tools.fillByUidTool,
-  tools.dragByUidToUidTool,
-  tools.fillFormByUidTool,
-  tools.uploadFileByUidTool,
+    // Network
+    tools.listNetworkRequestsTool,
+    tools.getNetworkRequestTool,
 
-  // Screenshot
-  tools.screenshotPageTool,
-  tools.screenshotByUidTool,
+    // Snapshot
+    tools.takeSnapshotTool,
+    tools.resolveUidToSelectorTool,
+    tools.clearSnapshotTool,
 
-  // Utilities
-  tools.acceptDialogTool,
-  tools.dismissDialogTool,
-  tools.navigateHistoryTool,
-  tools.setViewportSizeTool,
+    // Input
+    tools.clickByUidTool,
+    tools.hoverByUidTool,
+    tools.fillByUidTool,
+    tools.dragByUidToUidTool,
+    tools.fillFormByUidTool,
+    tools.uploadFileByUidTool,
 
-  // Firefox Management
-  tools.getFirefoxLogsTool,
-  tools.getFirefoxInfoTool,
-  tools.restartFirefoxTool,
+    // Screenshot
+    tools.screenshotPageTool,
+    tools.screenshotByUidTool,
 
-  // WebExtensions (install/uninstall use standard BiDi, no privileged context required)
-  tools.installExtensionTool,
-  tools.uninstallExtensionTool,
+    // Utilities
+    tools.acceptDialogTool,
+    tools.dismissDialogTool,
+    tools.navigateHistoryTool,
+    tools.setViewportSizeTool,
 
-  // Script evaluation — requires --enable-script
-  ...(args.enableScript ? [tools.evaluateScriptTool] : []),
+    // Firefox Management
+    tools.getFirefoxLogsTool,
+    tools.getFirefoxInfoTool,
+    tools.restartFirefoxTool,
 
-  // Privileged context tools — requires --enable-privileged-context
-  ...(args.enablePrivilegedContext
-    ? [
-        tools.listPrivilegedContextsTool,
-        tools.selectPrivilegedContextTool,
-        tools.evaluatePrivilegedScriptTool,
-        tools.setFirefoxPrefsTool,
-        tools.getFirefoxPrefsTool,
-        tools.listExtensionsTool,
-      ]
-    : []),
-];
+    // WebExtensions (install/uninstall use standard BiDi, no privileged context required)
+    tools.installExtensionTool,
+    tools.uninstallExtensionTool,
 
-async function main() {
+    // Script evaluation — requires --enable-script
+    ...(args.enableScript ? [tools.evaluateScriptTool] : []),
+
+    // Privileged context tools — requires --enable-privileged-context
+    ...(args.enablePrivilegedContext
+      ? [
+          tools.listPrivilegedContextsTool,
+          tools.selectPrivilegedContextTool,
+          tools.evaluatePrivilegedScriptTool,
+          tools.setFirefoxPrefsTool,
+          tools.getFirefoxPrefsTool,
+          tools.listExtensionsTool,
+        ]
+      : []),
+  ];
+
   log(`Starting ${SERVER_NAME} v${SERVER_VERSION}`);
   log(`Node.js ${version}`);
 
@@ -401,28 +401,4 @@ async function main() {
   // StdioServerTransport does not fire onclose on stdin EOF.
   process.stdin.on('end', onSignal);
   process.stdin.on('close', onSignal);
-}
-
-// Only run main() if this file is executed directly (not imported)
-// In ES modules, check if import.meta.url matches the executed file
-// We need to normalize both paths to handle different execution contexts (npx, node, etc.)
-const modulePath = fileURLToPath(import.meta.url);
-const scriptPath = process.argv[1] ? resolve(process.argv[1]) : '';
-
-// Resolve both paths fully to handle symlinks and path normalization
-let isMainModule = false;
-try {
-  const realModulePath = realpathSync(modulePath);
-  const realScriptPath = scriptPath ? realpathSync(scriptPath) : '';
-  isMainModule = realModulePath === realScriptPath;
-} catch {
-  // If realpath fails (e.g., file doesn't exist), fall back to simple comparison
-  isMainModule = modulePath === scriptPath;
-}
-
-if (isMainModule) {
-  main().catch((error) => {
-    logError('Fatal error in main', error);
-    process.exit(1);
-  });
 }
