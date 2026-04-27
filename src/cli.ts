@@ -141,10 +141,12 @@ export const cliOptions = {
   },
 } satisfies Record<string, YargsOptions>;
 
-export function parseArguments(version: string, argv = process.argv) {
+export function parseArguments(version: string, argv = process.argv, includePrivileged = true) {
+  const { enablePrivilegedContext: _, ...rest } = cliOptions;
+  const options = includePrivileged ? cliOptions : rest;
   const yargsInstance = yargs(hideBin(argv))
     .scriptName('npx firefox-devtools-mcp@latest')
-    .options(cliOptions)
+    .options(options)
     .example([
       [
         '$0 --firefox-path /Applications/Firefox.app/Contents/MacOS/firefox',
