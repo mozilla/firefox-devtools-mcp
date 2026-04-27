@@ -81,9 +81,9 @@ export class FirefoxCore {
    */
   async connect(): Promise<void> {
     if (this.options.connectExisting) {
-      log('🔗 Connecting to existing Firefox via Marionette...');
+      log('Connecting to existing Firefox via Marionette...');
     } else {
-      log('🚀 Launching Firefox via Selenium WebDriver BiDi...');
+      log('Launching Firefox via Selenium WebDriver BiDi...');
     }
 
     if (this.options.connectExisting) {
@@ -165,7 +165,7 @@ export class FirefoxCore {
         // Use Firefox's native --profile argument for reliable profile loading
         // (Selenium's setProfile() copies to temp dir which can be unreliable)
         firefoxOptions.addArguments('--profile', resolvedProfilePath);
-        log(`📁 Using Firefox profile: ${resolvedProfilePath}`);
+        log(`Using Firefox profile: ${resolvedProfilePath}`);
       }
       if (this.options.acceptInsecureCerts) {
         firefoxOptions.setAcceptInsecureCerts(true);
@@ -189,7 +189,7 @@ export class FirefoxCore {
         // This redirects all output from geckodriver and Firefox to the log file
         serviceBuilder.setStdio(['ignore', this.logFileFd, this.logFileFd]);
 
-        log(`📝 Capturing Firefox output to: ${this.logFilePath}`);
+        log(`Capturing Firefox output to: ${this.logFilePath}`);
       }
 
       this.driver = await new Builder()
@@ -200,9 +200,7 @@ export class FirefoxCore {
     }
 
     log(
-      this.options.connectExisting
-        ? '✅ Connected to existing Firefox'
-        : '✅ Firefox launched with BiDi'
+      this.options.connectExisting ? 'Connected to existing Firefox' : 'Firefox launched with BiDi'
     );
 
     // Remember current window handle (browsing context)
@@ -215,7 +213,7 @@ export class FirefoxCore {
       logDebug(`Navigated to: ${this.options.startUrl}`);
     }
 
-    log('✅ Firefox DevTools ready');
+    log('Firefox DevTools ready');
   }
 
   /**
@@ -432,6 +430,6 @@ export class FirefoxCore {
     }
     this.originalEnv = {};
 
-    log('✅ Firefox DevTools closed');
+    log('Firefox DevTools closed');
   }
 }

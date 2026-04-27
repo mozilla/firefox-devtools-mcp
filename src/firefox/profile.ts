@@ -50,7 +50,7 @@ export function resolveProfilePath(parentPath: string): ResolvedProfile {
   let warning: string | null = null;
   if (isFirefoxProfile(parentPath)) {
     warning =
-      `⚠️  The path "${parentPath}" looks like an existing Firefox profile.\n` +
+      `Warning: The path "${parentPath}" looks like an existing Firefox profile.\n` +
       `   It will NOT be used directly. Instead, a dedicated MCP profile will be\n` +
       `   created at: ${mcpProfilePath}\n` +
       `   This keeps your real profile safe from automated browser access.\n` +
@@ -63,7 +63,7 @@ export function resolveProfilePath(parentPath: string): ResolvedProfile {
 
   if (isNew) {
     mkdirSync(mcpProfilePath, { recursive: true });
-    log(`📁 Created MCP profile directory: ${mcpProfilePath}`);
+    log(`Created MCP profile directory: ${mcpProfilePath}`);
 
     // Bootstrap: copy prefs.js from the parent so user preferences are preserved.
     const parentPrefs = join(parentPath, 'prefs.js');

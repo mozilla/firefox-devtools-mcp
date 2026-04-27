@@ -92,7 +92,7 @@ export async function handleInstallExtension(args: unknown): Promise<McpToolResp
     const installType = permanent ? 'permanent' : 'temporary';
 
     return successResponse(
-      `✅ Extension installed (${installType}):\n  ID: ${extensionId}\n  Type: ${type}${path ? `\n  Path: ${path}` : ''}`
+      `Extension installed (${installType}):\n  ID: ${extensionId}\n  Type: ${type}${path ? `\n  Path: ${path}` : ''}`
     );
   } catch (error) {
     return errorResponse(error as Error);
@@ -132,7 +132,7 @@ export async function handleUninstallExtension(args: unknown): Promise<McpToolRe
 
     await firefox.sendBiDiCommand('webExtension.uninstall', { extension: id });
 
-    return successResponse(`✅ Extension uninstalled:\n  ID: ${id}`);
+    return successResponse(`Extension uninstalled:\n  ID: ${id}`);
   } catch (error) {
     return errorResponse(error as Error);
   }
@@ -188,22 +188,22 @@ interface ExtensionInfo {
 
 function formatExtensionList(extensions: ExtensionInfo[], filterId?: string): string {
   if (extensions.length === 0) {
-    return filterId ? `🔍 Extension not found: ${filterId}` : '📦 No extensions installed';
+    return filterId ? `Extension not found: ${filterId}` : 'No extensions installed';
   }
 
   const lines: string[] = [
-    `📦 ${extensions.length} extension(s)${filterId ? ` (filtered by: ${filterId})` : ''}`,
+    `${extensions.length} extension(s)${filterId ? ` (filtered by: ${filterId})` : ''}`,
   ];
 
   for (const ext of extensions) {
     lines.push('');
-    lines.push(`  📌 ${ext.name} (v${ext.version})`);
+    lines.push(`  ${ext.name} (v${ext.version})`);
     lines.push(`     ID: ${ext.id}`);
-    lines.push(`     Type: ${ext.isSystem ? '🔧 System/Built-in' : '👤 User-installed'}`);
+    lines.push(`     Type: ${ext.isSystem ? 'System/Built-in' : 'User-installed'}`);
     lines.push(`     UUID: ${ext.uuid}`);
     lines.push(`     Base URL: ${ext.baseURL}`);
     lines.push(`     Manifest: v${ext.manifestVersion || 'unknown'}`);
-    lines.push(`     Active: ${ext.isActive ? '✅' : '❌'}`);
+    lines.push(`     Active: ${ext.isActive ? 'yes' : 'no'}`);
 
     if (ext.backgroundScripts.length > 0) {
       lines.push(`     Background scripts:`);

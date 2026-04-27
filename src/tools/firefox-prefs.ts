@@ -87,11 +87,11 @@ export async function handleSetFirefoxPrefs(args: unknown): Promise<McpToolRespo
 
       const output: string[] = [];
       if (results.length > 0) {
-        output.push(`✅ Set ${results.length} preference(s):`);
+        output.push(`Set ${results.length} preference(s):`);
         output.push(...results);
       }
       if (errors.length > 0) {
-        output.push(`\n⚠️ Failed to set ${errors.length} preference(s):`);
+        output.push(`\nFailed to set ${errors.length} preference(s):`);
         output.push(...errors);
       }
 
@@ -212,11 +212,11 @@ export async function handleGetFirefoxPrefs(args: unknown): Promise<McpToolRespo
 
       const output: string[] = [];
       if (results.length > 0) {
-        output.push(`📋 Firefox Preferences:`);
+        output.push(`Firefox Preferences:`);
         output.push(...results);
       }
       if (errors.length > 0) {
-        output.push(`\n⚠️ Failed to read ${errors.length} preference(s):`);
+        output.push(`\nFailed to read ${errors.length} preference(s):`);
         output.push(...errors);
       }
 

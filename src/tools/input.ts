@@ -142,7 +142,7 @@ export async function handleClickByUid(args: unknown): Promise<McpToolResponse> 
 
     try {
       await firefox.clickByUid(uid, dblClick);
-      return successResponse(`✅ ${dblClick ? 'dblclick' : 'click'} ${uid}`);
+      return successResponse(`${dblClick ? 'dblclick' : 'click'} ${uid}`);
     } catch (error) {
       throw handleUidError(error as Error, uid);
     }
@@ -164,7 +164,7 @@ export async function handleHoverByUid(args: unknown): Promise<McpToolResponse> 
 
     try {
       await firefox.hoverByUid(uid);
-      return successResponse(`✅ hover ${uid}`);
+      return successResponse(`hover ${uid}`);
     } catch (error) {
       throw handleUidError(error as Error, uid);
     }
@@ -190,7 +190,7 @@ export async function handleFillByUid(args: unknown): Promise<McpToolResponse> {
 
     try {
       await firefox.fillByUid(uid, value);
-      return successResponse(`✅ fill ${uid}`);
+      return successResponse(`fill ${uid}`);
     } catch (error) {
       throw handleUidError(error as Error, uid);
     }
@@ -216,7 +216,7 @@ export async function handleDragByUidToUid(args: unknown): Promise<McpToolRespon
 
     try {
       await firefox.dragByUidToUid(fromUid, toUid);
-      return successResponse(`✅ drag ${fromUid}→${toUid}`);
+      return successResponse(`drag ${fromUid}→${toUid}`);
     } catch (error) {
       // Check both UIDs for staleness
       const errorMsg = (error as Error).message;
@@ -253,7 +253,7 @@ export async function handleFillFormByUid(args: unknown): Promise<McpToolRespons
 
     try {
       await firefox.fillFormByUid(elements);
-      return successResponse(`✅ filled ${elements.length} fields`);
+      return successResponse(`filled ${elements.length} fields`);
     } catch (error) {
       const errorMsg = (error as Error).message;
       if (errorMsg.includes('stale') || errorMsg.includes('Snapshot') || errorMsg.includes('UID')) {
@@ -283,7 +283,7 @@ export async function handleUploadFileByUid(args: unknown): Promise<McpToolRespo
 
     try {
       await firefox.uploadFileByUid(uid, filePath);
-      return successResponse(`✅ upload ${uid}`);
+      return successResponse(`upload ${uid}`);
     } catch (error) {
       const errorMsg = (error as Error).message;
 
