@@ -132,7 +132,7 @@ export async function handleNewPage(args: unknown): Promise<McpToolResponse> {
 
     const newIdx = await firefox.createNewPage(url);
 
-    return successResponse(`✅ new page [${newIdx}] → ${url}`);
+    return successResponse(`new page [${newIdx}] → ${url}`);
   } catch (error) {
     return errorResponse(error as Error);
   }
@@ -161,7 +161,7 @@ export async function handleNavigatePage(args: unknown): Promise<McpToolResponse
 
     await firefox.navigate(url);
 
-    return successResponse(`✅ [${selectedIdx}] → ${url}`);
+    return successResponse(`[${selectedIdx}] → ${url}`);
   } catch (error) {
     return errorResponse(error as Error);
   }
@@ -213,7 +213,7 @@ export async function handleSelectPage(args: unknown): Promise<McpToolResponse> 
     // Select the tab
     await firefox.selectTab(selectedIdx);
 
-    return successResponse(`✅ selected [${selectedIdx}]`);
+    return successResponse(`selected [${selectedIdx}]`);
   } catch (error) {
     return errorResponse(error as Error);
   }
@@ -241,7 +241,7 @@ export async function handleClosePage(args: unknown): Promise<McpToolResponse> {
 
     await firefox.closeTab(pageIdx);
 
-    return successResponse(`✅ closed [${pageIdx}]`);
+    return successResponse(`closed [${pageIdx}]`);
   } catch (error) {
     return errorResponse(error as Error);
   }

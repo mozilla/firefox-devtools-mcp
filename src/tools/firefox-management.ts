@@ -91,7 +91,7 @@ export async function handleGetFirefoxLogs(input: unknown) {
     const recentLines = allLines.slice(-maxLines);
 
     const result = [
-      `📋 Firefox Output File: ${logFilePath}`,
+      `Firefox Output File: ${logFilePath}`,
       `Total lines in file: ${allLines.length}`,
       grep ? `Lines matching "${grep}": ${allLines.length}` : '',
       `Showing last ${recentLines.length} lines:`,
@@ -129,7 +129,7 @@ export async function handleGetFirefoxInfo(_input: unknown) {
     const logFilePath = firefox.getLogFilePath();
 
     const info = [];
-    info.push('🦊 Firefox Instance Configuration');
+    info.push('Firefox Instance Configuration');
     info.push('');
 
     info.push(`Binary: ${options.firefoxPath ?? 'System Firefox (default)'}`);
@@ -320,12 +320,12 @@ export async function handleRestartFirefox(input: unknown) {
 
       if (changes.length === 0) {
         return successResponse(
-          '✅ Firefox closed. Will restart with same configuration on next tool call.'
+          'Firefox closed. Will restart with same configuration on next tool call.'
         );
       }
 
       return successResponse(
-        `✅ Firefox closed. Will restart with new configuration on next tool call:\n${changes.join('\n')}`
+        `Firefox closed. Will restart with new configuration on next tool call:\n${changes.join('\n')}`
       );
     } else {
       // Firefox not running (or disconnected) - configure for first start
@@ -374,7 +374,7 @@ export async function handleRestartFirefox(input: unknown) {
       }
 
       return successResponse(
-        `✅ Firefox configured. Will start on next tool call:\n${config.join('\n')}`
+        `Firefox configured. Will start on next tool call:\n${config.join('\n')}`
       );
     }
   } catch (error) {

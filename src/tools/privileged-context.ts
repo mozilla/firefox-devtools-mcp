@@ -59,10 +59,10 @@ export function isLikelyStatement(input: string): boolean {
 
 function formatContextList(contexts: any[]): string {
   if (contexts.length === 0) {
-    return '🔧 No privileged contexts found';
+    return 'No privileged contexts found';
   }
 
-  const lines: string[] = [`🔧 ${contexts.length} privileged contexts`];
+  const lines: string[] = [`${contexts.length} privileged contexts`];
   for (const ctx of contexts) {
     const id = ctx.context;
     const url = ctx.url || '(no url)';
@@ -125,7 +125,7 @@ export async function handleSelectPrivilegedContext(args: unknown): Promise<McpT
     firefox.setCurrentContextId(contextId);
 
     return successResponse(
-      `✅ Switched to privileged context: ${contextId} (Marionette context set to privileged)`
+      `Switched to privileged context: ${contextId} (Marionette context set to privileged)`
     );
   } catch (error) {
     return errorResponse(error as Error);
@@ -166,7 +166,7 @@ export async function handleEvaluatePrivilegedScript(args: unknown): Promise<Mcp
               ? 'undefined'
               : JSON.stringify(result, null, 2);
 
-      return successResponse(`🔧 Result:\n${resultText}`);
+      return successResponse(`Result:\n${resultText}`);
     } catch (executeError) {
       return errorResponse(
         new Error(

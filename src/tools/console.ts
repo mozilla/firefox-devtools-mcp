@@ -56,14 +56,6 @@ export const clearConsoleMessagesTool = {
   },
 };
 
-// Level emoji mapping
-const LEVEL_EMOJI: Record<string, string> = {
-  debug: '🔍',
-  info: 'ℹ️',
-  warn: '⚠️',
-  error: '❌',
-};
-
 const DEFAULT_LIMIT = 50;
 
 export async function handleListConsoleMessages(args: unknown): Promise<McpToolResponse> {
@@ -209,12 +201,11 @@ export async function handleListConsoleMessages(args: unknown): Promise<McpToolR
     output += '\n';
 
     for (const msg of messages) {
-      const emoji = LEVEL_EMOJI[msg.level.toLowerCase()] || '📝';
       const timestamp = msg.timestamp ? new Date(msg.timestamp).toISOString() : '';
       const source = msg.source ? ` [${msg.source}]` : '';
       const time = timestamp ? `[${timestamp}] ` : '';
 
-      output += `${emoji} ${time}${msg.level.toUpperCase()}${source}: ${msg.text}\n`;
+      output += `${time}${msg.level.toUpperCase()}${source}: ${msg.text}\n`;
     }
 
     if (truncated) {
@@ -235,7 +226,7 @@ export async function handleClearConsoleMessages(_args: unknown): Promise<McpToo
     const count = (await firefox.getConsoleMessages()).length;
     firefox.clearConsoleMessages();
 
-    return successResponse(`✅ cleared ${count} messages`);
+    return successResponse(`cleared ${count} messages`);
   } catch (error) {
     return errorResponse(error as Error);
   }

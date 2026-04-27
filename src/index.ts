@@ -11,7 +11,7 @@ if (process.env.NODE_ENV !== 'production') {
     const { config } = await import('dotenv');
     const result = config();
     if (result.parsed) {
-      console.error('📋 Loaded .env file for development');
+      console.error('Loaded .env file for development');
     }
   } catch {
     // dotenv not required in production

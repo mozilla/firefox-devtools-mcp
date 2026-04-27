@@ -76,7 +76,7 @@ export async function handleAcceptDialog(args: unknown): Promise<McpToolResponse
 
     try {
       await firefox.acceptDialog(promptText);
-      return successResponse(promptText ? `✅ Accepted: "${promptText}"` : '✅ Accepted');
+      return successResponse(promptText ? `Accepted: "${promptText}"` : 'Accepted');
     } catch (error) {
       const errorMsg = (error as Error).message;
 
@@ -99,7 +99,7 @@ export async function handleDismissDialog(_args: unknown): Promise<McpToolRespon
 
     try {
       await firefox.dismissDialog();
-      return successResponse('✅ Dismissed');
+      return successResponse('Dismissed');
     } catch (error) {
       const errorMsg = (error as Error).message;
 
@@ -133,7 +133,7 @@ export async function handleNavigateHistory(args: unknown): Promise<McpToolRespo
       await firefox.navigateForward();
     }
 
-    return successResponse(`✅ ${direction}`);
+    return successResponse(`${direction}`);
   } catch (error) {
     return errorResponse(error as Error);
   }
@@ -157,7 +157,7 @@ export async function handleSetViewportSize(args: unknown): Promise<McpToolRespo
 
     await firefox.setViewportSize(width, height);
 
-    return successResponse(`✅ ${width}x${height}`);
+    return successResponse(`${width}x${height}`);
   } catch (error) {
     return errorResponse(error as Error);
   }
