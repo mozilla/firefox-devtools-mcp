@@ -38,3 +38,7 @@ GitHub Actions for CI, Release, and npm publish are included. See [docs/ci-and-r
 ## Code of Conduct
 
 This project follows the [Mozilla Community Participation Guidelines](CODE_OF_CONDUCT.md).
+
+## License
+
+By contributing, you agree that your contributions will be dual-licensed under [MIT](LICENSE-MIT) and [Apache 2.0](LICENSE-APACHE), matching the project's license.
