@@ -3,7 +3,7 @@
   "version": "0.9.2",
   "description": "Model Context Protocol (MCP) server for Firefox DevTools automation",
   "author": "Mozilla",
-  "license": "MIT",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -95,7 +95,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
     "scripts",
     "plugins"
   ],
