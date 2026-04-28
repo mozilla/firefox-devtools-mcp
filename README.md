@@ -13,7 +13,15 @@ Repository: https://github.com/mozilla/firefox-devtools-mcp
 
 > **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx firefox-devtools-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
 
-> **Security**: Browser MCP servers carry inherent risks — always use a dedicated Firefox profile, avoid untrusted sites, and be aware of prompt injection. See [SECURITY.md](SECURITY.md) for details and how to report vulnerabilities.
+## Security
+
+Browser MCP servers carry inherent risks. A few key practices:
+
+- **Use a dedicated Firefox profile.** Never run the server against your regular profile — the agent has access to whatever the browser can reach, including cookies and saved sessions.
+- **Be cautious about which sites you visit.** Pages can return content designed to manipulate the agent (prompt injection). Stick to sites you control or trust.
+- **Avoid enabling extra flags unless needed.** `--enable-script` and `--enable-privileged-context` significantly expand what the agent can do.
+
+See [SECURITY.md](SECURITY.md) for a full breakdown of risks and how to report vulnerabilities.
 
 ## Requirements
 
