@@ -41,7 +41,7 @@ COPY --from=builder /app/dist ./dist
 
 # Create non-root user
 RUN groupadd -g 1001 -r nodejs && \
-    useradd -r -g nodejs -u 1001 nodejs
+    useradd -r -g nodejs -u 1001 -m -d /home/nodejs nodejs
 
 # Change ownership of the app directory
 RUN chown -R nodejs:nodejs /app
