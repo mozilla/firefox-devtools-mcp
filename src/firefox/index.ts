@@ -197,6 +197,13 @@ export class FirefoxClient {
     return await this.dom.uploadFileByUid(uid, filePath);
   }
 
+  async pressKey(key: string, uid?: string): Promise<void> {
+    if (!this.dom) {
+      throw new Error('Not connected');
+    }
+    return await this.dom.pressKey(key, uid);
+  }
+
   // ============================================================================
   // Console
   // ============================================================================

@@ -4,6 +4,55 @@
 
 import { By, Key, WebDriver, WebElement } from 'selenium-webdriver';
 
+// Map of lowercase key names → Selenium unicode values
+const KEY_MAP: Record<string, string> = {
+  enter: Key.RETURN,
+  return: Key.RETURN,
+  escape: Key.ESCAPE,
+  esc: Key.ESCAPE,
+  tab: Key.TAB,
+  backspace: Key.BACK_SPACE,
+  delete: Key.DELETE,
+  space: Key.SPACE,
+  ' ': Key.SPACE,
+  arrowup: Key.ARROW_UP,
+  up: Key.ARROW_UP,
+  arrowdown: Key.ARROW_DOWN,
+  down: Key.ARROW_DOWN,
+  arrowleft: Key.ARROW_LEFT,
+  left: Key.ARROW_LEFT,
+  arrowright: Key.ARROW_RIGHT,
+  right: Key.ARROW_RIGHT,
+  home: Key.HOME,
+  end: Key.END,
+  pageup: Key.PAGE_UP,
+  pagedown: Key.PAGE_DOWN,
+  insert: Key.INSERT,
+  f1: Key.F1,
+  f2: Key.F2,
+  f3: Key.F3,
+  f4: Key.F4,
+  f5: Key.F5,
+  f6: Key.F6,
+  f7: Key.F7,
+  f8: Key.F8,
+  f9: Key.F9,
+  f10: Key.F10,
+  f11: Key.F11,
+  f12: Key.F12,
+};
+
+const MODIFIER_MAP: Record<string, string> = {
+  ctrl: Key.CONTROL,
+  control: Key.CONTROL,
+  alt: Key.ALT,
+  shift: Key.SHIFT,
+  meta: Key.META,
+  cmd: Key.META,
+  win: Key.META,
+  super: Key.META,
+};
+
 export class DomInteractions {
   constructor(
     private driver: WebDriver,
@@ -300,6 +349,54 @@ export class DomInteractions {
     await el.sendKeys(filePath);
 
     // Wait for events to propagate
+    await this.waitForEventsAfterAction();
+  }
+
+  /**
+   * Press a key or key combination.
+   * @param key Key name or combo like "Enter", "Escape", "ctrl+l", "ctrl+shift+t", "F5"
+   * @param uid Optional element UID to focus before pressing. If omitted, sends to active element.
+   */
+  async pressKey(key: string, uid?: string): Promise<void> {
+    const parts = key.split('+').map((p) => p.trim().toLowerCase());
+    const modifiers: string[] = [];
+    let mainKey = '';
+
+    for (const part of parts) {
+      if (part in MODIFIER_MAP) {
+        modifiers.push(MODIFIER_MAP[part]!);
+      } else {
+        mainKey = KEY_MAP[part] ?? part;
+      }
+    }
+
+    if (!mainKey) {
+      throw new Error(`pressKey: no key specified in "${key}"`);
+    }
+
+    if (uid) {
+      if (!this.resolveUid) {
+        throw new Error(
+          'pressKey: resolveUid callback not set. Ensure snapshot is initialized.'
+        );
+      }
+      const el = await this.resolveUid(uid);
+      // Key.chord concatenates modifiers + key + Key.NULL (releases all modifiers)
+      await el.sendKeys(Key.chord(...modifiers, mainKey));
+    } else {
+      // Send to the currently focused element via W3C Actions keyboard source
+      const actions = this.driver.actions({ async: true });
+      for (const mod of modifiers) {
+        actions.keyDown(mod);
+      }
+      actions.keyDown(mainKey);
+      actions.keyUp(mainKey);
+      for (const mod of [...modifiers].reverse()) {
+        actions.keyUp(mod);
+      }
+      await actions.perform();
+    }
+
     await this.waitForEventsAfterAction();
   }
 
