@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "firefox-devtools": {
-      "command": "npx",
-      "args": ["-y", "firefox-devtools-mcp@latest"]
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/../../../dist/index.js"]
     }
   }
 }
