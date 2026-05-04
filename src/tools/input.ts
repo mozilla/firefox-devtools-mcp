@@ -128,6 +128,27 @@ export const uploadFileByUidTool = {
   },
 };
 
+export const pressKeyTool = {
+  name: 'press_key',
+  description:
+    'Press a keyboard key or key combination in the browser. Use this to submit forms (Enter), dismiss dialogs (Escape), navigate (Tab, arrow keys), trigger shortcuts (ctrl+l, ctrl+f, ctrl+shift+t), or press function keys (F5, F12). If uid is provided the key is sent to that element; otherwise it goes to the currently focused element.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      key: {
+        type: 'string',
+        description:
+          'Key name or combination. Named keys: Enter, Escape, Tab, Backspace, Delete, Space, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Home, End, PageUp, PageDown, F1–F12. Modifiers: ctrl, alt, shift, meta. Combine with +, e.g. "ctrl+l", "ctrl+shift+t", "alt+F4".',
+      },
+      uid: {
+        type: 'string',
+        description: 'Element UID from snapshot (optional). If omitted, sends to active element.',
+      },
+    },
+    required: ['key'],
+  },
+};
+
 // Handlers
 export async function handleClickByUid(args: unknown): Promise<McpToolResponse> {
   try {
@@ -301,6 +322,31 @@ export async function handleUploadFileByUid(args: unknown): Promise<McpToolRespo
         throw new Error(`${uid} is hidden/not interactable`);
       }
 
+      throw error;
+    }
+  } catch (error) {
+    return errorResponse(error as Error);
+  }
+}
+
+export async function handlePressKey(args: unknown): Promise<McpToolResponse> {
+  try {
+    const { key, uid } = args as { key: string; uid?: string };
+
+    if (!key || typeof key !== 'string') {
+      throw new Error('key parameter is required and must be a string');
+    }
+
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+
+    try {
+      await firefox.pressKey(key, uid);
+      return successResponse(uid ? `✅ press_key "${key}" on ${uid}` : `✅ press_key "${key}"`);
+    } catch (error) {
+      if (uid) {
+        throw handleUidError(error as Error, uid);
+      }
       throw error;
     }
   } catch (error) {
