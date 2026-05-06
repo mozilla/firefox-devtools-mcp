@@ -53,12 +53,14 @@ export {
   dragByUidToUidTool,
   fillFormByUidTool,
   uploadFileByUidTool,
+  pressKeyTool,
   handleClickByUid,
   handleHoverByUid,
   handleFillByUid,
   handleDragByUidToUid,
   handleFillFormByUid,
   handleUploadFileByUid,
+  handlePressKey,
 } from './input.js';
 
 // Screenshot tools

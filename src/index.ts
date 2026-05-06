@@ -199,6 +199,7 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse
   ['drag_by_uid_to_uid', tools.handleDragByUidToUid],
   ['fill_form_by_uid', tools.handleFillFormByUid],
   ['upload_file_by_uid', tools.handleUploadFileByUid],
+  ['press_key', tools.handlePressKey],
 
   // Screenshot
   ['screenshot_page', tools.handleScreenshotPage],
@@ -264,6 +265,7 @@ const allTools = [
   tools.dragByUidToUidTool,
   tools.fillFormByUidTool,
   tools.uploadFileByUidTool,
+  tools.pressKeyTool,
 
   // Screenshot
   tools.screenshotPageTool,
