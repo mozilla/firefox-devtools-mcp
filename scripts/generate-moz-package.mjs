@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Generates package.moz.json from package.json by applying the overrides
- * needed for the firefox-devtools-mcp-moz npm package.
+ * needed for the @mozilla/firefox-devtools-mcp-moz npm package.
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -13,7 +13,7 @@ const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
 
 const moz = {
   ...pkg,
-  name: 'firefox-devtools-mcp-moz',
+  name: '@mozilla/firefox-devtools-mcp-moz',
   description:
     pkg.description + ' (moz build with privileged context support)',
   main: 'dist.moz/index.js',
@@ -23,7 +23,7 @@ const moz = {
   },
   files: ['dist.moz', 'README.md', 'LICENSE', 'scripts', 'plugins'],
   publishConfig: {
-    access: 'restricted',
+    access: 'public',
   },
 };
 

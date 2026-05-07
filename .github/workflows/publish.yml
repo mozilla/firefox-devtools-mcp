@@ -26,12 +26,6 @@ jobs:
           cache: 'npm'
           always-auth: true
 
-      - name: Configure npm auth
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Install dependencies
         run: npm ci
 
@@ -42,7 +36,8 @@ jobs:
           npm run format:check
           npm run build
 
-      - name: Publish
+      - name: Publish main package
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish moz package
+        run: npm run publish:moz -- --access public --provenance
