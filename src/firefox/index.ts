@@ -484,6 +484,15 @@ export class FirefoxClient {
   async close(): Promise<void> {
     await this.core.close();
   }
+
+  /**
+   * Kill the geckodriver service process.
+   * Cross-platform — no shell commands needed.
+   * @internal
+   */
+  killService(): void {
+    this.core.killService();
+  }
 }
 
 // Re-export types
