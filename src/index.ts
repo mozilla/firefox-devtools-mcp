@@ -41,11 +41,39 @@ let nextLaunchOptions: FirefoxLaunchOptions | null = null;
 let pendingWarning: string | null = null;
 
 /**
- * Reset Firefox instance (used when disconnection is detected)
+ * Reset Firefox instance (used when disconnection is detected).
+ * Tries graceful close with a timeout; if it hangs (zombie geckodriver),
+ * force-kills the process tree.
  */
-export function resetFirefox(): void {
+export async function resetFirefox(): Promise<void> {
   if (firefox) {
-    firefox.reset();
+    let closeSucceeded = false;
+    let timer: NodeJS.Timeout;
+
+    const closePromise = firefox.close().then(
+      () => {
+        closeSucceeded = true;
+      },
+      () => {}
+    );
+
+    try {
+      await Promise.race([
+        closePromise,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('close timeout')), 5000);
+        }),
+      ]);
+    } catch {
+      // Timeout or rejection — close() didn't succeed; force-kill below.
+    } finally {
+      clearTimeout(timer!);
+    }
+
+    if (!closeSucceeded) {
+      firefox.killService();
+      firefox.reset();
+    }
     firefox = null;
   }
   pendingWarning = null;
@@ -81,7 +109,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
     const isConnected = await firefox.isConnected();
     if (!isConnected) {
       log('Firefox connection lost, reconnecting...');
-      resetFirefox();
+      await resetFirefox();
     } else {
       return firefox;
     }
@@ -385,13 +413,7 @@ export async function run(
   // Clean up the Marionette session so Firefox accepts new connections.
   // Without this, the session stays locked after the MCP client disconnects.
   const cleanup = async () => {
-    if (firefox) {
-      try {
-        await firefox.close();
-      } catch {
-        // ignore
-      }
-    }
+    await resetFirefox();
     await server.close();
     process.exit(0);
   };

@@ -255,12 +255,34 @@ export class FirefoxCore {
         d._bidiConnection = undefined;
       }
       if ('quit' in this.driver) {
-        void (this.driver as { quit(): Promise<void> }).quit();
+        // Swallow rejection — driver may already be dead
+        void (this.driver as { quit(): Promise<void> }).quit().catch(() => {});
       }
     }
     this.driver = null;
     this.currentContextId = null;
+
+    if (this.logFileFd !== undefined) {
+      try {
+        closeSync(this.logFileFd);
+      } catch {
+        // already closed
+      }
+      this.logFileFd = undefined;
+    }
+
     logDebug('Driver state reset');
+  }
+
+  /**
+   * Kill the geckodriver service process using selenium's own service.kill().
+   * Cross-platform — no shell commands needed.
+   * Used when graceful close() hangs (e.g. Firefox died but geckodriver didn't notice).
+   */
+  killService(): void {
+    if (this.driver) {
+      void (this.driver as any).onQuit_().catch(() => {});
+    }
   }
 
   /**
