@@ -74,7 +74,8 @@ export class FirefoxClient {
     this.pages = new PageManagement(
       driver,
       () => this.core.getCurrentContextId(),
-      (id: string) => this.core.setCurrentContextId(id)
+      (id: string) => this.core.setCurrentContextId(id),
+      (method: string, params: Record<string, any>) => this.core.sendBiDiCommand(method, params)
     );
 
     // Subscribe to console and network events for ALL contexts (not just current).
