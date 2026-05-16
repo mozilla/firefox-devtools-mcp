@@ -7,7 +7,11 @@ import { log, logDebug } from '../utils/logger.js';
 
 const PRIVILEGED_URL_SCHEMES = ['moz-extension:'];
 
-function isPrivilegedUrl(url: string): boolean {
+/**
+ * Check if a URL uses a privileged scheme that requires BiDi navigation.
+ * @internal Exported for testability only; not a stable public API.
+ */
+export function isPrivilegedUrl(url: string): boolean {
   try {
     return PRIVILEGED_URL_SCHEMES.includes(new URL(url).protocol);
   } catch {

@@ -1,0 +1,9 @@
+{
+  "manifest_version": 2,
+  "name": "MCP Test Extension",
+  "version": "1.0",
+  "description": "Minimal extension for testing moz-extension:// navigation",
+  "browser_action": {
+    "default_popup": "popup.html"
+  }
+}
