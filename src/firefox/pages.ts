@@ -3,20 +3,53 @@
  */
 
 import { WebDriver } from 'selenium-webdriver';
-import { log } from '../utils/logger.js';
+import { log, logDebug } from '../utils/logger.js';
+
+const PRIVILEGED_URL_SCHEMES = ['moz-extension:'];
+
+/**
+ * Check if a URL uses a privileged scheme that requires BiDi navigation.
+ * @internal Exported for testability only; not a stable public API.
+ */
+export function isPrivilegedUrl(url: string): boolean {
+  try {
+    return PRIVILEGED_URL_SCHEMES.includes(new URL(url).protocol);
+  } catch {
+    logDebug(`URL parse failed, treating as non-privileged: ${url}`);
+    return false;
+  }
+}
 
 export class PageManagement {
   constructor(
     private driver: WebDriver,
     private getCurrentContextId: () => string | null,
-    private setCurrentContextId: (id: string) => void
+    private setCurrentContextId: (id: string) => void,
+    private sendBiDiCommand?: (method: string, params: Record<string, any>) => Promise<any>
   ) {}
 
   /**
-   * Navigate to URL
+   * Navigate to URL.
+   * For moz-extension:// URLs, uses BiDi browsingContext.navigate with
+   * wait:"none" because geckodriver
+   * waits for BiDi navigation completion events that the Remote Agent does
+   * not emit for extension/privileged contexts, causing driver.get() to hang.
    */
   async navigate(url: string): Promise<void> {
-    await this.driver.get(url);
+    if (isPrivilegedUrl(url) && this.sendBiDiCommand) {
+      const contextId = this.getCurrentContextId();
+      if (!contextId) {
+        throw new Error(`Cannot navigate to privileged URL ${url}: no browsing context ID`);
+      }
+      await this.sendBiDiCommand('browsingContext.navigate', {
+        context: contextId,
+        url,
+        wait: 'none',
+      });
+      logDebug(`BiDi navigate (wait:none) to: ${url}`);
+    } else {
+      await this.driver.get(url);
+    }
     log(`Navigated to: ${url}`);
   }
 
@@ -159,7 +192,7 @@ export class PageManagement {
     const newIdx = handles.length - 1;
     this.setCurrentContextId(handles[newIdx]!);
     this.cachedSelectedIdx = newIdx;
-    await this.driver.get(url);
+    await this.navigate(url);
     return newIdx;
   }
 
