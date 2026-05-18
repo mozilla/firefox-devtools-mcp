@@ -128,9 +128,7 @@ describe('moz-extension:// Navigation Integration Tests', () => {
     // while tolerating slow CI.
     const result = await Promise.race([
       firefox.navigate(extensionUrl).then(() => 'navigated'),
-      new Promise<string>((resolve) =>
-        setTimeout(() => resolve('timeout'), 5000)
-      ),
+      new Promise<string>((resolve) => setTimeout(() => resolve('timeout'), 5000)),
     ]);
 
     expect(result).toBe('navigated');
@@ -150,9 +148,7 @@ describe('moz-extension:// Navigation Integration Tests', () => {
   it('should create new page with moz-extension:// URL without hanging', async () => {
     const result = await Promise.race([
       firefox.createNewPage(extensionUrl).then((idx: number) => `created-${idx}`),
-      new Promise<string>((resolve) =>
-        setTimeout(() => resolve('timeout'), 5000)
-      ),
+      new Promise<string>((resolve) => setTimeout(() => resolve('timeout'), 5000)),
     ]);
 
     expect(result).toMatch(/^created-/);

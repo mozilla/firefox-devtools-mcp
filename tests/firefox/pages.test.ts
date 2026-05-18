@@ -72,8 +72,19 @@ describe('PageManagement', () => {
       ? vi.fn().mockImplementation(overrides.sendBiDiCommand)
       : undefined;
 
-    const pages = new PageManagement(driver, getCurrentContextId, setCurrentContextId, sendBiDiCommand as any);
-    return { pages, driver, getCurrentContextId, setCurrentContextId, sendBiDiCommand: sendBiDiCommand as any };
+    const pages = new PageManagement(
+      driver,
+      getCurrentContextId,
+      setCurrentContextId,
+      sendBiDiCommand as any
+    );
+    return {
+      pages,
+      driver,
+      getCurrentContextId,
+      setCurrentContextId,
+      sendBiDiCommand: sendBiDiCommand as any,
+    };
   }
 
   describe('navigate', () => {
@@ -151,7 +162,12 @@ describe('PageManagement', () => {
       const getCurrentContextId = vi.fn().mockReturnValue('handle-2');
       const setCurrentContextId = vi.fn();
 
-      const pages = new PageManagement(driver, getCurrentContextId, setCurrentContextId, bidiFn as any);
+      const pages = new PageManagement(
+        driver,
+        getCurrentContextId,
+        setCurrentContextId,
+        bidiFn as any
+      );
 
       const idx = await pages.createNewPage('moz-extension://abc123/popup.html');
 
@@ -179,7 +195,12 @@ describe('PageManagement', () => {
       const getCurrentContextId = vi.fn().mockReturnValue('handle-2');
       const setCurrentContextId = vi.fn();
 
-      const pages = new PageManagement(driver, getCurrentContextId, setCurrentContextId, bidiFn as any);
+      const pages = new PageManagement(
+        driver,
+        getCurrentContextId,
+        setCurrentContextId,
+        bidiFn as any
+      );
 
       const idx = await pages.createNewPage('https://example.com');
 
