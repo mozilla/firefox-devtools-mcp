@@ -127,6 +127,8 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
       env: envVars,
       logFile: args.outputFile ?? undefined,
       prefs,
+      androidDevice: args.androidDevice ?? undefined,
+      androidPackage: args.androidPackage ?? undefined,
     };
   }
 

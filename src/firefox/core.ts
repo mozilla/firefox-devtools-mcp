@@ -80,13 +80,43 @@ export class FirefoxCore {
    * Launch Firefox (or connect to an existing instance) and establish BiDi connection
    */
   async connect(): Promise<void> {
-    if (this.options.connectExisting) {
+    const isAndroid = this.options.androidDevice !== undefined;
+
+    if (isAndroid) {
+      log('Launching Firefox for Android via ADB...');
+    } else if (this.options.connectExisting) {
       log('Connecting to existing Firefox via Marionette...');
     } else {
       log('Launching Firefox via Selenium WebDriver BiDi...');
     }
 
-    if (this.options.connectExisting) {
+    if (isAndroid) {
+      // Pre-set the geckodriver path so selenium-webdriver skips getBinaryPaths(),
+      // which would otherwise discover the desktop Firefox binary and inject it into
+      // moz:firefoxOptions.binary — conflicting with androidPackage.
+      const geckodriverPath = await findGeckodriver();
+      logDebug(`Using geckodriver: ${geckodriverPath}`);
+
+      const pkg = this.options.androidPackage ?? 'org.mozilla.firefox';
+      const mozOptions: Record<string, unknown> = { androidPackage: pkg };
+      const deviceSerial = this.options.androidDevice;
+      if (deviceSerial && deviceSerial !== 'auto') {
+        mozOptions.androidDeviceSerial = deviceSerial;
+      }
+      if (this.options.prefs) {
+        mozOptions.prefs = this.options.prefs;
+      }
+
+      const caps = new Capabilities();
+      caps.set('webSocketUrl', true);
+      caps.set('moz:firefoxOptions', mozOptions);
+      if (this.options.acceptInsecureCerts) {
+        caps.set('acceptInsecureCerts', true);
+      }
+
+      const serviceBuilder = new firefox.ServiceBuilder(geckodriverPath);
+      this.driver = firefox.Driver.createSession(caps, serviceBuilder.build());
+    } else if (this.options.connectExisting) {
       const port = this.options.marionettePort ?? 2828;
 
       // Find geckodriver binary (--driver avoids downloading Firefox via selenium-manager)

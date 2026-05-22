@@ -64,6 +64,10 @@ export interface FirefoxLaunchOptions {
   logFile?: string | undefined;
   /** Firefox preferences to set at startup via moz:firefoxOptions */
   prefs?: Record<string, string | number | boolean> | undefined;
+  /** Android device serial; omit to auto-select the single connected device */
+  androidDevice?: string | undefined;
+  /** Android app package name (default: org.mozilla.firefox) */
+  androidPackage?: string | undefined;
 }
 
 /**
