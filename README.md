@@ -108,8 +108,30 @@ You can pass flags or environment variables (names on the right):
 - `--pref name=value` — set Firefox preference at startup via `moz:firefoxOptions` (repeatable)
 - `--enable-script` — enable the `evaluate_script` tool, which executes arbitrary JavaScript in the page context (`ENABLE_SCRIPT=true`)
 - `--enable-privileged-context` — enable privileged context tools: list/select privileged contexts, evaluate privileged scripts, get/set Firefox prefs, and list extensions. Requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` (`ENABLE_PRIVILEGED_CONTEXT=true`)
+- `--android-device` — enable Firefox for Android mode; value is the ADB device serial (e.g. `emulator-5554`). Run `adb devices` to list connected devices. Omit the value or use `auto` to select the single connected device automatically.
+- `--android-package` — Android app package name, default `org.mozilla.firefox`. Other packages: `org.mozilla.firefox_beta` for Firefox Beta, `org.mozilla.fenix` for Firefox Nightly, `org.mozilla.fenix.debug` for Firefox Nightly Debug, `org.mozilla.geckoview_example` for geckoview (`ANDROID_PACKAGE`)
 
 > **Note on `--pref`:** When Firefox runs in automation, it applies [RecommendedPreferences](https://searchfox.org/firefox-main/source/remote/shared/RecommendedPreferences.sys.mjs) that modify browser behavior for testing. The `--pref` option allows overriding these defaults when needed.
+
+### Firefox for Android
+
+Use `--android-device` to automate Firefox running on an Android device. Requires `adb` on your PATH and geckodriver, which is managed automatically.
+
+```bash
+# List connected devices
+adb devices
+
+# Launch Firefox for Android on the single connected device
+npx firefox-devtools-mcp --android-device auto
+
+# Target a specific device
+npx firefox-devtools-mcp --android-device <serial>
+
+# Use Firefox Nightly instead
+npx firefox-devtools-mcp --android-device <serial> --android-package org.mozilla.fenix
+```
+
+Port forwarding between the host and device is handled automatically by geckodriver.
 
 ### Connect to existing Firefox
 

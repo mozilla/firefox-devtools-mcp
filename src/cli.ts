@@ -127,6 +127,17 @@ export const cliOptions = {
       'Set Firefox preference at startup via moz:firefoxOptions (format: name=value). Can be specified multiple times.',
     alias: 'p',
   },
+  androidDevice: {
+    type: 'string',
+    description:
+      'Android device serial for launching Firefox for Android via ADB. Omit to auto-select the single connected device. Requires adb on PATH.',
+  },
+  androidPackage: {
+    type: 'string',
+    description:
+      'Android app package name (default: org.mozilla.firefox). Use org.mozilla.fenix for Nightly.',
+    default: process.env.ANDROID_PACKAGE ?? 'org.mozilla.firefox',
+  },
   enableScript: {
     type: 'boolean',
     description:
