@@ -5,51 +5,51 @@
 import { WebDriver } from 'selenium-webdriver';
 import { log, logDebug } from '../utils/logger.js';
 
-const PRIVILEGED_URL_SCHEMES = ['moz-extension:'];
+const COMMON_URL_SCHEMES = ['http:', 'https:', 'data:', 'blob:', 'file:'];
 
 /**
- * Check if a URL uses a privileged scheme that requires BiDi navigation.
- * @internal Exported for testability only; not a stable public API.
+ * Check if a URL uses a common scheme that supports load events.
+ * Non-common schemes = moz-extension:, about:, ...
  */
-export function isPrivilegedUrl(url: string): boolean {
+export function isCommonScheme(url: string): boolean {
   try {
-    return PRIVILEGED_URL_SCHEMES.includes(new URL(url).protocol);
+    return COMMON_URL_SCHEMES.includes(new URL(url).protocol);
   } catch {
-    logDebug(`URL parse failed, treating as non-privileged: ${url}`);
     return false;
   }
 }
+
+export type BiDiCommandFn = (method: string, params: Record<string, any>) => Promise<any>;
 
 export class PageManagement {
   constructor(
     private driver: WebDriver,
     private getCurrentContextId: () => string | null,
     private setCurrentContextId: (id: string) => void,
-    private sendBiDiCommand?: (method: string, params: Record<string, any>) => Promise<any>
+    private sendBiDiCommand: BiDiCommandFn
   ) {}
 
   /**
-   * Navigate to URL.
-   * For moz-extension:// URLs, uses BiDi browsingContext.navigate with
-   * wait:"none" because geckodriver
-   * waits for BiDi navigation completion events that the Remote Agent does
-   * not emit for extension/privileged contexts, causing driver.get() to hang.
+   * Navigate to URL using BiDi
    */
   async navigate(url: string): Promise<void> {
-    if (isPrivilegedUrl(url) && this.sendBiDiCommand) {
-      const contextId = this.getCurrentContextId();
-      if (!contextId) {
-        throw new Error(`Cannot navigate to privileged URL ${url}: no browsing context ID`);
-      }
-      await this.sendBiDiCommand('browsingContext.navigate', {
-        context: contextId,
-        url,
-        wait: 'none',
-      });
-      logDebug(`BiDi navigate (wait:none) to: ${url}`);
-    } else {
-      await this.driver.get(url);
+    const contextId = this.getCurrentContextId();
+    if (!contextId) {
+      throw new Error(`Cannot navigate: no browsing context ID`);
     }
+
+    // Default wait time is "interactive" (DOMContentLoaded).
+    // All uncommon schemes use wait time "none"
+    const wait = isCommonScheme(url) ? 'interactive' : 'none';
+
+    // Navigate using direct BiDi
+    await this.sendBiDiCommand('browsingContext.navigate', {
+      context: contextId,
+      url,
+      wait,
+    });
+
+    logDebug(`BiDi navigate (wait:${wait}) to: ${url}`);
     log(`Navigated to: ${url}`);
   }
 

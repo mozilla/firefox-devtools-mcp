@@ -1,212 +1,174 @@
 /**
- * Unit tests for PageManagement and isPrivilegedUrl
+ * Unit tests for PageManagement and isCommonScheme
  *
- * The moz-extension:// fix: geckodriver's driver.get() hangs on extension URLs
- * because it waits for BiDi navigation completion events that the Remote Agent
- * never emits for extension contexts. The fix routes moz-extension:// URLs
- * through BiDi browsingContext.navigate with wait:"none", which returns
- * immediately without waiting for load events.
+ * Navigation uses BiDi browsingContext.navigate for all URLs.
+ * Common schemes (http/https/data/blob/file) use wait:"interactive".
+ * Uncommon schemes (moz-extension:, about:, etc.) use wait:"none"
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { isPrivilegedUrl, PageManagement } from '@/firefox/pages.js';
+import { isCommonScheme, PageManagement } from '@/firefox/pages.js';
 
-// -- isPrivilegedUrl ----------------------------------------------------------
+const HTTPS_URL = 'https://example.com/test.html';
+const HTTP_URL = 'http://example.com/test.html';
+const FILE_URL = 'file:///some/path/test.html';
+const MOZ_EXT_URL = 'moz-extension://a1b2c3d4-e5f6-7890-abcd-ef1234567890/popup.html';
+const BLOB_URL = 'blob:https://example.org/40a5fb5a-d56d-4a33-b4e2-0acf6a8e5f64';
+const DATA_URL = 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==';
 
-describe('isPrivilegedUrl', () => {
-  it('returns true for moz-extension:// URLs', () => {
-    expect(isPrivilegedUrl('moz-extension://abc123/popup.html')).toBe(true);
+describe('isCommonScheme', () => {
+  it('returns true for common URL schemes', () => {
+    expect(isCommonScheme(HTTPS_URL)).toBe(true);
+    expect(isCommonScheme(HTTP_URL)).toBe(true);
+    expect(isCommonScheme(FILE_URL)).toBe(true);
+    expect(isCommonScheme(DATA_URL)).toBe(true);
+    expect(isCommonScheme(BLOB_URL)).toBe(true);
   });
 
-  it('returns false for https:// URLs', () => {
-    expect(isPrivilegedUrl('https://example.com')).toBe(false);
+  it('returns false for moz-extension:// URLs', () => {
+    expect(isCommonScheme(MOZ_EXT_URL)).toBe(false);
   });
 
-  it('returns false for http:// URLs', () => {
-    expect(isPrivilegedUrl('http://localhost:3000')).toBe(false);
+  it('returns false for about: URLs', () => {
+    expect(isCommonScheme('about:blank')).toBe(false);
   });
 
-  it('returns false for file:// URLs', () => {
-    expect(isPrivilegedUrl('file:///path/to/page.html')).toBe(false);
-  });
-
-  it('returns false for about: URLs (not in PRIVILEGED_URL_SCHEMES)', () => {
-    expect(isPrivilegedUrl('about:blank')).toBe(false);
-  });
-
-  // Malformed strings make URL constructor throw; the catch block returns false
   it('returns false for malformed URLs', () => {
-    expect(isPrivilegedUrl('not-a-url')).toBe(false);
-  });
-
-  it('returns false for empty string', () => {
-    expect(isPrivilegedUrl('')).toBe(false);
+    expect(isCommonScheme('not-a-url')).toBe(false);
   });
 });
 
 // -- PageManagement -----------------------------------------------------------
 
 describe('PageManagement', () => {
-  type BiDiCommandFn = (method: string, params: Record<string, any>) => Promise<any>;
-
-  /**
-   * Build mocked PageManagement dependencies.
-   *
-   * The contextId handling is subtle: null and undefined mean different things.
-   * - contextId: null   → explicitly null (no browsing context available)
-   * - contextId omitted → defaults to 'ctx-1' (normal case)
-   *
-   * We use `'contextId' in overrides` to distinguish these, because
-   * `null ?? 'ctx-1'` would incorrectly collapse null into the default.
-   */
-  function createMocks(overrides?: { contextId?: string | null; sendBiDiCommand?: BiDiCommandFn }) {
-    const driver = { get: vi.fn().mockResolvedValue(undefined) } as any;
-    const hasContextId = 'contextId' in (overrides ?? {});
-    const contextId = hasContextId ? overrides!.contextId : 'ctx-1';
-    const getCurrentContextId = vi.fn().mockImplementation(() => contextId);
+  function createMocks() {
+    // Any driver method call should fail — navigate must use BiDi, not driver
+    const driver = new Proxy(
+      {},
+      {
+        get: () => {
+          throw new Error('Unexpected driver call — navigation must use BiDi');
+        },
+      }
+    );
+    const getCurrentContextId = vi.fn().mockReturnValue('ctx-1');
     const setCurrentContextId = vi.fn();
-
-    // When sendBiDiCommand is provided, wrap it in a mock so we can assert calls.
-    // When omitted, it stays undefined — simulates BiDi being unavailable.
-    const sendBiDiCommand = overrides?.sendBiDiCommand
-      ? vi.fn().mockImplementation(overrides.sendBiDiCommand)
-      : undefined;
+    const sendBiDiCommand = vi.fn().mockResolvedValue({});
 
     const pages = new PageManagement(
       driver,
       getCurrentContextId,
       setCurrentContextId,
-      sendBiDiCommand as any
+      sendBiDiCommand
     );
-    return {
-      pages,
-      driver,
-      getCurrentContextId,
-      setCurrentContextId,
-      sendBiDiCommand: sendBiDiCommand as any,
-    };
+    return { pages, sendBiDiCommand };
   }
 
   describe('navigate', () => {
-    // Core fix: moz-extension:// must use BiDi, not driver.get()
-    it('uses BiDi browsingContext.navigate with wait:none for moz-extension:// URLs', async () => {
-      const bidiFn = vi.fn().mockResolvedValue({});
-      const { pages, driver, sendBiDiCommand } = createMocks({ sendBiDiCommand: bidiFn });
+    it('uses BiDi with wait:interactive for common URL schemes', async () => {
+      const { pages, sendBiDiCommand } = createMocks();
 
-      await pages.navigate('moz-extension://abc123/popup.html');
-
+      await pages.navigate(HTTPS_URL);
       expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
         context: 'ctx-1',
-        url: 'moz-extension://abc123/popup.html',
+        url: HTTPS_URL,
+        wait: 'interactive',
+      });
+
+      await pages.navigate(HTTP_URL);
+      expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
+        context: 'ctx-1',
+        url: HTTP_URL,
+        wait: 'interactive',
+      });
+
+      await pages.navigate(DATA_URL);
+      expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
+        context: 'ctx-1',
+        url: DATA_URL,
+        wait: 'interactive',
+      });
+
+      await pages.navigate(FILE_URL);
+      expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
+        context: 'ctx-1',
+        url: FILE_URL,
+        wait: 'interactive',
+      });
+
+      await pages.navigate(BLOB_URL);
+      expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
+        context: 'ctx-1',
+        url: BLOB_URL,
+        wait: 'interactive',
+      });
+    });
+
+    it('uses BiDi with wait:none for uncommon URL schemes', async () => {
+      const { pages, sendBiDiCommand } = createMocks();
+
+      await pages.navigate(MOZ_EXT_URL);
+      expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
+        context: 'ctx-1',
+        url: MOZ_EXT_URL,
         wait: 'none',
       });
-      expect(driver.get).not.toHaveBeenCalled();
-    });
 
-    // Guard: no context ID means we can't send a BiDi command.
-    // Also verify sendBiDiCommand was never called (not just that it threw).
-    it('throws when context ID is null for moz-extension:// URL', async () => {
-      const bidiFn = vi.fn().mockResolvedValue({});
-      const { pages, sendBiDiCommand } = createMocks({ contextId: null, sendBiDiCommand: bidiFn });
+      await pages.navigate('about:blank');
+      expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
+        context: 'ctx-1',
+        url: 'about:blank',
+        wait: 'none',
+      });
 
-      await expect(pages.navigate('moz-extension://abc123/popup.html')).rejects.toThrow(
-        'Cannot navigate to privileged URL moz-extension://abc123/popup.html: no browsing context ID'
-      );
-      expect(sendBiDiCommand).not.toHaveBeenCalled();
-    });
-
-    // Fallback: if BiDi is not available (e.g. no Remote Agent), we still try
-    // driver.get(). This will hang for moz-extension://, but there's no alternative.
-    it('falls through to driver.get() for moz-extension:// when BiDi is unavailable', async () => {
-      const { pages, driver, sendBiDiCommand } = createMocks();
-
-      await pages.navigate('moz-extension://abc123/popup.html');
-
-      expect(driver.get).toHaveBeenCalledWith('moz-extension://abc123/popup.html');
-      expect(sendBiDiCommand).toBeUndefined();
-    });
-
-    // Non-privileged URLs always use the standard path
-    it('uses driver.get() for normal URLs', async () => {
-      const bidiFn = vi.fn().mockResolvedValue({});
-      const { pages, driver, sendBiDiCommand } = createMocks({ sendBiDiCommand: bidiFn });
-
-      await pages.navigate('https://example.com');
-
-      expect(driver.get).toHaveBeenCalledWith('https://example.com');
-      expect(sendBiDiCommand).not.toHaveBeenCalled();
-    });
-
-    // If the BiDi command rejects, the error should propagate (no silent swallow)
-    it('propagates BiDi navigation errors for moz-extension:// URLs', async () => {
-      const bidiFn = vi.fn().mockRejectedValue(new Error('BiDi error: invalid context'));
-      const { pages } = createMocks({ sendBiDiCommand: bidiFn });
-
-      await expect(pages.navigate('moz-extension://abc123/popup.html')).rejects.toThrow(
-        'BiDi error: invalid context'
-      );
+      await pages.navigate('not-a-url');
+      expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
+        context: 'ctx-1',
+        url: 'not-a-url',
+        wait: 'none',
+      });
     });
   });
 
   describe('createNewPage', () => {
-    // createNewPage must delegate to navigate(), not call driver.get() directly,
-    // so that the moz-extension:// BiDi path is also used for new tabs
-    it('uses BiDi navigate for moz-extension:// URL after creating the tab', async () => {
-      const bidiFn = vi.fn().mockResolvedValue({});
-      const allHandles = ['handle-1', 'handle-2'];
+    it('uses BiDi navigate', async () => {
+      // createNewPage needs real driver methods for switchTo/handles
+      const switchToMock = vi
+        .fn()
+        .mockReturnValue({ newWindow: vi.fn().mockResolvedValue(undefined) });
+      const getAllWindowHandlesMock = vi.fn().mockResolvedValue(['handle-1', 'handle-2']);
+
       const driver = {
-        get: vi.fn().mockResolvedValue(undefined),
-        switchTo: vi.fn().mockReturnValue({ newWindow: vi.fn().mockResolvedValue(undefined) }),
-        getAllWindowHandles: vi.fn().mockResolvedValue(allHandles),
+        switchTo: switchToMock,
+        getAllWindowHandles: getAllWindowHandlesMock,
       } as any;
+
       const getCurrentContextId = vi.fn().mockReturnValue('handle-2');
       const setCurrentContextId = vi.fn();
+      const sendBiDiCommand = vi.fn().mockResolvedValue({});
 
       const pages = new PageManagement(
         driver,
         getCurrentContextId,
         setCurrentContextId,
-        bidiFn as any
+        sendBiDiCommand
       );
 
-      const idx = await pages.createNewPage('moz-extension://abc123/popup.html');
-
-      // Verify the BiDi navigate was used (not driver.get)
-      expect(bidiFn).toHaveBeenCalledWith('browsingContext.navigate', {
+      // wait: interactive
+      await pages.createNewPage(HTTPS_URL);
+      expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
         context: 'handle-2',
-        url: 'moz-extension://abc123/popup.html',
+        url: HTTPS_URL,
+        wait: 'interactive',
+      });
+
+      // wait: none
+      await pages.createNewPage(MOZ_EXT_URL);
+      expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
+        context: 'handle-2',
+        url: MOZ_EXT_URL,
         wait: 'none',
       });
-      // Verify context was set before navigation
-      expect(setCurrentContextId).toHaveBeenCalledWith('handle-2');
-      expect(driver.get).not.toHaveBeenCalled();
-      expect(idx).toBe(1);
-    });
-
-    // With a normal URL, createNewPage delegates to navigate() which uses driver.get()
-    it('uses driver.get() for normal URLs after creating the tab', async () => {
-      const bidiFn = vi.fn().mockResolvedValue({});
-      const allHandles = ['handle-1', 'handle-2'];
-      const driver = {
-        get: vi.fn().mockResolvedValue(undefined),
-        switchTo: vi.fn().mockReturnValue({ newWindow: vi.fn().mockResolvedValue(undefined) }),
-        getAllWindowHandles: vi.fn().mockResolvedValue(allHandles),
-      } as any;
-      const getCurrentContextId = vi.fn().mockReturnValue('handle-2');
-      const setCurrentContextId = vi.fn();
-
-      const pages = new PageManagement(
-        driver,
-        getCurrentContextId,
-        setCurrentContextId,
-        bidiFn as any
-      );
-
-      const idx = await pages.createNewPage('https://example.com');
-
-      expect(driver.get).toHaveBeenCalledWith('https://example.com');
-      expect(bidiFn).not.toHaveBeenCalled();
-      expect(idx).toBe(1);
     });
   });
 });
