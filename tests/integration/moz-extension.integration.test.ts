@@ -85,25 +85,6 @@ async function getExtensionHostname(firefox: FirefoxClient, extensionId: string)
   }
 }
 
-/**
- * Race a promise against a timeout. Resolves 'ok' on success, 'timeout' if
- * the timeout fires, or rejects with the original error.
- */
-function raceWithTimeout(promise: Promise<any>, ms: number): Promise<'ok' | 'timeout'> {
-  let timer: ReturnType<typeof setTimeout>;
-  return Promise.race([
-    promise.then(
-      () => 'ok' as const,
-      (e: any) => {
-        throw e;
-      }
-    ),
-    new Promise<'timeout'>((resolve) => {
-      timer = setTimeout(() => resolve('timeout'), ms);
-    }),
-  ]).finally(() => clearTimeout(timer));
-}
-
 describe('BiDi Navigation Integration Tests', () => {
   let firefox: FirefoxClient;
   let extensionUrl: string;
@@ -157,10 +138,7 @@ describe('BiDi Navigation Integration Tests', () => {
   it('should navigate to moz-extension:// URL without hanging', async () => {
     // Non-standard schemes use wait:"none" because the Remote Agent
     // doesn't emit navigation completion events for extension contexts.
-    // A 5s timeout proves no hang while tolerating slow CI.
-    const result = await raceWithTimeout(firefox.navigate(extensionUrl), 5000);
-
-    expect(result).toBe('ok');
+    await firefox.navigate(extensionUrl);
 
     // Poll for the page URL since wait:none returns before the page loads
     const driver = firefox.getDriver();
@@ -174,12 +152,7 @@ describe('BiDi Navigation Integration Tests', () => {
   }, 15000);
 
   it('should create new page with moz-extension:// URL without hanging', async () => {
-    const result = await raceWithTimeout(
-      firefox.createNewPage(extensionUrl).then((idx: number) => idx),
-      5000
-    );
-
-    expect(result).toBe('ok');
+    await firefox.createNewPage(extensionUrl);
 
     // Poll for the page URL since wait:none returns before the page loads
     const driver = firefox.getDriver();
