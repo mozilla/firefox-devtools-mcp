@@ -47,33 +47,7 @@ let pendingWarning: string | null = null;
  */
 export async function resetFirefox(): Promise<void> {
   if (firefox) {
-    let closeSucceeded = false;
-    let timer: NodeJS.Timeout;
-
-    const closePromise = firefox.close().then(
-      () => {
-        closeSucceeded = true;
-      },
-      () => {}
-    );
-
-    try {
-      await Promise.race([
-        closePromise,
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error('close timeout')), 5000);
-        }),
-      ]);
-    } catch {
-      // Timeout or rejection — close() didn't succeed; force-kill below.
-    } finally {
-      clearTimeout(timer!);
-    }
-
-    if (!closeSucceeded) {
-      firefox.killService();
-      firefox.reset();
-    }
+    await firefox.close();
     firefox = null;
   }
   pendingWarning = null;
@@ -171,7 +145,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
     // leave geckodriver running with an active Marionette session, causing
     // "Connection attempt denied because an active session has been found"
     // on the next connect attempt.
-    await firefox.close().catch(() => {});
+    await firefox.close();
     firefox = null;
     throw error;
   }

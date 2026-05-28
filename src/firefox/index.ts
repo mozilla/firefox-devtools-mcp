@@ -465,33 +465,21 @@ export class FirefoxClient {
     return this.core.getOptions();
   }
 
-  /**
-   * Reset all internal state (used when Firefox is detected as closed)
-   */
-  reset(): void {
-    this.core.reset();
-    this.consoleEvents = null;
-    this.networkEvents = null;
-    this.dom = null;
-    this.pages = null;
-    this.snapshot = null;
-  }
-
   // ============================================================================
   // Cleanup
   // ============================================================================
 
   async close(): Promise<void> {
-    await this.core.close();
-  }
-
-  /**
-   * Kill the geckodriver service process.
-   * Cross-platform — no shell commands needed.
-   * @internal
-   */
-  killService(): void {
-    this.core.killService();
+    try {
+      await this.core.close();
+    } catch {
+      /* never throws per contract */
+    }
+    this.consoleEvents = null;
+    this.networkEvents = null;
+    this.dom = null;
+    this.pages = null;
+    this.snapshot = null;
   }
 }
 

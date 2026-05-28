@@ -289,12 +289,7 @@ export async function handleRestartFirefox(input: unknown) {
       // Set options for next launch
       setNextLaunchOptions(newOptions);
 
-      // Close current instance (ignore errors - we're restarting anyway)
-      try {
-        await currentFirefox.close();
-      } catch {
-        // Ignore close errors - we'll reset anyway
-      }
+      // Close current instance
       await resetFirefox();
 
       // Prepare change summary

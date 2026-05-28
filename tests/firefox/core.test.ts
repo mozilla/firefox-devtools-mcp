@@ -62,15 +62,151 @@ describe('FirefoxCore', () => {
     });
   });
 
-  describe('reset', () => {
-    it('should reset driver and context to null', () => {
+  describe('close', () => {
+    it('should call quit() and null driver when quit() succeeds', async () => {
+      const quit = vi.fn().mockResolvedValue(undefined);
+      const onQuit = vi.fn().mockResolvedValue(undefined);
       const core = new FirefoxCore({ headless: true });
-      core.setCurrentContextId('test-context');
+      (core as any).driver = { quit, onQuit_: onQuit };
+      core.setCurrentContextId('ctx-1');
 
-      core.reset();
+      await core.close();
 
+      expect(quit).toHaveBeenCalledTimes(1);
+      expect(onQuit).not.toHaveBeenCalled();
       expect(core.getCurrentContextId()).toBe(null);
       expect(() => core.getDriver()).toThrow('Driver not connected');
+    });
+
+    it('should call onQuit_() when quit() times out', async () => {
+      vi.useFakeTimers();
+      try {
+        const onQuit = vi.fn().mockResolvedValue(undefined);
+        const core = new FirefoxCore({ headless: true });
+        (core as any).driver = {
+          quit: vi.fn().mockReturnValue(new Promise(() => {})),
+          onQuit_: onQuit,
+        };
+        core.setCurrentContextId('ctx-1');
+
+        const closePromise = core.close();
+
+        await vi.advanceTimersByTimeAsync(5500);
+        await closePromise;
+
+        expect(onQuit).toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should call onQuit_() when quit() rejects', async () => {
+      const onQuit = vi.fn().mockResolvedValue(undefined);
+      const core = new FirefoxCore({ headless: true });
+      (core as any).driver = {
+        quit: vi.fn().mockRejectedValue(new Error('session not found')),
+        onQuit_: onQuit,
+      };
+      core.setCurrentContextId('ctx-1');
+
+      await core.close();
+
+      expect(onQuit).toHaveBeenCalled();
+    });
+
+    it('should be idempotent with driver — second call is a no-op', async () => {
+      const quit = vi.fn().mockResolvedValue(undefined);
+      const onQuit = vi.fn().mockResolvedValue(undefined);
+      const core = new FirefoxCore({ headless: true });
+      (core as any).driver = { quit, onQuit_: onQuit };
+      core.setCurrentContextId('ctx-1');
+
+      await core.close();
+      await core.close();
+
+      expect(quit).toHaveBeenCalledTimes(1);
+      expect(onQuit).not.toHaveBeenCalled();
+    });
+
+    it('should be idempotent without driver — returns without error', async () => {
+      const core = new FirefoxCore({ headless: true });
+      await core.close();
+      await expect(core.close()).resolves.toBeUndefined();
+    });
+
+    it('should close BiDi WebSocket and clear the reference', async () => {
+      const bidiClose = vi.fn();
+      const webdriver = {
+        quit: vi.fn().mockResolvedValue(undefined),
+        _bidiConnection: { close: bidiClose },
+      };
+      const core = new FirefoxCore({ headless: true });
+      (core as any).driver = webdriver;
+
+      await core.close();
+
+      expect(bidiClose).toHaveBeenCalled();
+      expect(webdriver._bidiConnection).toBeUndefined();
+    });
+
+    it('should swallow BiDi close errors and continue cleanup', async () => {
+      const webdriver = {
+        quit: vi.fn().mockResolvedValue(undefined),
+        _bidiConnection: {
+          close: vi.fn().mockImplementation(() => {
+            throw new Error('ws dead');
+          }),
+        },
+      };
+      const core = new FirefoxCore({ headless: true });
+      (core as any).driver = webdriver;
+      core.setCurrentContextId('ctx-1');
+
+      await core.close();
+
+      expect(webdriver._bidiConnection).toBeUndefined();
+    });
+
+    it('should restore env vars and clear state fields', async () => {
+      const savedNewKey = process.env.FIREFOX_MCP_TEST_NEWKEY;
+      const savedExisting = process.env.FIREFOX_MCP_TEST_EXISTING;
+      try {
+        const core = new FirefoxCore({ headless: true });
+        (core as any).driver = {
+          quit: vi.fn().mockResolvedValue(undefined),
+        };
+        core.setCurrentContextId('ctx-1');
+        (core as any).logFilePath = '/tmp/test.log';
+        (core as any).profileWarning = 'test warning';
+        (core as any).logFileFd = 42;
+        (core as any).originalEnv = {
+          FIREFOX_MCP_TEST_NEWKEY: undefined,
+          FIREFOX_MCP_TEST_EXISTING: 'oldvalue',
+        };
+        process.env.FIREFOX_MCP_TEST_NEWKEY = 'was-set-by-connect';
+        process.env.FIREFOX_MCP_TEST_EXISTING = 'overwritten-by-connect';
+
+        await core.close();
+
+        expect(core.getCurrentContextId()).toBe(null);
+        expect((core as any).logFilePath).toBeUndefined();
+        expect((core as any).profileWarning).toBeNull();
+        expect((core as any).logFileFd).toBeUndefined();
+        expect((core as any).originalEnv).toEqual({});
+        expect('FIREFOX_MCP_TEST_NEWKEY' in process.env).toBe(false);
+        expect(process.env.FIREFOX_MCP_TEST_EXISTING).toBe('oldvalue');
+      } finally {
+        if (savedNewKey === undefined) {
+          delete process.env.FIREFOX_MCP_TEST_NEWKEY;
+        } else {
+          process.env.FIREFOX_MCP_TEST_NEWKEY = savedNewKey;
+        }
+        if (savedExisting === undefined) {
+          delete process.env.FIREFOX_MCP_TEST_EXISTING;
+        } else {
+          process.env.FIREFOX_MCP_TEST_EXISTING = savedExisting;
+        }
+      }
     });
   });
 });
