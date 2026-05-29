@@ -92,30 +92,30 @@ describe('FirefoxCore connect() profile handling', () => {
 
     vi.doMock('selenium-webdriver/firefox.js', () => ({
       default: {
-        Options: vi.fn(() => ({
-          enableBidi: mockEnableBidi,
-          addArguments: mockAddArguments,
-          setProfile: mockSetProfile,
-          setBinary: mockSetBinary,
-          windowSize: mockWindowSize,
-          setAcceptInsecureCerts: mockSetAcceptInsecureCerts,
-        })),
-        ServiceBuilder: vi.fn(() => ({
-          setStdio: mockSetStdio,
-        })),
+        Options: class {
+          enableBidi = mockEnableBidi;
+          addArguments = mockAddArguments;
+          setProfile = mockSetProfile;
+          setBinary = mockSetBinary;
+          windowSize = mockWindowSize;
+          setAcceptInsecureCerts = mockSetAcceptInsecureCerts;
+        },
+        ServiceBuilder: class {
+          setStdio = mockSetStdio;
+        },
       },
     }));
 
     vi.doMock('selenium-webdriver', () => ({
-      Builder: vi.fn(() => ({
-        forBrowser: vi.fn().mockReturnThis(),
-        setFirefoxOptions: vi.fn().mockReturnThis(),
-        setFirefoxService: vi.fn().mockReturnThis(),
-        build: vi.fn().mockResolvedValue({
+      Builder: class {
+        forBrowser = vi.fn().mockReturnThis();
+        setFirefoxOptions = vi.fn().mockReturnThis();
+        setFirefoxService = vi.fn().mockReturnThis();
+        build = vi.fn().mockResolvedValue({
           getWindowHandle: vi.fn().mockResolvedValue('mock-context-id'),
           get: vi.fn().mockResolvedValue(undefined),
-        }),
-      })),
+        });
+      },
       Browser: { FIREFOX: 'firefox' },
     }));
 

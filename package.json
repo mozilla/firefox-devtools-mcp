@@ -70,7 +70,7 @@
     "@modelcontextprotocol/sdk": "1.29.0",
     "geckodriver": "6.0.2",
     "selenium-webdriver": "4.36.0",
-    "ws": "8.18.3",
+    "ws": "8.21.0",
     "yargs": "17.7.2"
   },
   "devDependencies": {
@@ -81,8 +81,8 @@
     "@types/yargs": "17.0.32",
     "@typescript-eslint/eslint-plugin": "8.58.0",
     "@typescript-eslint/parser": "8.58.0",
-    "@vitest/coverage-v8": "3.1.4",
-    "@vitest/ui": "3.1.4",
+    "@vitest/coverage-v8": "4.1.8",
+    "@vitest/ui": "4.1.8",
     "dotenv": "17.2.1",
     "eslint": "8.57.1",
     "eslint-config-prettier": "10.1.5",
@@ -92,7 +92,7 @@
     "tsup": "8.5.0",
     "tsx": "4.21.0",
     "typescript": "5.3.3",
-    "vitest": "3.1.4"
+    "vitest": "4.1.8"
   },
   "files": [
     "dist",

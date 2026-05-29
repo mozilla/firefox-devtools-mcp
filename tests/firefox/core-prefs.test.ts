@@ -24,28 +24,32 @@ describe('FirefoxCore prefs via firefoxOptions', () => {
   function mockSelenium(extraOptions: Record<string, unknown> = {}) {
     vi.doMock('selenium-webdriver/firefox.js', () => ({
       default: {
-        Options: vi.fn(() => ({
-          enableBidi: vi.fn(),
-          addArguments: vi.fn(),
-          setBinary: vi.fn(),
-          setAcceptInsecureCerts: vi.fn(),
-          setPreference: mockSetPreference,
-          ...extraOptions,
-        })),
-        ServiceBuilder: vi.fn(() => ({ setStdio: vi.fn() })),
+        Options: class {
+          enableBidi = vi.fn();
+          addArguments = vi.fn();
+          setBinary = vi.fn();
+          setAcceptInsecureCerts = vi.fn();
+          setPreference = mockSetPreference;
+          constructor() {
+            Object.assign(this, extraOptions);
+          }
+        },
+        ServiceBuilder: class {
+          setStdio = vi.fn();
+        },
       },
     }));
 
     vi.doMock('selenium-webdriver', () => ({
-      Builder: vi.fn(() => ({
-        forBrowser: vi.fn().mockReturnThis(),
-        setFirefoxOptions: vi.fn().mockReturnThis(),
-        setFirefoxService: vi.fn().mockReturnThis(),
-        build: vi.fn().mockResolvedValue({
+      Builder: class {
+        forBrowser = vi.fn().mockReturnThis();
+        setFirefoxOptions = vi.fn().mockReturnThis();
+        setFirefoxService = vi.fn().mockReturnThis();
+        build = vi.fn().mockResolvedValue({
           getWindowHandle: mockGetWindowHandle,
           get: vi.fn().mockResolvedValue(undefined),
-        }),
-      })),
+        });
+      },
       Browser: { FIREFOX: 'firefox' },
     }));
   }
