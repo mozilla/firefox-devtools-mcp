@@ -15,6 +15,7 @@
     "build": "tsup",
     "build:moz": "node scripts/generate-moz-package.mjs && tsup --config tsup.config.moz.ts",
     "build:all": "npm run build && npm run build:moz",
+    "publish:moz": "node scripts/publish-moz-package.mjs",
     "start": "node dist/index.js",
     "setup": "node scripts/setup-mcp-config.js",
     "clean": "rm -rf dist",
