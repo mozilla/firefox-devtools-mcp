@@ -1,6 +1,6 @@
 # Firefox DevTools MCP
 
-[![npm version](https://badge.fury.io/js/firefox-devtools-mcp.svg)](https://www.npmjs.com/package/firefox-devtools-mcp)
+[![npm version](https://badge.fury.io/js/@mozilla%2Ffirefox-devtools-mcp.svg)](https://www.npmjs.com/package/mozilla/firefox-devtools-mcp)
 [![CI](https://github.com/mozilla/firefox-devtools-mcp/workflows/CI/badge.svg)](https://github.com/mozilla/firefox-devtools-mcp/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/mozilla/firefox-devtools-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/mozilla/firefox-devtools-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
@@ -11,7 +11,7 @@ Model Context Protocol server for automating Firefox via WebDriver BiDi (through
 
 Repository: https://github.com/mozilla/firefox-devtools-mcp
 
-> **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx firefox-devtools-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
+> **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx @mozilla/firefox-devtools-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
 
 ## Security
 
@@ -35,17 +35,17 @@ Recommended: use npx so you always run the latest published version from npm.
 Option A — Claude Code CLI
 
 ```bash
-claude mcp add firefox-devtools npx firefox-devtools-mcp@latest
+claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest
 ```
 
 Pass options either as args or env vars. Examples:
 
 ```bash
 # Headless + viewport via args
-claude mcp add firefox-devtools npx firefox-devtools-mcp@latest -- --headless --viewport 1280x720
+claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest -- --headless --viewport 1280x720
 
 # Or via environment variables
-claude mcp add firefox-devtools npx firefox-devtools-mcp@latest \
+claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest \
   --env START_URL=https://example.com \
   --env FIREFOX_HEADLESS=true
 ```
@@ -63,7 +63,7 @@ Add to your Claude Code config file:
   "mcpServers": {
     "firefox-devtools": {
       "command": "npx",
-      "args": ["-y", "firefox-devtools-mcp@latest", "--headless", "--viewport", "1280x720"],
+      "args": ["-y", "@mozilla/firefox-devtools-mcp@latest", "--headless", "--viewport", "1280x720"],
       "env": {
         "START_URL": "about:home"
       }
@@ -82,7 +82,7 @@ npm run setup
 ## Try it with MCP Inspector
 
 ```bash
-npx @modelcontextprotocol/inspector npx firefox-devtools-mcp@latest --start-url https://example.com --headless
+npx @modelcontextprotocol/inspector npx @mozilla/firefox-devtools-mcp@latest --start-url https://example.com --headless
 ```
 
 Then call tools like:
@@ -122,13 +122,13 @@ Use `--android-device` to automate Firefox running on an Android device. Require
 adb devices
 
 # Launch Firefox for Android on the single connected device
-npx firefox-devtools-mcp --android-device auto
+npx @mozilla/firefox-devtools-mcp --android-device auto
 
 # Target a specific device
-npx firefox-devtools-mcp --android-device <serial>
+npx @mozilla/firefox-devtools-mcp --android-device <serial>
 
 # Use Firefox Nightly instead
-npx firefox-devtools-mcp --android-device <serial> --android-package org.mozilla.fenix
+npx @mozilla/firefox-devtools-mcp --android-device <serial> --android-package org.mozilla.fenix
 ```
 
 Port forwarding between the host and device is handled automatically by geckodriver.
@@ -142,7 +142,7 @@ Use `--connect-existing` to automate your real browsing session — with cookies
 firefox --marionette
 
 # Run the MCP server
-npx firefox-devtools-mcp --connect-existing --marionette-port 2828
+npx @mozilla/firefox-devtools-mcp --connect-existing --marionette-port 2828
 ```
 
 Or set `marionette.enabled` to `true` in `about:config` (or `user.js`) to enable Marionette on every launch.
@@ -208,7 +208,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on local development, te
     "mcpServers": {
       "firefox-devtools": {
         "command": "cmd",
-        "args": ["/c", "npx", "-y", "firefox-devtools-mcp@latest"]
+        "args": ["/c", "npx", "-y", "@mozilla/firefox-devtools-mcp@latest"]
       }
     }
     ```
@@ -219,7 +219,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on local development, te
     "mcpServers": {
       "firefox-devtools": {
         "command": "C:\\nvm4w\\nodejs\\npx.ps1",
-        "args": ["-y", "firefox-devtools-mcp@latest"]
+        "args": ["-y", "@mozilla/firefox-devtools-mcp@latest"]
       }
     }
     ```
