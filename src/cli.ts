@@ -138,6 +138,11 @@ export const cliOptions = {
       'Android app package name (default: org.mozilla.firefox). Use org.mozilla.fenix for Nightly.',
     default: process.env.ANDROID_PACKAGE ?? 'org.mozilla.firefox',
   },
+  logFile: {
+    type: 'string',
+    description:
+      'Path to a file where MCP server logs will be written. Set DEBUG=* to also enable verbose debug logs.',
+  },
   enableScript: {
     type: 'boolean',
     description:
