@@ -112,6 +112,7 @@ describe('FirefoxCore connect() profile handling', () => {
         setFirefoxOptions: vi.fn().mockReturnThis(),
         setFirefoxService: vi.fn().mockReturnThis(),
         build: vi.fn().mockResolvedValue({
+          getCapabilities: vi.fn(() => ({ get: vi.fn(() => '123.4') })),
           getWindowHandle: vi.fn().mockResolvedValue('mock-context-id'),
           get: vi.fn().mockResolvedValue(undefined),
         }),

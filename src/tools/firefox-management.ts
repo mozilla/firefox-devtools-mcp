@@ -127,12 +127,14 @@ export async function handleGetFirefoxInfo(_input: unknown) {
     const firefox = await getFirefox();
     const options = firefox.getOptions();
     const logFilePath = firefox.getLogFilePath();
+    const version = firefox.getFirefoxVersion();
 
     const info = [];
     info.push('Firefox Instance Configuration');
     info.push('');
 
     info.push(`Binary: ${options.firefoxPath ?? 'System Firefox (default)'}`);
+    info.push(`Firefox version: ${version ?? '(unknown)'}`);
     info.push(`Headless: ${options.headless ? 'Yes' : 'No'}`);
 
     if (options.viewport) {

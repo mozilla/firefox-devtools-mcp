@@ -445,6 +445,14 @@ export class FirefoxClient {
   }
 
   /**
+   * Get current browser version (eg "153.0a1").
+   * @internal
+   */
+  getFirefoxVersion(): string | null {
+    return this.core.getFirefoxVersion();
+  }
+
+  /**
    * Get log file path (if logging is enabled)
    */
   getLogFilePath(): string | undefined {

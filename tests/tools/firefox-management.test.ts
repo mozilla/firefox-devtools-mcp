@@ -222,6 +222,7 @@ describe('Firefox Management Tools', () => {
           },
         }),
         getLogFilePath: vi.fn().mockReturnValue(undefined),
+        getFirefoxVersion: vi.fn().mockReturnValue('123.4'),
       };
 
       mockGetFirefox.mockResolvedValue(mockFirefoxWithPrefs);
