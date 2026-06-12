@@ -44,6 +44,7 @@ describe('FirefoxCore prefs via firefoxOptions', () => {
         build: vi.fn().mockResolvedValue({
           getWindowHandle: mockGetWindowHandle,
           get: vi.fn().mockResolvedValue(undefined),
+          getCapabilities: vi.fn(() => ({ get: vi.fn(() => '123.4') })),
         }),
       })),
       Browser: { FIREFOX: 'firefox' },

@@ -85,11 +85,12 @@ async function findGeckodriver(): Promise<string> {
 }
 
 export class FirefoxCore {
-  private driver: WebDriver | null = null;
   private currentContextId: string | null = null;
-  private originalEnv: Record<string, string | undefined> = {};
-  private logFilePath: string | undefined;
+  private driver: WebDriver | null = null;
+  private firefoxVersion: string | null = null;
   private logFileFd: number | undefined;
+  private logFilePath: string | undefined;
+  private originalEnv: Record<string, string | undefined> = {};
   private profileWarning: string | null = null;
 
   constructor(private options: FirefoxLaunchOptions) {}
@@ -254,6 +255,11 @@ export class FirefoxCore {
       this.options.connectExisting ? 'Connected to existing Firefox' : 'Firefox launched with BiDi'
     );
 
+    // Retrieve the Firefox version from the returned capabilities.
+    const driverCapabilities = await this.driver.getCapabilities();
+    this.firefoxVersion = (driverCapabilities.get('browserVersion') as string) ?? null;
+    logDebug(`Browser version: ${this.firefoxVersion}`);
+
     // Remember current window handle (browsing context)
     this.currentContextId = await this.driver.getWindowHandle();
     logDebug(`Browsing context ID: ${this.currentContextId}`);
@@ -326,6 +332,13 @@ export class FirefoxCore {
    */
   setCurrentContextId(contextId: string): void {
     this.currentContextId = contextId;
+  }
+
+  /**
+   * Get the current firefox version, as a string (eg "153.0a1")
+   */
+  getFirefoxVersion(): string | null {
+    return this.firefoxVersion;
   }
 
   /**
