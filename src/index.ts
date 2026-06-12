@@ -231,6 +231,18 @@ export async function run(
     // Script evaluation — requires --enable-script
     ...(args.enableScript ? ([['evaluate_script', tools.handleEvaluateScript]] as const) : []),
 
+    // Debugging tools — requires --enable-script
+    ...(args.enableScript
+      ? ([
+          ['enable_debugger', tools.handleEnableDebugger],
+          ['list_scripts', tools.handleListScripts],
+          ['get_script_source', tools.handleGetScriptSource],
+          ['set_logpoint', tools.handleSetLogpoint],
+          ['remove_logpoint', tools.handleRemoveLogpoint],
+          ['get_logpoint_results', tools.handleGetLogpointResults],
+        ] as const)
+      : []),
+
     // Privileged context tools — requires --enable-privileged-context
     ...(args.enablePrivilegedContext
       ? ([
@@ -295,6 +307,18 @@ export async function run(
 
     // Script evaluation — requires --enable-script
     ...(args.enableScript ? [tools.evaluateScriptTool] : []),
+
+    // Debugging tools — requires --enable-script
+    ...(args.enableScript
+      ? [
+          tools.enableDebuggerTool,
+          tools.listScriptsTool,
+          tools.getScriptSourceTool,
+          tools.setLogpointTool,
+          tools.removeLogpointTool,
+          tools.getLogpointResultsTool,
+        ]
+      : []),
 
     // Privileged context tools — requires --enable-privileged-context
     ...(args.enablePrivilegedContext
