@@ -4,6 +4,7 @@
  */
 
 import { successResponse, errorResponse } from '../utils/response-helpers.js';
+import { isLikelyStatement } from '../utils/js-validation.js';
 import type { McpToolResponse } from '../types/common.js';
 
 export const listPrivilegedContextsTool = {
@@ -47,15 +48,6 @@ export const evaluatePrivilegedScriptTool = {
     required: ['expression'],
   },
 };
-
-/**
- * Detects if the input looks like a JavaScript statement rather than an expression.
- * Statements like const/let/var declarations cannot be used with return().
- */
-export function isLikelyStatement(input: string): boolean {
-  const trimmed = input.trim();
-  return /^(const|let|var)\s/.test(trimmed);
-}
 
 function formatContextList(contexts: any[]): string {
   if (contexts.length === 0) {

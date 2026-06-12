@@ -6,7 +6,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   evaluatePrivilegedScriptTool,
   handleEvaluatePrivilegedScript,
-  isLikelyStatement,
 } from '../../src/tools/privileged-context.js';
 
 // Mock the index module (used by handler tests)
@@ -25,36 +24,6 @@ describe('Privileged Context Tool Definitions', () => {
     it('should mention expression in description', () => {
       expect(evaluatePrivilegedScriptTool.description).toContain('expression');
     });
-  });
-});
-
-describe('isLikelyStatement', () => {
-  it('should detect const declarations', () => {
-    expect(isLikelyStatement('const x = 1')).toBe(true);
-  });
-
-  it('should detect let declarations', () => {
-    expect(isLikelyStatement('let x = 1')).toBe(true);
-  });
-
-  it('should detect var declarations', () => {
-    expect(isLikelyStatement('var x = 1')).toBe(true);
-  });
-
-  it('should allow function calls', () => {
-    expect(isLikelyStatement('Services.prefs.getBoolPref("foo")')).toBe(false);
-  });
-
-  it('should allow simple expressions', () => {
-    expect(isLikelyStatement('1 + 2')).toBe(false);
-  });
-
-  it('should allow property access', () => {
-    expect(isLikelyStatement('document.title')).toBe(false);
-  });
-
-  it('should handle leading whitespace', () => {
-    expect(isLikelyStatement('  const x = 1')).toBe(true);
   });
 });
 
