@@ -13,7 +13,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { SERVER_NAME, SERVER_VERSION } from './config/constants.js';
-import { log, logError, logDebug } from './utils/logger.js';
+import { log, logError, logDebug, setupLogFile, flushLogs } from './utils/logger.js';
 import { parsePrefs } from './cli.js';
 import type { parseArguments } from './cli.js';
 import { FirefoxDevTools } from './firefox/index.js';
@@ -172,6 +172,10 @@ export async function run(
   }
 
   args = parseArgsFn(SERVER_VERSION);
+
+  if (args.logFile) {
+    setupLogFile(args.logFile);
+  }
 
   // Tool handler mapping
   const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse>>([
@@ -395,6 +399,7 @@ export async function run(
       }
     }
     await server.close();
+    await flushLogs().catch(() => {});
     process.exit(0);
   };
   const onSignal = () => void cleanup();

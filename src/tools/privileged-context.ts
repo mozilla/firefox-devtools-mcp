@@ -4,6 +4,8 @@
  */
 
 import { successResponse, errorResponse } from '../utils/response-helpers.js';
+import { validateFunction } from '../utils/js-validation.js';
+import { remoteValueToNative } from '../utils/remote-value.js';
 import type { McpToolResponse } from '../types/common.js';
 
 export const listPrivilegedContextsTool = {
@@ -35,27 +37,18 @@ export const selectPrivilegedContextTool = {
 export const evaluatePrivilegedScriptTool = {
   name: 'evaluate_privileged_script',
   description:
-    'Evaluate JavaScript in the current privileged context. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Returns the result of the expression. IMPORTANT: Only provide expressions, not statements. Do not use const, let, or var declarations as they will cause syntax errors. For complex logic, wrap in an IIFE: (function() { const x = 1; return x; })()',
+    'Execute JS function in the current privileged context. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Use select_privileged_context first to target a chrome context.',
   inputSchema: {
     type: 'object',
     properties: {
-      expression: {
+      function: {
         type: 'string',
-        description: 'JavaScript expression to evaluate in the privileged context',
+        description: 'JS function string, e.g. () => Services.prefs.getBoolPref("foo")',
       },
     },
-    required: ['expression'],
+    required: ['function'],
   },
 };
-
-/**
- * Detects if the input looks like a JavaScript statement rather than an expression.
- * Statements like const/let/var declarations cannot be used with return().
- */
-export function isLikelyStatement(input: string): boolean {
-  const trimmed = input.trim();
-  return /^(const|let|var)\s/.test(trimmed);
-}
 
 function formatContextList(contexts: any[]): string {
   if (contexts.length === 0) {
@@ -132,47 +125,45 @@ export async function handleSelectPrivilegedContext(args: unknown): Promise<McpT
   }
 }
 
+const EvaluateResultType = {
+  Exception: 'exception',
+  Success: 'success',
+};
+
 export async function handleEvaluatePrivilegedScript(args: unknown): Promise<McpToolResponse> {
   try {
-    const { expression } = args as { expression: string };
+    const { function: fnString } = args as { function: string };
 
-    if (!expression || typeof expression !== 'string') {
-      throw new Error('expression parameter is required and must be a string');
-    }
-
-    if (isLikelyStatement(expression)) {
-      return errorResponse(
-        new Error(
-          `Cannot evaluate statement: "${expression.substring(0, 50)}${expression.length > 50 ? '...' : ''}". ` +
-            'This tool expects an expression, not a statement (const/let/var declarations are statements). ' +
-            'To use statements, wrap them in an IIFE: (function() { const x = 1; return x; })()'
-        )
-      );
-    }
+    validateFunction(fnString);
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    const driver = firefox.getDriver();
+    const result = await firefox.sendBiDiCommand('script.callFunction', {
+      functionDeclaration: fnString,
+      awaitPromise: true,
+      arguments: [],
+      target: { context: firefox.getCurrentContextId() },
+    });
 
-    try {
-      const result = await driver.executeScript(`return (${expression});`);
-      const resultText =
-        typeof result === 'string'
-          ? result
-          : result === null
-            ? 'null'
-            : result === undefined
-              ? 'undefined'
-              : JSON.stringify(result, null, 2);
-
-      return successResponse(`Result:\n${resultText}`);
-    } catch (executeError) {
+    if (result.type === EvaluateResultType.Success) {
+      let output = 'Script ran in chrome context and returned:\n';
+      output += '```json\n';
+      output += JSON.stringify(remoteValueToNative(result.result), null, 2);
+      output += '\n```';
+      return successResponse(output);
+    } else if (result.type === EvaluateResultType.Exception) {
+      const exceptionDetails = result.exceptionDetails;
       return errorResponse(
         new Error(
-          `Script execution failed: ${executeError instanceof Error ? executeError.message : String(executeError)}`
+          `Script execution failed: ${exceptionDetails.text}\n\n` +
+            '```json\n' +
+            JSON.stringify(remoteValueToNative(exceptionDetails.exception), null, 2) +
+            '\n```'
         )
       );
+    } else {
+      return errorResponse(`Unexpected script.callFunction result type: ${result.type}`);
     }
   } catch (error) {
     return errorResponse(error as Error);

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-06-11
+
+### Changed
+- Updated default start url to about:blank instead of about:home
+
+## [0.9.4] - 2026-06-04
+
+### Added
+- Support for connecting to Firefox for Android via `--android` flag
+
+### Fixed
+- Navigation to `moz-extension://` URLs no longer hangs; now uses BiDi navigate
+- Geckodriver binary detection on Windows
+
 ## [0.9.3] - 2026-05-07
 
 ### Added

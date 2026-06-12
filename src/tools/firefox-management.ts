@@ -127,12 +127,14 @@ export async function handleGetFirefoxInfo(_input: unknown) {
     const firefox = await getFirefox();
     const options = firefox.getOptions();
     const logFilePath = firefox.getLogFilePath();
+    const version = firefox.getFirefoxVersion();
 
     const info = [];
     info.push('Firefox Instance Configuration');
     info.push('');
 
     info.push(`Binary: ${options.firefoxPath ?? 'System Firefox (default)'}`);
+    info.push(`Firefox version: ${version ?? '(unknown)'}`);
     info.push(`Headless: ${options.headless ? 'Yes' : 'No'}`);
 
     if (options.viewport) {
@@ -220,7 +222,7 @@ export const restartFirefoxTool = {
       startUrl: {
         type: 'string',
         description:
-          'URL to navigate to after restart (optional, uses about:home if not specified)',
+          'URL to navigate to after restart (optional, uses about:blank if not specified)',
       },
       prefs: {
         type: 'object',
@@ -282,7 +284,7 @@ export async function handleRestartFirefox(input: unknown) {
         profilePath: profilePath ?? currentOptions.profilePath,
         env: newEnv !== undefined ? newEnv : currentOptions.env,
         headless: headless !== undefined ? headless : currentOptions.headless,
-        startUrl: startUrl ?? currentOptions.startUrl ?? 'about:home',
+        startUrl: startUrl ?? currentOptions.startUrl ?? 'about:blank',
         prefs: mergedPrefs,
       };
 
@@ -350,7 +352,7 @@ export async function handleRestartFirefox(input: unknown) {
         profilePath: profilePath ?? args.profilePath ?? undefined,
         env: newEnv,
         headless: headless ?? false,
-        startUrl: startUrl ?? 'about:home',
+        startUrl: startUrl ?? 'about:blank',
       };
 
       setNextLaunchOptions(newOptions);

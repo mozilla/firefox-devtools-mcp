@@ -1,8 +1,10 @@
 /**
- * JavaScript evaluation tool (currently disabled - see docs/future-features.md)
+ * JavaScript evaluation tool
  */
 
 import { successResponse, errorResponse } from '../utils/response-helpers.js';
+import { remoteValueToNative } from '../utils/remote-value.js';
+import { validateFunction } from '../utils/js-validation.js';
 import type { McpToolResponse } from '../types/common.js';
 
 export const evaluateScriptTool = {
@@ -39,43 +41,14 @@ export const evaluateScriptTool = {
 };
 
 // Constants
-const MAX_FUNCTION_SIZE = 16 * 1024; // 16 KB
 const DEFAULT_TIMEOUT = 5000; // 5 seconds
+const TIMEOUT = Symbol('Timeout');
 
-/**
- * Validate function string format
- */
-function validateFunction(fnString: string): void {
-  if (!fnString || typeof fnString !== 'string') {
-    throw new Error('function parameter is required and must be a string');
-  }
-
-  if (fnString.length > MAX_FUNCTION_SIZE) {
-    throw new Error(
-      `Function too large (${fnString.length} bytes, max ${MAX_FUNCTION_SIZE} bytes). ` +
-        'This tool is not designed for massive scripts.'
-    );
-  }
-
-  // Check if it looks like a function or arrow function
-  const trimmed = fnString.trim();
-  const isFunctionLike =
-    trimmed.startsWith('function') ||
-    trimmed.startsWith('async function') ||
-    trimmed.startsWith('(') ||
-    trimmed.startsWith('async (');
-
-  if (!isFunctionLike) {
-    throw new Error(
-      `Invalid function format. Expected a function or arrow function, got: "${trimmed.substring(0, 50)}...".\n\n` +
-        'Valid examples:\n' +
-        '  () => document.title\n' +
-        '  async () => { return await fetch("/api") }\n' +
-        '  (el) => el.innerText\n' +
-        '  function() { return window.location.href }'
-    );
-  }
-}
+// Types from the WebDriver BiDi specification.
+const EvaluateResultType = {
+  Exception: 'exception',
+  Success: 'success',
+};
 
 export async function handleEvaluateScript(args: unknown): Promise<McpToolResponse> {
   try {
@@ -94,21 +67,16 @@ export async function handleEvaluateScript(args: unknown): Promise<McpToolRespon
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
-    const driver = firefox.getDriver();
-
-    if (!driver) {
-      throw new Error('WebDriver not available');
-    }
 
     const scriptTimeout = timeout ?? DEFAULT_TIMEOUT;
 
-    // Prepare arguments: resolve UIDs to WebElements if provided
+    // Prepare arguments: resolve UIDs to references shared ids if provided
     const resolvedArgs: unknown[] = [];
     if (fnArgs && fnArgs.length > 0) {
       for (const arg of fnArgs) {
         try {
           const element = await firefox.resolveUidToElement(arg.uid);
-          resolvedArgs.push(element);
+          resolvedArgs.push({ sharedId: await element.getId() });
         } catch (error) {
           const errorMsg = (error as Error).message;
 
@@ -130,42 +98,51 @@ export async function handleEvaluateScript(args: unknown): Promise<McpToolRespon
       }
     }
 
-    // Unified execution path: use executeScript with optional args
-    const evalCode = `
-      const fn = ${fnString};
-      const args = Array.from(arguments);
-      const result = fn(...args);
-      return result instanceof Promise ? result : Promise.resolve(result);
-    `;
-
-    // Set script timeout
-    await driver.manage().setTimeouts({ script: scriptTimeout });
-
     // Execute with resolved args (empty array if no args)
-    const result = await driver.executeScript(evalCode, ...resolvedArgs);
+    const callFunctionPromise = firefox.sendBiDiCommand('script.callFunction', {
+      functionDeclaration: fnString,
+      awaitPromise: true,
+      arguments: resolvedArgs,
+      target: { context: firefox.getCurrentContextId() },
+    });
 
-    // Format output
-    let output = 'Script ran on page and returned:\n';
-    output += '```json\n';
-    output += JSON.stringify(result, null, 2);
-    output += '\n```';
+    // Race against timeout as WebDriver BiDi callFunction has no built-in
+    // timeout feature.
+    const result = await Promise.race([
+      new Promise((r) => setTimeout(() => r(TIMEOUT), scriptTimeout)),
+      callFunctionPromise,
+    ]);
 
-    return successResponse(output);
-  } catch (error) {
-    const errorMsg = (error as Error).message;
-
-    // Enhance timeout errors
-    if (errorMsg.includes('timeout') || errorMsg.includes('Timeout')) {
-      const timeoutValue = (args as { timeout?: number })?.timeout ?? DEFAULT_TIMEOUT;
+    if (result === TIMEOUT) {
       return errorResponse(
         new Error(
-          `Script execution timed out (exceeded ${timeoutValue}ms).\n\n` +
+          `Script execution timed out (exceeded ${scriptTimeout}ms).\n\n` +
             'The function may contain an infinite loop or be waiting for a slow operation.\n' +
             'Try simplifying the script or increasing the timeout parameter.'
         )
       );
-    }
+    } else if (result.type === EvaluateResultType.Success) {
+      // Format output
+      let output = 'Script ran on page and returned:\n';
+      output += '```json\n';
+      output += JSON.stringify(remoteValueToNative(result.result), null, 2);
+      output += '\n```';
 
+      return successResponse(output);
+    } else if (result.type === EvaluateResultType.Exception) {
+      const exceptionDetails = result.exceptionDetails;
+      return errorResponse(
+        new Error(
+          `Script execution failed: ${exceptionDetails.text}\n\n` +
+            '```json\n' +
+            JSON.stringify(remoteValueToNative(exceptionDetails.exception), null, 2) +
+            '\n```'
+        )
+      );
+    } else {
+      return errorResponse(`Unexpected script.callFunction result type: ${result.type}`);
+    }
+  } catch (error) {
     return errorResponse(error as Error);
   }
 }

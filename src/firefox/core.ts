@@ -4,74 +4,93 @@
 
 import { Builder, Browser, Capabilities, WebDriver } from 'selenium-webdriver';
 import firefox from 'selenium-webdriver/firefox.js';
-import { mkdirSync, openSync, closeSync } from 'node:fs';
+import { mkdirSync, openSync, closeSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, delimiter } from 'node:path';
 import type { FirefoxLaunchOptions } from './types.js';
 import { log, logDebug } from '../utils/logger.js';
 import { resolveProfilePath } from './profile.js';
 
 // ---------------------------------------------------------------------------
-// Geckodriver binary finder — used only for --connect-existing mode
+// Geckodriver binary finder
 // ---------------------------------------------------------------------------
 
-/**
- * Finds the geckodriver binary path via selenium-manager.
- * Uses --driver (not --browser) to avoid downloading Firefox, which is
- * already running in connect-existing mode.
- */
-async function findGeckodriver(): Promise<string> {
-  const path = await import('node:path');
-  const { execFileSync } = await import('node:child_process');
+function findGeckodriverInPath(binaryName: string): string | null {
+  for (const dir of (process.env.PATH ?? '').split(delimiter)) {
+    if (!dir) {
+      continue;
+    }
+    const candidate = join(dir, binaryName);
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
 
+function findGeckodriverInSeleniumCache(binaryName: string): string | null {
+  const cacheBase = join(homedir(), '.cache/selenium/geckodriver');
   try {
-    const { createRequire } = await import('node:module');
-    const require = createRequire(import.meta.url);
-    const swPkg = require.resolve('selenium-webdriver/package.json');
-    const swDir = path.dirname(swPkg);
-    const platform =
-      process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'macos' : 'linux';
-    const ext = process.platform === 'win32' ? '.exe' : '';
-    const smBin = path.join(swDir, 'bin', platform, `selenium-manager${ext}`);
-    const result = JSON.parse(
-      execFileSync(smBin, ['--driver', 'geckodriver', '--output', 'json'], { encoding: 'utf-8' })
-    );
-    return result.result.driver_path as string;
-  } catch {
-    // Fallback: walk the selenium cache directory to find any geckodriver binary
-    const os = await import('node:os');
-    const fs = await import('node:fs');
-    const cacheBase = path.join(os.homedir(), '.cache/selenium/geckodriver');
-    const ext = process.platform === 'win32' ? '.exe' : '';
-    const binaryName = `geckodriver${ext}`;
-    try {
-      if (fs.existsSync(cacheBase)) {
-        for (const platformDir of fs.readdirSync(cacheBase)) {
-          const platformPath = path.join(cacheBase, platformDir);
-          if (!fs.statSync(platformPath).isDirectory()) {
-            continue;
-          }
-          for (const versionDir of fs.readdirSync(platformPath).sort().reverse()) {
-            const candidate = path.join(platformPath, versionDir, binaryName);
-            if (fs.existsSync(candidate)) {
-              return candidate;
-            }
-          }
+    if (!existsSync(cacheBase)) {
+      return null;
+    }
+    for (const platformDir of readdirSync(cacheBase)) {
+      const platformPath = join(cacheBase, platformDir);
+      if (!statSync(platformPath).isDirectory()) {
+        continue;
+      }
+      for (const versionDir of readdirSync(platformPath).sort().reverse()) {
+        const candidate = join(platformPath, versionDir, binaryName);
+        if (existsSync(candidate)) {
+          return candidate;
         }
       }
-    } catch {
-      // ignore permission errors
     }
-    throw new Error('Cannot find geckodriver binary. Ensure selenium-webdriver is installed.');
+  } catch {
+    // ignore permission errors
+  }
+  return null;
+}
+
+async function findGeckodriverInNpmPackage(): Promise<string | null> {
+  try {
+    const { download } = await import('geckodriver');
+    log('geckodriver not found in PATH or selenium cache, downloading via npm package...');
+    return await download();
+  } catch {
+    return null;
   }
 }
 
+/**
+ * Finds the geckodriver binary using three strategies in order:
+ * 1. Search PATH directly (fast, no subprocess)
+ * 2. Walk the selenium cache directory
+ * 3. Download via the bundled geckodriver npm package
+ * Throws if none succeeds.
+ */
+async function findGeckodriver(): Promise<string> {
+  const ext = process.platform === 'win32' ? '.exe' : '';
+  const binaryName = `geckodriver${ext}`;
+
+  const found =
+    findGeckodriverInPath(binaryName) ??
+    findGeckodriverInSeleniumCache(binaryName) ??
+    (await findGeckodriverInNpmPackage());
+
+  if (!found) {
+    throw new Error('Cannot find geckodriver binary. Ensure geckodriver is in PATH.');
+  }
+  return found;
+}
+
 export class FirefoxCore {
-  private driver: WebDriver | null = null;
   private currentContextId: string | null = null;
-  private originalEnv: Record<string, string | undefined> = {};
-  private logFilePath: string | undefined;
+  private driver: WebDriver | null = null;
+  private firefoxVersion: string | null = null;
   private logFileFd: number | undefined;
+  private logFilePath: string | undefined;
+  private originalEnv: Record<string, string | undefined> = {};
   private profileWarning: string | null = null;
 
   constructor(private options: FirefoxLaunchOptions) {}
@@ -119,7 +138,6 @@ export class FirefoxCore {
     } else if (this.options.connectExisting) {
       const port = this.options.marionettePort ?? 2828;
 
-      // Find geckodriver binary (--driver avoids downloading Firefox via selenium-manager)
       const geckodriverPath = await findGeckodriver();
       logDebug(`Using geckodriver: ${geckodriverPath}`);
 
@@ -206,19 +224,23 @@ export class FirefoxCore {
         }
       }
 
-      // Configure geckodriver service to capture output
-      const serviceBuilder = new firefox.ServiceBuilder();
+      let serviceBuilder;
+      if (process.platform === 'win32') {
+        // On windows, firefox.ServiceBuilder() invoked from the MCP will hang.
+        // geckodriver has to be in the PATH. See Bug 2040849.
+        const geckodriverPath = await findGeckodriver();
+        logDebug(`Using geckodriver: ${geckodriverPath}`);
+        serviceBuilder = new firefox.ServiceBuilder(geckodriverPath);
+      } else {
+        // On other platforms, the default ServiceBuilder should locate and
+        // start geckodriver successfully.
+        serviceBuilder = new firefox.ServiceBuilder();
+      }
 
-      // If we have a log file, open it and redirect geckodriver output there
-      // This captures both geckodriver logs and Firefox stderr (including MOZ_LOG)
       if (this.logFilePath) {
         // Open file for appending, create if doesn't exist
         this.logFileFd = openSync(this.logFilePath, 'a');
-
-        // Configure stdio: stdin=ignore, stdout=logfile, stderr=logfile
-        // This redirects all output from geckodriver and Firefox to the log file
         serviceBuilder.setStdio(['ignore', this.logFileFd, this.logFileFd]);
-
         log(`Capturing Firefox output to: ${this.logFilePath}`);
       }
 
@@ -232,6 +254,11 @@ export class FirefoxCore {
     log(
       this.options.connectExisting ? 'Connected to existing Firefox' : 'Firefox launched with BiDi'
     );
+
+    // Retrieve the Firefox version from the returned capabilities.
+    const driverCapabilities = await this.driver.getCapabilities();
+    this.firefoxVersion = (driverCapabilities.get('browserVersion') as string) ?? null;
+    logDebug(`Browser version: ${this.firefoxVersion}`);
 
     // Remember current window handle (browsing context)
     this.currentContextId = await this.driver.getWindowHandle();
@@ -305,6 +332,13 @@ export class FirefoxCore {
    */
   setCurrentContextId(contextId: string): void {
     this.currentContextId = contextId;
+  }
+
+  /**
+   * Get the current firefox version, as a string (eg "153.0a1")
+   */
+  getFirefoxVersion(): string | null {
+    return this.firefoxVersion;
   }
 
   /**

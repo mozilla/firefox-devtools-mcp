@@ -96,8 +96,8 @@ export const cliOptions = {
   },
   startUrl: {
     type: 'string',
-    description: 'URL to open when Firefox starts (default: about:home)',
-    default: process.env.START_URL ?? 'about:home',
+    description: 'URL to open when Firefox starts (default: about:blank)',
+    default: process.env.START_URL ?? 'about:blank',
   },
   connectExisting: {
     type: 'boolean',
@@ -137,6 +137,11 @@ export const cliOptions = {
     description:
       'Android app package name (default: org.mozilla.firefox). Use org.mozilla.fenix for Nightly.',
     default: process.env.ANDROID_PACKAGE ?? 'org.mozilla.firefox',
+  },
+  logFile: {
+    type: 'string',
+    description:
+      'Path to a file where MCP server logs will be written. Set DEBUG=* to also enable verbose debug logs.',
   },
   enableScript: {
     type: 'boolean',

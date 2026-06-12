@@ -1,6 +1,6 @@
 # Firefox DevTools MCP
 
-[![npm version](https://badge.fury.io/js/firefox-devtools-mcp.svg)](https://www.npmjs.com/package/firefox-devtools-mcp)
+[![npm version](https://badge.fury.io/js/@mozilla%2Ffirefox-devtools-mcp.svg)](https://www.npmjs.com/package/mozilla/firefox-devtools-mcp)
 [![CI](https://github.com/mozilla/firefox-devtools-mcp/workflows/CI/badge.svg)](https://github.com/mozilla/firefox-devtools-mcp/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/mozilla/firefox-devtools-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/mozilla/firefox-devtools-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
@@ -11,7 +11,7 @@ Model Context Protocol server for automating Firefox via WebDriver BiDi (through
 
 Repository: https://github.com/mozilla/firefox-devtools-mcp
 
-> **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx firefox-devtools-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
+> **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx @mozilla/firefox-devtools-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
 
 ## Security
 
@@ -35,17 +35,17 @@ Recommended: use npx so you always run the latest published version from npm.
 Option A — Claude Code CLI
 
 ```bash
-claude mcp add firefox-devtools npx firefox-devtools-mcp@latest
+claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest
 ```
 
 Pass options either as args or env vars. Examples:
 
 ```bash
 # Headless + viewport via args
-claude mcp add firefox-devtools npx firefox-devtools-mcp@latest -- --headless --viewport 1280x720
+claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest -- --headless --viewport 1280x720
 
 # Or via environment variables
-claude mcp add firefox-devtools npx firefox-devtools-mcp@latest \
+claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest \
   --env START_URL=https://example.com \
   --env FIREFOX_HEADLESS=true
 ```
@@ -63,9 +63,9 @@ Add to your Claude Code config file:
   "mcpServers": {
     "firefox-devtools": {
       "command": "npx",
-      "args": ["-y", "firefox-devtools-mcp@latest", "--headless", "--viewport", "1280x720"],
+      "args": ["-y", "@mozilla/firefox-devtools-mcp@latest", "--headless", "--viewport", "1280x720"],
       "env": {
-        "START_URL": "about:home"
+        "START_URL": "about:blank"
       }
     }
   }
@@ -82,7 +82,7 @@ npm run setup
 ## Try it with MCP Inspector
 
 ```bash
-npx @modelcontextprotocol/inspector npx firefox-devtools-mcp@latest --start-url https://example.com --headless
+npx @modelcontextprotocol/inspector npx @mozilla/firefox-devtools-mcp@latest --start-url https://example.com --headless
 ```
 
 Then call tools like:
@@ -110,6 +110,7 @@ You can pass flags or environment variables (names on the right):
 - `--enable-privileged-context` — enable privileged context tools: list/select privileged contexts, evaluate privileged scripts, get/set Firefox prefs, and list extensions. Requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` (`ENABLE_PRIVILEGED_CONTEXT=true`)
 - `--android-device` — enable Firefox for Android mode; value is the ADB device serial (e.g. `emulator-5554`). Run `adb devices` to list connected devices. Omit the value or use `auto` to select the single connected device automatically.
 - `--android-package` — Android app package name, default `org.mozilla.firefox`. Other packages: `org.mozilla.firefox_beta` for Firefox Beta, `org.mozilla.fenix` for Firefox Nightly, `org.mozilla.fenix.debug` for Firefox Nightly Debug, `org.mozilla.geckoview_example` for geckoview (`ANDROID_PACKAGE`)
+- `--log-file` — write MCP server logs to a file instead of stderr. Useful for debugging sessions with MCP clients that hide server output. Set `DEBUG=*` to also include verbose debug logs. Example: `--log-file /tmp/firefox-mcp.log`
 
 > **Note on `--pref`:** When Firefox runs in automation, it applies [RecommendedPreferences](https://searchfox.org/firefox-main/source/remote/shared/RecommendedPreferences.sys.mjs) that modify browser behavior for testing. The `--pref` option allows overriding these defaults when needed.
 
@@ -122,13 +123,13 @@ Use `--android-device` to automate Firefox running on an Android device. Require
 adb devices
 
 # Launch Firefox for Android on the single connected device
-npx firefox-devtools-mcp --android-device auto
+npx @mozilla/firefox-devtools-mcp --android-device auto
 
 # Target a specific device
-npx firefox-devtools-mcp --android-device <serial>
+npx @mozilla/firefox-devtools-mcp --android-device <serial>
 
 # Use Firefox Nightly instead
-npx firefox-devtools-mcp --android-device <serial> --android-package org.mozilla.fenix
+npx @mozilla/firefox-devtools-mcp --android-device <serial> --android-package org.mozilla.fenix
 ```
 
 Port forwarding between the host and device is handled automatically by geckodriver.
@@ -142,7 +143,7 @@ Use `--connect-existing` to automate your real browsing session — with cookies
 firefox --marionette
 
 # Run the MCP server
-npx firefox-devtools-mcp --connect-existing --marionette-port 2828
+npx @mozilla/firefox-devtools-mcp --connect-existing --marionette-port 2828
 ```
 
 Or set `marionette.enabled` to `true` in `about:config` (or `user.js`) to enable Marionette on every launch.
@@ -208,7 +209,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on local development, te
     "mcpServers": {
       "firefox-devtools": {
         "command": "cmd",
-        "args": ["/c", "npx", "-y", "firefox-devtools-mcp@latest"]
+        "args": ["/c", "npx", "-y", "@mozilla/firefox-devtools-mcp@latest"]
       }
     }
     ```
@@ -219,7 +220,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on local development, te
     "mcpServers": {
       "firefox-devtools": {
         "command": "C:\\nvm4w\\nodejs\\npx.ps1",
-        "args": ["-y", "firefox-devtools-mcp@latest"]
+        "args": ["-y", "@mozilla/firefox-devtools-mcp@latest"]
       }
     }
     ```
