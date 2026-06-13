@@ -472,8 +472,8 @@ export class FirefoxClient {
   async close(): Promise<void> {
     try {
       await this.core.close();
-    } catch {
-      /* never throws per contract */
+    } catch (error) {
+      logDebug(`close() failed: ${error instanceof Error ? error.message : String(error)}`);
     }
     this.consoleEvents = null;
     this.networkEvents = null;

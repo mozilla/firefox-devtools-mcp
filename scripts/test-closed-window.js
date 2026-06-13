@@ -137,9 +137,6 @@ async function main() {
   const geckosBefore = new Set(pgrep('geckodriver'));
   const usedPids = [];
 
-  // ---------------------------------------------------------------
-  // Scenario A: Firefox frozen (SIGSTOP)
-  // ---------------------------------------------------------------
   console.log('Scenario A: Firefox frozen (SIGSTOP)');
 
   console.log('  1. Launching Firefox...');
@@ -164,7 +161,7 @@ async function main() {
   // Verify geckodriver death BEFORE cleaning up frozen Firefox (avoids false positives)
   console.log('  4. Verifying geckodriver was killed by close()...');
   if (!(await waitForDeath(a.geckoPid, 5000))) {
-    console.log('  [FAIL] Geckodriver still alive after close()');
+    console.error('  [FAIL] Geckodriver still alive after close()');
     killAll([...a.firefoxPids, a.geckoPid]);
     process.exit(1);
   }
@@ -174,12 +171,10 @@ async function main() {
   killAll(a.firefoxPids);
 
   console.log('  6. Reconnecting...');
-  usedPids.push(a.geckoPid, await reconnect(geckosBefore, usedPids));
+  usedPids.push(a.geckoPid);
+  usedPids.push(await reconnect(geckosBefore, usedPids));
   console.log('  Scenario A: PASS\n');
 
-  // ---------------------------------------------------------------
-  // Scenario B: Firefox killed (SIGKILL)
-  // ---------------------------------------------------------------
   console.log('Scenario B: Firefox killed (SIGKILL)');
 
   console.log('  1. Launching Firefox...');
@@ -206,20 +201,17 @@ async function main() {
 
   console.log('  5. Verifying geckodriver is dead...');
   if (!(await waitForDeath(b.geckoPid, 5000))) {
-    console.log('  [FAIL] Geckodriver still alive after cleanup');
+    console.error('  [FAIL] Geckodriver still alive after cleanup');
     killHard(b.geckoPid);
     process.exit(1);
   }
   console.log('     Geckodriver is dead');
 
   console.log('  6. Reconnecting...');
-  usedPids.push(b.geckoPid, await reconnect(geckosBefore, usedPids));
+  usedPids.push(b.geckoPid);
+  usedPids.push(await reconnect(geckosBefore, usedPids));
   console.log('  Scenario B: PASS\n');
 
-  // ---------------------------------------------------------------
-  // Scenario C: Firefox killed (SIGKILL) — non-headless recovery
-  // Same as B but with a visible browser window (real user scenario)
-  // ---------------------------------------------------------------
   console.log('Scenario C: Firefox killed (SIGKILL) — non-headless');
 
   console.log('  1. Launching Firefox (non-headless)...');
@@ -246,14 +238,15 @@ async function main() {
 
   console.log('  5. Verifying geckodriver is dead...');
   if (!(await waitForDeath(c.geckoPid, 5000))) {
-    console.log('  [FAIL] Geckodriver still alive after cleanup');
+    console.error('  [FAIL] Geckodriver still alive after cleanup');
     killHard(c.geckoPid);
     process.exit(1);
   }
   console.log('     Geckodriver is dead');
 
   console.log('  6. Reconnecting...');
-  usedPids.push(c.geckoPid, await reconnect(geckosBefore, usedPids));
+  usedPids.push(c.geckoPid);
+  usedPids.push(await reconnect(geckosBefore, usedPids));
   console.log('  Scenario C: PASS\n');
 
   // Final cleanup

@@ -391,8 +391,9 @@ export class FirefoxCore {
         webdriver._bidiConnection.close();
       } catch {
         /* already dead */
+      } finally {
+        webdriver._bidiConnection = undefined;
       }
-      webdriver._bidiConnection = undefined;
     }
 
     // In connect-existing mode, geckodriver's DELETE /session releases Marionette
@@ -408,9 +409,6 @@ export class FirefoxCore {
           }),
         ]);
       } catch {
-        // Timer has passed but webdriver.quit() still hasn't returned.
-        // This means Geckodriver is unresponsive. Kill geckodriver.
-        // Calling webdriver.onQuit_ (notice the underscore at the end) kills the geckodriver process
         const webdriverHasOnQuit = typeof webdriver.onQuit_ === 'function';
         logDebug('WebDriver.quit() timed out or failed - force killing geckodriver');
         if (webdriverHasOnQuit) {
