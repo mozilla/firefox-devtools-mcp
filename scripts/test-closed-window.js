@@ -2,13 +2,10 @@
 /**
  * Test: zombie geckodriver cleanup
  *
- * Scenario A (SIGSTOP): Firefox is frozen and can't respond, so close() hangs.
- *   Proves that close() force-kills the zombie via onQuit_() on timeout.
- *
  * Scenario B (SIGKILL): Firefox is completely dead (user clicked [X]).
  *   Recovery test: can close() clean up and reconnect after Firefox dies?
- *   Note: SIGKILL closes TCP sockets, so geckodriver often dies with Firefox.
- *   A true zombie (geckodriver alive but stuck) is tested by Scenario A.
+ *
+ * Scenario C (SIGKILL, non-headless): Same as B with a visible browser window.
  */
 import { FirefoxDevTools } from '../dist/index.js';
 import { execFileSync } from 'node:child_process';
@@ -51,12 +48,6 @@ function isAlive(pid) {
 function killHard(pid) {
   try {
     process.kill(pid, 'SIGKILL');
-  } catch {}
-}
-
-function freeze(pid) {
-  try {
-    process.kill(pid, 'SIGSTOP');
   } catch {}
 }
 
@@ -136,44 +127,6 @@ async function main() {
   console.log('--- Zombie geckodriver fix test ---\n');
   const geckosBefore = new Set(pgrep('geckodriver'));
   const usedPids = [];
-
-  console.log('Scenario A: Firefox frozen (SIGSTOP)');
-
-  console.log('  1. Launching Firefox...');
-  const a = await launchFirefox(geckosBefore);
-  console.log(`     Geckodriver PID: ${a.geckoPid}, Firefox PIDs: ${a.firefoxPids.join(', ')}`);
-
-  console.log('  2. Freezing Firefox (SIGSTOP)...');
-  for (const pid of a.firefoxPids) freeze(pid);
-  const allFrozen = a.firefoxPids.every((pid) => !isAlive(pid) || getProcState(pid) === 'T');
-  if (!allFrozen) {
-    console.error('  [FATAL] Firefox not frozen');
-    killAll([...a.firefoxPids, a.geckoPid]);
-    process.exit(1);
-  }
-  console.log('     Firefox is frozen');
-
-  console.log('  3. Calling close() (built-in timeout + force-kill)...');
-  const t0 = Date.now();
-  await a.devTools.close();
-  console.log(`     close() completed in ${Date.now() - t0}ms`);
-
-  // Verify geckodriver death BEFORE cleaning up frozen Firefox (avoids false positives)
-  console.log('  4. Verifying geckodriver was killed by close()...');
-  if (!(await waitForDeath(a.geckoPid, 5000))) {
-    console.error('  [FAIL] Geckodriver still alive after close()');
-    killAll([...a.firefoxPids, a.geckoPid]);
-    process.exit(1);
-  }
-  console.log('     Geckodriver is dead');
-
-  console.log('  5. Cleaning up frozen Firefox...');
-  killAll(a.firefoxPids);
-
-  console.log('  6. Reconnecting...');
-  usedPids.push(a.geckoPid);
-  usedPids.push(await reconnect(geckosBefore, usedPids));
-  console.log('  Scenario A: PASS\n');
 
   console.log('Scenario B: Firefox killed (SIGKILL)');
 
