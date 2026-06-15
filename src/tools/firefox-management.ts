@@ -291,13 +291,8 @@ export async function handleRestartFirefox(input: unknown) {
       // Set options for next launch
       setNextLaunchOptions(newOptions);
 
-      // Close current instance (ignore errors - we're restarting anyway)
-      try {
-        await currentFirefox.close();
-      } catch {
-        // Ignore close errors - we'll reset anyway
-      }
-      resetFirefox();
+      // Close current instance
+      await resetFirefox();
 
       // Prepare change summary
       const changes = [];
@@ -333,7 +328,7 @@ export async function handleRestartFirefox(input: unknown) {
       // Firefox not running (or disconnected) - configure for first start
       if (currentFirefox) {
         // Had a stale disconnected reference, clean it up
-        resetFirefox();
+        await resetFirefox();
       }
 
       // Use provided firefoxPath, or fall back to CLI args if available

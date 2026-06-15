@@ -41,11 +41,13 @@ let nextLaunchOptions: FirefoxLaunchOptions | null = null;
 let pendingWarning: string | null = null;
 
 /**
- * Reset Firefox instance (used when disconnection is detected)
+ * Reset Firefox instance (used when disconnection is detected).
+ * Tries graceful close with a timeout; if it hangs (zombie geckodriver),
+ * force-kills the process tree.
  */
-export function resetFirefox(): void {
+export async function resetFirefox(): Promise<void> {
   if (firefox) {
-    firefox.reset();
+    await firefox.close();
     firefox = null;
   }
   pendingWarning = null;
@@ -81,7 +83,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
     const isConnected = await firefox.isConnected();
     if (!isConnected) {
       log('Firefox connection lost, reconnecting...');
-      resetFirefox();
+      await resetFirefox();
     } else {
       return firefox;
     }
@@ -145,7 +147,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
     // leave geckodriver running with an active Marionette session, causing
     // "Connection attempt denied because an active session has been found"
     // on the next connect attempt.
-    await firefox.close().catch(() => {});
+    await firefox.close();
     firefox = null;
     throw error;
   }
@@ -391,13 +393,7 @@ export async function run(
   // Clean up the Marionette session so Firefox accepts new connections.
   // Without this, the session stays locked after the MCP client disconnects.
   const cleanup = async () => {
-    if (firefox) {
-      try {
-        await firefox.close();
-      } catch {
-        // ignore
-      }
-    }
+    await resetFirefox();
     await server.close();
     await flushLogs().catch(() => {});
     process.exit(0);

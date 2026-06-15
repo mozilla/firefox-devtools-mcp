@@ -35,9 +35,10 @@ describe('getFirefox() reconnect behavior', () => {
       marionettePort: 2828,
     });
 
-    // Verify reset clears the state
+    // Verify close() clears the state
+    (core as any).driver = { quit: vi.fn().mockResolvedValue(undefined) };
     core.setCurrentContextId('old-context');
-    core.reset();
+    await core.close();
     expect(core.getCurrentContextId()).toBe(null);
     expect(() => core.getDriver()).toThrow('Driver not connected');
   });

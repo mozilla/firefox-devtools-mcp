@@ -302,25 +302,6 @@ export class FirefoxCore {
   }
 
   /**
-   * Reset driver state (used when Firefox is detected as closed)
-   */
-  reset(): void {
-    if (this.driver) {
-      const d = this.driver as any;
-      if (d._bidiConnection) {
-        d._bidiConnection.close();
-        d._bidiConnection = undefined;
-      }
-      if ('quit' in this.driver) {
-        void (this.driver as { quit(): Promise<void> }).quit();
-      }
-    }
-    this.driver = null;
-    this.currentContextId = null;
-    logDebug('Driver state reset');
-  }
-
-  /**
    * Get current browsing context ID
    */
   getCurrentContextId(): string | null {
@@ -448,27 +429,58 @@ export class FirefoxCore {
 
   /**
    * Close driver and cleanup.
-   * When connected to an existing Firefox instance, only kills geckodriver
-   * without closing the browser.
+   * - Tries graceful quit() with a timeout; on timeout, force-kills via onQuit_().
+   * - Restores env vars, closes log fd, clears all state.
+   * - Never throws — callers can rely on cleanup completing.
    */
   async close(): Promise<void> {
-    if (this.driver) {
-      // Selenium's quit() skips closing the BiDi WebSocket when onQuit_ is set
-      // (it returns early before reaching the _bidiConnection.close() branch).
-      // We must close it first: geckodriver may not release the Marionette session
-      // until the BiDi connection is cleanly terminated, which would leave Firefox's
-      // Marionette locked and prevent reconnection.
-      const d = this.driver as any;
-      if (d._bidiConnection) {
-        d._bidiConnection.close();
-        d._bidiConnection = undefined;
+    if (!this.driver) {
+      return;
+    }
+
+    const webdriver = this.driver as any; // Selenium WebDriver
+    const webdriverQuitTimeout = 5000;
+
+    // Null to prevent re-entrancy
+    this.driver = null;
+    this.currentContextId = null;
+    this.logFilePath = undefined;
+    this.profileWarning = null;
+
+    // Selenium's quit() skips closing the BiDi WebSocket when onQuit_ is set.
+    // We must close it first: geckodriver may not release the Marionette session
+    // until the BiDi connection is cleanly terminated.
+    if (webdriver._bidiConnection) {
+      try {
+        webdriver._bidiConnection.close();
+      } catch {
+        /* already dead */
+      } finally {
+        webdriver._bidiConnection = undefined;
       }
-      // In connect-existing mode, geckodriver's DELETE /session releases Marionette
-      // without terminating Firefox (since geckodriver was started with --connect-existing).
-      if ('quit' in this.driver) {
-        await (this.driver as { quit(): Promise<void> }).quit();
+    }
+
+    // In connect-existing mode, geckodriver's DELETE /session releases Marionette
+    // without terminating Firefox (since geckodriver was started with --connect-existing).
+    if ('quit' in webdriver) {
+      let timer: NodeJS.Timeout;
+      try {
+        // Give webdriver.quit() a certain timeout
+        await Promise.race([
+          (webdriver as { quit(): Promise<void> }).quit(),
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error('close timeout')), webdriverQuitTimeout);
+          }),
+        ]);
+      } catch {
+        const webdriverHasOnQuit = typeof webdriver.onQuit_ === 'function';
+        logDebug('WebDriver.quit() timed out or failed - force killing geckodriver');
+        if (webdriverHasOnQuit) {
+          void webdriver.onQuit_().catch(() => {});
+        }
+      } finally {
+        clearTimeout(timer!);
       }
-      this.driver = null;
     }
 
     // Close log file descriptor if open

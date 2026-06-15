@@ -474,24 +474,21 @@ export class FirefoxClient {
     return this.core.getOptions();
   }
 
-  /**
-   * Reset all internal state (used when Firefox is detected as closed)
-   */
-  reset(): void {
-    this.core.reset();
-    this.consoleEvents = null;
-    this.networkEvents = null;
-    this.dom = null;
-    this.pages = null;
-    this.snapshot = null;
-  }
-
   // ============================================================================
   // Cleanup
   // ============================================================================
 
   async close(): Promise<void> {
-    await this.core.close();
+    try {
+      await this.core.close();
+    } catch (error) {
+      logDebug(`close() failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    this.consoleEvents = null;
+    this.networkEvents = null;
+    this.dom = null;
+    this.pages = null;
+    this.snapshot = null;
   }
 }
 
