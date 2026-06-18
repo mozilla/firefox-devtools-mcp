@@ -14,6 +14,7 @@ vi.mock('../../src/index.js', () => ({
 describe('FirefoxCore prefs via firefoxOptions', () => {
   const mockSetPreference = vi.fn();
   const mockGetWindowHandle = vi.fn();
+  const mockServiceBuilderAddArguments = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,6 +37,7 @@ describe('FirefoxCore prefs via firefoxOptions', () => {
         },
         ServiceBuilder: class {
           setStdio = vi.fn();
+          addArguments = mockServiceBuilderAddArguments;
         },
       },
     }));
@@ -79,6 +81,25 @@ describe('FirefoxCore prefs via firefoxOptions', () => {
     expect(mockSetPreference).toHaveBeenCalledWith('bool.pref', true);
     expect(mockSetPreference).toHaveBeenCalledWith('int.pref', 42);
     expect(mockSetPreference).toHaveBeenCalledWith('string.pref', 'hello');
+  });
+
+  it('should forward remote.log.level to geckodriver --log argument', async () => {
+    mockSelenium();
+    const { FirefoxCore } = await import('../../src/firefox/core.js');
+    const core = new FirefoxCore({
+      headless: true,
+      prefs: { 'remote.log.level': 'Trace' },
+    });
+    await core.connect();
+    expect(mockServiceBuilderAddArguments).toHaveBeenCalledWith('--log', 'trace');
+  });
+
+  it('should not pass --log to geckodriver when remote.log.level is not set', async () => {
+    mockSelenium();
+    const { FirefoxCore } = await import('../../src/firefox/core.js');
+    const core = new FirefoxCore({ headless: true });
+    await core.connect();
+    expect(mockServiceBuilderAddArguments).not.toHaveBeenCalledWith('--log', expect.anything());
   });
 
   it('should not require MOZ_REMOTE_ALLOW_SYSTEM_ACCESS', async () => {

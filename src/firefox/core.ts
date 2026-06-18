@@ -244,6 +244,11 @@ export class FirefoxCore {
         log(`Capturing Firefox output to: ${this.logFilePath}`);
       }
 
+      const remoteLogLevel = this.options.prefs?.['remote.log.level'];
+      if (remoteLogLevel && typeof remoteLogLevel === 'string') {
+        serviceBuilder.addArguments('--log', remoteLogLevel.toLowerCase());
+      }
+
       this.driver = await new Builder()
         .forBrowser(Browser.FIREFOX)
         .setFirefoxOptions(firefoxOptions)
