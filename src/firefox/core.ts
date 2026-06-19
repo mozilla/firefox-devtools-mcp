@@ -222,6 +222,12 @@ export class FirefoxCore {
         for (const [name, value] of Object.entries(this.options.prefs)) {
           firefoxOptions.setPreference(name, value);
         }
+        if (
+          this.options.prefs['remote.prefs.recommended'] === false &&
+          !('app.update.disabledForTesting' in this.options.prefs)
+        ) {
+          firefoxOptions.setPreference('app.update.disabledForTesting', true);
+        }
       }
 
       let serviceBuilder;

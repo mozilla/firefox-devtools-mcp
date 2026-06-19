@@ -102,6 +102,28 @@ describe('FirefoxCore prefs via firefoxOptions', () => {
     expect(mockServiceBuilderAddArguments).not.toHaveBeenCalledWith('--log', expect.anything());
   });
 
+  it('should automatically set app.update.disabledForTesting when remote.prefs.recommended is false', async () => {
+    mockSelenium();
+    const { FirefoxCore } = await import('../../src/firefox/core.js');
+    const core = new FirefoxCore({
+      headless: true,
+      prefs: { 'remote.prefs.recommended': false },
+    });
+    await core.connect();
+    expect(mockSetPreference).toHaveBeenCalledWith('app.update.disabledForTesting', true);
+  });
+
+  it('should not override app.update.disabledForTesting when explicitly set alongside remote.prefs.recommended=false', async () => {
+    mockSelenium();
+    const { FirefoxCore } = await import('../../src/firefox/core.js');
+    const core = new FirefoxCore({
+      headless: true,
+      prefs: { 'remote.prefs.recommended': false, 'app.update.disabledForTesting': false },
+    });
+    await core.connect();
+    expect(mockSetPreference).not.toHaveBeenCalledWith('app.update.disabledForTesting', true);
+  });
+
   it('should not require MOZ_REMOTE_ALLOW_SYSTEM_ACCESS', async () => {
     delete process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS;
     mockSelenium();
