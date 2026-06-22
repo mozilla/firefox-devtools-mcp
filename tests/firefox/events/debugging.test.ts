@@ -110,6 +110,24 @@ describe('DebuggingEvents', () => {
       expect(results[0].error).toBe('ReferenceError: x is not defined');
     });
 
+    it('result buffer is capped at 100, dropping oldest results first', async () => {
+      events.addLogpoint(LOGPOINT_ID, URL, LINE, 'x');
+
+      for (let i = 0; i < 105; i++) {
+        mock.emit({
+          method: 'moz:debugging.paused',
+          params: { context: 'ctx-1', url: URL, line: LINE, column: 0, callFrames: [] },
+        });
+      }
+
+      await vi.waitFor(
+        () => {
+          expect(events.getLogpointResults(LOGPOINT_ID)).toHaveLength(100);
+        },
+        { timeout: 1000 }
+      );
+    });
+
     it('pause at non-logpoint location does not evaluate expression', async () => {
       events.addLogpoint(LOGPOINT_ID, URL, LINE, 'x');
       mock.emit({

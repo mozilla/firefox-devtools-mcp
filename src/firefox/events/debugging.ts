@@ -6,10 +6,13 @@ import type { WebDriver } from 'selenium-webdriver';
 import type { LogpointResult } from '../types.js';
 import { logDebug } from '../../utils/logger.js';
 
+const MAX_LOGPOINT_RESULTS = 100;
+
 interface LogpointEntry {
   expression: string;
   location: { url: string; line: number };
   results: LogpointResult[];
+  capped: boolean;
 }
 
 export class DebuggingEvents {
@@ -71,6 +74,7 @@ export class DebuggingEvents {
       location: { url, line },
       expression,
       results: [],
+      capped: false,
     });
   }
 
@@ -133,6 +137,13 @@ export class DebuggingEvents {
         timestamp: Date.now(),
       });
     } finally {
+      if (entry.results.length > MAX_LOGPOINT_RESULTS) {
+        entry.results.splice(0, entry.results.length - MAX_LOGPOINT_RESULTS);
+        if (!entry.capped) {
+          entry.capped = true;
+          logDebug(`Logpoint ${logpointId}: result buffer capped at ${MAX_LOGPOINT_RESULTS}`);
+        }
+      }
       await this.sendBiDiCommand('moz:debugging.resume', { context: contextId }).catch((err) => {
         logDebug(`Failed to resume after logpoint: ${String(err)}`);
       });
