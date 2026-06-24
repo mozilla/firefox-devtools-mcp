@@ -173,6 +173,7 @@ BiDi-dependent features (console events, network events) are not available in co
 - Privileged Context: list/select privileged ("chrome") contexts, evaluate_privileged_script (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 - WebExtension: install_extension, uninstall_extension, list_extensions (list requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 - Firefox Management: get_firefox_info, get_firefox_output, restart_firefox, set_firefox_prefs, get_firefox_prefs
+- Profiler: profiler_is_active, profiler_start (preset or explicit config), profiler_stop (saves profile to downloads directory)
 - Utilities: accept/dismiss dialog, history back/forward, set viewport
 
 ### Screenshot optimization for Claude Code

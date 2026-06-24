@@ -134,3 +134,13 @@ export {
   handleRemoveLogpoint,
   handleGetLogpointResults,
 } from './debugging.js';
+
+// Profiler tools
+export {
+  profilerIsActiveTool,
+  profilerStartTool,
+  profilerStopTool,
+  handleProfilerIsActive,
+  handleProfilerStart,
+  handleProfilerStop,
+} from './profiler.js';

@@ -228,6 +228,11 @@ export async function run(
     ['install_extension', tools.handleInstallExtension],
     ['uninstall_extension', tools.handleUninstallExtension],
 
+    // Profiler
+    ['profiler_is_active', tools.handleProfilerIsActive],
+    ['profiler_start', tools.handleProfilerStart],
+    ['profiler_stop', tools.handleProfilerStop],
+
     // Script evaluation — requires --enable-script
     ...(args.enableScript ? ([['evaluate_script', tools.handleEvaluateScript]] as const) : []),
 
@@ -304,6 +309,11 @@ export async function run(
     // WebExtensions (install/uninstall use standard BiDi, no privileged context required)
     tools.installExtensionTool,
     tools.uninstallExtensionTool,
+
+    // Profiler
+    tools.profilerIsActiveTool,
+    tools.profilerStartTool,
+    tools.profilerStopTool,
 
     // Script evaluation — requires --enable-script
     ...(args.enableScript ? [tools.evaluateScriptTool] : []),
