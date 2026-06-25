@@ -118,3 +118,19 @@ export {
   handleUninstallExtension,
   handleListExtensions,
 } from './webextension.js';
+
+// Debugging tools (script inspection, logpoints)
+export {
+  enableDebuggerTool,
+  listScriptsTool,
+  getScriptSourceTool,
+  setLogpointTool,
+  removeLogpointTool,
+  getLogpointResultsTool,
+  handleEnableDebugger,
+  handleListScripts,
+  handleGetScriptSource,
+  handleSetLogpoint,
+  handleRemoveLogpoint,
+  handleGetLogpointResults,
+} from './debugging.js';

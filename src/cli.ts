@@ -146,7 +146,7 @@ export const cliOptions = {
   enableScript: {
     type: 'boolean',
     description:
-      'Enable the evaluate_script tool, which allows executing arbitrary JavaScript in the page context.',
+      'Enable the script tools such as script evaluation and logpoints (Firefox 153+ required).',
     default: (process.env.ENABLE_SCRIPT ?? 'false') === 'true',
   },
   enablePrivilegedContext: {

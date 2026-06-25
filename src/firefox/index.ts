@@ -2,11 +2,11 @@
  * Firefox Client - Public facade for modular Firefox automation
  */
 
-import type { FirefoxLaunchOptions, ConsoleMessage } from './types.js';
+import type { FirefoxLaunchOptions, ConsoleMessage, LogpointResult } from './types.js';
 import { WebElement } from 'selenium-webdriver';
 import { FirefoxCore } from './core.js';
 import { logDebug } from '../utils/logger.js';
-import { ConsoleEvents, NetworkEvents } from './events/index.js';
+import { ConsoleEvents, NetworkEvents, DebuggingEvents } from './events/index.js';
 import { DomInteractions } from './dom.js';
 import { PageManagement } from './pages.js';
 import { SnapshotManager, type Snapshot, type SnapshotOptions } from './snapshot/index.js';
@@ -19,6 +19,7 @@ export class FirefoxClient {
   private core: FirefoxCore;
   private consoleEvents: ConsoleEvents | null = null;
   private networkEvents: NetworkEvents | null = null;
+  private debuggingEvents: DebuggingEvents | null = null;
   private dom: DomInteractions | null = null;
   private pages: PageManagement | null = null;
   private snapshot: SnapshotManager | null = null;
@@ -64,6 +65,10 @@ export class FirefoxClient {
         onNavigate,
         autoClearOnNavigate: false,
       });
+
+      this.debuggingEvents = new DebuggingEvents(driver as any, (method, params) =>
+        this.core.sendBiDiCommand(method, params)
+      );
     }
 
     // Initialize DOM with UID resolver callback
@@ -97,6 +102,14 @@ export class FirefoxClient {
       } catch {
         logDebug('Network events unavailable (BiDi not supported by this Firefox session)');
         this.networkEvents = null;
+      }
+    }
+    if (this.debuggingEvents) {
+      try {
+        await this.debuggingEvents.subscribe();
+      } catch {
+        logDebug('Debugging events unavailable (BiDi not supported by this Firefox session)');
+        this.debuggingEvents = null;
       }
     }
   }
@@ -453,6 +466,44 @@ export class FirefoxClient {
   }
 
   /**
+   * @internal
+   */
+  async setLogpoint(url: string, line: number, expression: string): Promise<string> {
+    if (!this.debuggingEvents) {
+      throw new Error('Debugging events not available');
+    }
+    const result = await this.core.sendBiDiCommand('moz:debugging.setBreakpoint', {
+      location: { url, line },
+    });
+    const logpointId = (result as { breakpoint: string }).breakpoint;
+    this.debuggingEvents.addLogpoint(logpointId, url, line, expression);
+    return logpointId;
+  }
+
+  /**
+   * @internal
+   */
+  async removeLogpoint(logpointId: string): Promise<void> {
+    if (!this.debuggingEvents) {
+      throw new Error('Debugging events not available');
+    }
+    await this.core.sendBiDiCommand('moz:debugging.removeBreakpoint', {
+      breakpoint: logpointId,
+    });
+    this.debuggingEvents.removeLogpoint(logpointId);
+  }
+
+  /**
+   * @internal
+   */
+  getLogpointResults(logpointId: string): LogpointResult[] | null {
+    if (!this.debuggingEvents) {
+      return null;
+    }
+    return this.debuggingEvents.getLogpointResults(logpointId);
+  }
+
+  /**
    * Get log file path (if logging is enabled)
    */
   getLogFilePath(): string | undefined {
@@ -486,6 +537,7 @@ export class FirefoxClient {
     }
     this.consoleEvents = null;
     this.networkEvents = null;
+    this.debuggingEvents = null;
     this.dom = null;
     this.pages = null;
     this.snapshot = null;
