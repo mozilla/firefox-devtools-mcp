@@ -1,6 +1,6 @@
 {
   "name": "@mozilla/firefox-devtools-mcp",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "Model Context Protocol (MCP) server for Firefox DevTools automation",
   "author": "Mozilla",
   "license": "MIT OR Apache-2.0",
@@ -8,7 +8,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "firefox-devtools-mcp": "./dist/index.js"
+    "firefox-devtools-mcp": "dist/index.js"
   },
   "scripts": {
     "dev": "tsx watch src/index.moz.ts",
