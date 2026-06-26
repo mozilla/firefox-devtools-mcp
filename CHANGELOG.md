@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-06-26
+
+### Added
+- Profiler tools for Firefox 154+: `profiler_start`, `profiler_stop`, `profiler_is_active`
+- Logpoint tools for non-breaking debugging: `enable_debugger`, `set_logpoint`, `remove_logpoint`, `get_logpoint_results`
+- `get_firefox_info` now returns the Firefox version number
+- `--log-file` CLI option to write MCP server logs to a file
+
+### Fixed
+- Zombie geckodriver processes are now killed when Firefox is closed while the MCP server is running
+- `remote.log.level` can now be set via `--pref`
+- `app.update.disabledForTesting` is now forced to `true` when recommended preferences are disabled
+
 ## [0.9.5] - 2026-06-11
 
 ### Changed
