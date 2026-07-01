@@ -2,7 +2,7 @@
   "mcpServers": {
     "firefox-devtools": {
       "command": "npx",
-      "args": ["-y", "firefox-devtools-mcp@latest"]
+      "args": ["-y", "@mozilla/firefox-devtools-mcp@latest"]
     }
   }
 }

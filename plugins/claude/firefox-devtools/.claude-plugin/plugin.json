@@ -1,11 +1,12 @@
 {
   "name": "firefox-devtools",
-  "description": "Firefox browser automation via WebDriver BiDi. Automate Firefox for testing, scraping, form filling, screenshots, and debugging.",
-  "version": "0.6.0",
+  "description": "Control Firefox for browsing, web testing, and debugging. Fill forms, capture network and console activity, take screenshots, run scripts, and profile performance. Supports Android devices.",
+  "version": "0.9.7",
   "author": {
     "name": "Mozilla",
     "url": "https://github.com/mozilla/firefox-devtools-mcp"
   },
   "repository": "https://github.com/mozilla/firefox-devtools-mcp",
-  "license": "MIT"
+  "homepage": "https://github.com/mozilla/firefox-devtools-mcp",
+  "license": "MIT OR Apache-2.0"
 }
