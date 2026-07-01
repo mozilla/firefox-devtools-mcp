@@ -45,7 +45,8 @@
     "test:navigation": "node scripts/test-navigation.js",
     "test:privileged": "node scripts/test-privileged-context.js",
     "test:screenshot": "node scripts/test-screenshot.js",
-    "test:integration:win": "node scripts/run-integration-tests-windows.mjs"
+    "test:integration:win": "node scripts/run-integration-tests-windows.mjs",
+    "bump-version": "node scripts/bump-version.mjs"
   },
   "keywords": [
     "mcp",

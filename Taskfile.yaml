@@ -90,6 +90,11 @@ tasks:
     cmds:
       - npm run inspector:dev
 
+  bump-version:
+    desc: Bump version in package.json and plugin.json (usage: task bump-version -- 0.9.8)
+    cmds:
+      - node scripts/bump-version.mjs {{.CLI_ARGS}}
+
   release:
     desc: Prepare for release (clean, install, build, check)
     cmds:
