@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-07-02
+
+### Updated
+- Removed strict plugin versioning, plugin should always update to the latest sha
+- Removed setup skill, failing for cowork, highlighted using restart instead
+- Enabled scripting and disabled automation preferences by default
+
+## [0.9.8] - 2026-07-02
+
+### Updated
+- Restructured and cleaned up plugin skills
+- Added a marketplace.json, plugin can be installed via the repository's URL
+
 ## [0.9.7] - 2026-06-26
 
 ### Fixed
