@@ -3,22 +3,22 @@ description: Navigate Firefox to a URL and take a snapshot
 argument-hint: <url>
 ---
 
-# /firefox:navigate
+# /firefox-devtools-mcp:navigate
 
 Opens a URL in Firefox and takes a DOM snapshot for interaction.
 
 ## Usage
 
 ```
-/firefox:navigate <url>
+/firefox-devtools-mcp:navigate <url>
 ```
 
 ## Examples
 
 ```
-/firefox:navigate https://example.com
-/firefox:navigate https://github.com/login
-/firefox:navigate file:///path/to/local.html
+/firefox-devtools-mcp:navigate https://example.com
+/firefox-devtools-mcp:navigate https://github.com/login
+/firefox-devtools-mcp:navigate file:///path/to/local.html
 ```
 
 ## What Happens

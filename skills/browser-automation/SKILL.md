@@ -1,6 +1,6 @@
 ---
 name: browser-automation
-description: This skill should be used when the user asks about browser automation, testing web pages, scraping content, filling forms, taking screenshots, or monitoring console/network activity. Activates for E2E testing, web scraping, form automation, or debugging web applications.
+description: This skill should be used when the user asks about browser automation, testing web pages, extracting content, filling forms, taking screenshots, or monitoring console/network activity. Activates for E2E testing, form automation, browsing tasks, or debugging web applications.
 ---
 
 When the user asks about browser automation, use Firefox DevTools MCP to control a real Firefox browser.
@@ -11,9 +11,10 @@ Activate this skill when the user:
 
 - Wants to automate browser interactions ("Fill out this form", "Click the login button")
 - Needs E2E testing ("Test the checkout flow", "Verify the login works")
-- Requests web scraping ("Extract prices from this page", "Get all links")
+- Wants to browse or extract content ("Get all links on this page", "Extract prices")
 - Needs screenshots ("Screenshot this page", "Capture the error state")
 - Wants to debug ("Check for JS errors", "Show failed network requests")
+- Needs to profile performance ("Profile this page load")
 
 ## Core Workflow
 
@@ -50,12 +51,16 @@ take_snapshot  # Get fresh UIDs
 
 | Task | Tools |
 |------|-------|
-| Navigate | `navigate_page` |
+| Navigate | `navigate_page`, `navigate_history` |
 | See DOM | `take_snapshot` |
 | Click | `click_by_uid` |
+| Hover | `hover_by_uid` |
 | Type | `fill_by_uid`, `fill_form_by_uid` |
+| Drag | `drag_by_uid_to_uid` |
+| Dialogs | `accept_dialog`, `dismiss_dialog` |
 | Screenshot | `screenshot_page`, `screenshot_by_uid` |
 | Debug | `list_console_messages`, `list_network_requests` |
+| Profile | `profiler_start`, `profiler_stop` |
 
 ## Guidelines
 

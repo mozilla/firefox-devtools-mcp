@@ -3,24 +3,24 @@ description: Show console errors and failed network requests
 argument-hint: [console|network|all]
 ---
 
-# /firefox:debug
+# /firefox-devtools-mcp:debug
 
 Displays debugging information from the current page.
 
 ## Usage
 
 ```
-/firefox:debug              # Show all (console errors + failed requests)
-/firefox:debug console      # Console messages only
-/firefox:debug network      # Network requests only
+/firefox-devtools-mcp:debug              # Show all (console errors + failed requests)
+/firefox-devtools-mcp:debug console      # Console messages only
+/firefox-devtools-mcp:debug network      # Network requests only
 ```
 
 ## Examples
 
 ```
-/firefox:debug
-/firefox:debug console
-/firefox:debug network
+/firefox-devtools-mcp:debug
+/firefox-devtools-mcp:debug console
+/firefox-devtools-mcp:debug network
 ```
 
 ## What Happens

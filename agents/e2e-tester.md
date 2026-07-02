@@ -22,11 +22,16 @@ When given a test scenario, execute it step-by-step using Firefox automation too
 ## Available Tools
 
 - `navigate_page` - Go to URL
+- `navigate_history` - Go back or forward
 - `take_snapshot` - Get DOM with UIDs
-- `fill_by_uid` / `fill_form_by_uid` - Enter text
+- `fill_by_uid` / `fill_form_by_uid` - Enter text into fields
 - `click_by_uid` - Click elements
+- `hover_by_uid` - Hover over elements
+- `drag_by_uid_to_uid` - Drag and drop
+- `accept_dialog` / `dismiss_dialog` - Handle browser dialogs
 - `screenshot_page` - Capture evidence
 - `list_console_messages` - Check for JS errors
+- `list_network_requests` - Verify API calls
 
 ## Guidelines
 
@@ -34,3 +39,4 @@ When given a test scenario, execute it step-by-step using Firefox automation too
 - Take screenshots at key checkpoints
 - Report console errors as test failures
 - Be specific about what passed or failed
+- Handle dialogs explicitly — unexpected dialogs block interactions

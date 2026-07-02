@@ -25,9 +25,7 @@ updateJson(resolve(root, 'package.json'), pkg => {
   pkg.version = version;
 });
 
-updateJson(
-  resolve(root, 'plugins/claude/firefox-devtools/.claude-plugin/plugin.json'),
-  plugin => {
-    plugin.version = version;
-  }
-);
+updateJson(resolve(root, '.claude-plugin/plugin.json'), plugin => {
+  plugin.version = version;
+  plugin.mcpServers['firefox-devtools'].args[1] = `@mozilla/firefox-devtools-mcp@${version}`;
+});

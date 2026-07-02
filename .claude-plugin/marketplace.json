@@ -1,0 +1,19 @@
+{
+  "name": "firefox-devtools-plugins",
+  "owner": {
+    "name": "Mozilla"
+  },
+  "plugins": [
+    {
+      "name": "firefox-devtools-mcp",
+      "source": "./",
+      "description": "Control Firefox for browsing, web testing, and debugging. Fill forms, capture network and console activity, take screenshots, run scripts, and profile performance. Supports Android devices.",
+      "homepage": "https://github.com/mozilla/firefox-devtools-mcp",
+      "repository": "https://github.com/mozilla/firefox-devtools-mcp",
+      "license": "MIT OR Apache-2.0",
+      "author": {
+        "name": "Mozilla"
+      }
+    }
+  ]
+}
