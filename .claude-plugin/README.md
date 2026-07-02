@@ -70,9 +70,16 @@ The plugin works automatically when you ask about browser tasks:
 2. Interact using UIDs - `click_by_uid`, `fill_by_uid`, etc.
 3. Re-snapshot after DOM changes
 
+## Default Configuration
+
+The plugin enables the following by default:
+
+- **`--enable-script`** — enables JavaScript evaluation and debugging tools (`evaluate_script`, logpoints, script inspection). Requires Firefox 153+.
+- **`remote.prefs.recommended=false`** — skips WebDriver's automation preferences so Firefox behaves closer to a regular browser session. See [RecommendedPreferences](https://searchfox.org/firefox-main/source/remote/shared/RecommendedPreferences.sys.mjs) for what those preferences do.
+
 ## Requirements
 
-- Firefox 120+
+- Firefox 153+ (for script tools) or Firefox 120+ (without script tools)
 - Node.js 20.19.0+
 
 ## Links
