@@ -62,7 +62,7 @@ take_snapshot  # Get fresh UIDs
 | Type | `fill_by_uid`, `fill_form_by_uid` |
 | Drag | `drag_by_uid_to_uid` |
 | Dialogs | `accept_dialog`, `dismiss_dialog` |
-| Screenshot | `screenshot_page saveTo=<path>`, `screenshot_by_uid` |
+| Screenshot | `screenshot_page`, `screenshot_by_uid` |
 | Debug | `list_console_messages`, `list_network_requests` |
 | Profile | `profiler_start`, `profiler_stop` |
 
@@ -71,6 +71,6 @@ take_snapshot  # Get fresh UIDs
 - **Check existing session first**: Call `list_pages` before navigating — reuse the running Firefox session rather than starting fresh
 - **Always snapshot first**: UIDs only exist after `take_snapshot`
 - **Re-snapshot after DOM changes**: UIDs become stale after interactions
-- **Save screenshots to disk**: Always use `saveTo="/tmp/screenshot.png"` (or similar) — without it the image is only embedded in the conversation and not accessible as a file
+- **Screenshots**: in Cowork (system prompt has an outputs folder host path), call `screenshot_page saveTo="<host-outputs-path>/screenshot.png"` then call `present_files` with that path. Otherwise call `screenshot_page` without `saveTo` and include the returned image directly in your reply — the user cannot see tool call outputs.
 - **Check for errors**: Use `list_console_messages level="error"` to catch JS issues
 - **Firefox only**: This MCP controls Firefox, not Chrome or Safari

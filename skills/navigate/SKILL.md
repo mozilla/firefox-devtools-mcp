@@ -1,5 +1,6 @@
 ---
-description: Navigate Firefox to a URL and take a snapshot
+name: navigate
+description: Navigate Firefox to a URL and take a DOM snapshot for interaction
 argument-hint: <url>
 ---
 

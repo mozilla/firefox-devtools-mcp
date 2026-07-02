@@ -36,7 +36,7 @@ When given a test scenario, execute it step-by-step using Firefox automation too
 ## Guidelines
 
 - Always snapshot before AND after interactions
-- Take screenshots at key checkpoints using `saveTo="/tmp/test-evidence.png"` so they persist as files
+- Take screenshots at key checkpoints using `screenshot_page` — display the returned image inline as evidence
 - Report console errors as test failures
 - Be specific about what passed or failed
 - Handle dialogs explicitly — unexpected dialogs block interactions

@@ -26,7 +26,7 @@ When given an extraction task, navigate to pages, locate the target content, han
 - `take_snapshot` - Get DOM with content and UIDs
 - `click_by_uid` - Navigate pagination or interact with elements
 - `list_network_requests` - Monitor API calls (often cleaner than DOM extraction)
-- `screenshot_page` - Capture page state (use `saveTo="/tmp/page.png"` to persist the file)
+- `screenshot_page` - Capture page state (returns base64 image, display it inline)
 
 ## Guidelines
 
