@@ -29,4 +29,4 @@ Displays debugging information from the current page.
 - `network`: Calls `list_network_requests` with `statusMin=400`
 - `all` (default): Shows both console errors and failed network requests
 
-Useful for debugging page issues, JavaScript errors, and API failures.
+Requires Firefox to already be running and on the page you want to debug. If Firefox is not running or is on about:blank, call `navigate_page` first.

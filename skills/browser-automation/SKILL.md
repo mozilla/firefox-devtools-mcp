@@ -5,6 +5,10 @@ description: This skill should be used when the user asks about browser automati
 
 When the user asks about browser automation, use Firefox DevTools MCP to control a real Firefox browser.
 
+## Before Starting
+
+Always call `list_pages` first. This checks whether Firefox is already running and which pages are open. Do not assume Firefox needs to be restarted or that you need to navigate from scratch — reuse the existing session whenever possible.
+
 ## When to Use This Skill
 
 Activate this skill when the user:
@@ -58,13 +62,15 @@ take_snapshot  # Get fresh UIDs
 | Type | `fill_by_uid`, `fill_form_by_uid` |
 | Drag | `drag_by_uid_to_uid` |
 | Dialogs | `accept_dialog`, `dismiss_dialog` |
-| Screenshot | `screenshot_page`, `screenshot_by_uid` |
+| Screenshot | `screenshot_page saveTo=<path>`, `screenshot_by_uid` |
 | Debug | `list_console_messages`, `list_network_requests` |
 | Profile | `profiler_start`, `profiler_stop` |
 
 ## Guidelines
 
+- **Check existing session first**: Call `list_pages` before navigating — reuse the running Firefox session rather than starting fresh
 - **Always snapshot first**: UIDs only exist after `take_snapshot`
 - **Re-snapshot after DOM changes**: UIDs become stale after interactions
+- **Save screenshots to disk**: Always use `saveTo="/tmp/screenshot.png"` (or similar) — without it the image is only embedded in the conversation and not accessible as a file
 - **Check for errors**: Use `list_console_messages level="error"` to catch JS issues
 - **Firefox only**: This MCP controls Firefox, not Chrome or Safari
