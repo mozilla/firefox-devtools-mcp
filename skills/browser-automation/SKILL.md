@@ -74,3 +74,4 @@ take_snapshot  # Get fresh UIDs
 - **Screenshots**: in Cowork (system prompt has an outputs folder host path), call `screenshot_page saveTo="<host-outputs-path>/screenshot.png"` then call `present_files` with that path. Otherwise call `screenshot_page` without `saveTo` and include the returned image directly in your reply — the user cannot see tool call outputs.
 - **Check for errors**: Use `list_console_messages level="error"` to catch JS issues
 - **Firefox only**: This MCP controls Firefox, not Chrome or Safari
+- **Reconfiguring Firefox**: to use a specific binary, profile, or headless mode, call `restart_firefox` with the relevant options (`firefoxPath`, `profilePath`, `headless`)
