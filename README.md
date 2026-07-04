@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/mozilla-firefox-devtools-mcp-badge.png)](https://mseep.ai/app/mozilla-firefox-devtools-mcp)
+
 # Firefox DevTools MCP
 
 [![npm version](https://badge.fury.io/js/firefox-devtools-mcp.svg)](https://www.npmjs.com/package/firefox-devtools-mcp)
