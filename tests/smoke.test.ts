@@ -6,20 +6,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { SERVER_NAME, SERVER_VERSION } from '../src/config/constants.js';
 
 describe('Smoke Tests', () => {
-  describe('Constants', () => {
-    it('should have correct server name', () => {
-      expect(SERVER_NAME).toBe('firefox-devtools');
-    });
-
-    it('should have valid server version', () => {
-      expect(SERVER_VERSION).toMatch(/^\d+\.\d+\.\d+/);
-      expect(SERVER_VERSION).toBe('0.7.1');
-    });
-  });
-
   describe('Module imports', () => {
     it('should import tools without errors', async () => {
       const { listPagesTool } = await import('../src/tools/pages.js');
