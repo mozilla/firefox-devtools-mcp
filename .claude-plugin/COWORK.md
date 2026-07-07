@@ -59,7 +59,7 @@ Some known issues / limitations.
 
 Cowork is often vague about the root cause — it may say things like "the MCP server failed to connect" or "the tools aren't registered", or simply offer to switch to Chrome instead. Check the following:
 
-- Make sure you are in **Claude Cowork**, no in **Claude Chat** — plugins only work in Cowork.
+- Make sure you are in **Claude Cowork**, not in **Claude Chat** — plugins only work in Cowork.
 - **Node.js** is missing or outdated. Run `node --version` in a terminal to check. It must be 20.19.0 or higher. If not, download it from [nodejs.org](https://nodejs.org).
 - The plugin is not installed. Check that it is listed after clicking on **Customize > Plugins**.
 
