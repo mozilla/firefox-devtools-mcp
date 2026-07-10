@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.8] - 2026-07-02
+## [0.9.10] - 2026-07-10
+
+### Added
+- `--auto-profile` option to automatically pick and reuse a profile folder based on the Firefox binary path, reducing the risk of mixing profiles across Nightly/Beta/Release
+- `mcpb` build target for packaging the MCP server as a `.mcpb` bundle
+- Secondary plugin to help troubleshoot installation issues
+
+### Fixed
+- Server version and name are now correctly set at build time
+
+### Docs
+- Added Cowork plugin installation steps, including the node/npm dependency note and a screenshot
+
+## [0.9.9] - 2026-07-02
 
 ### Updated
 - Removed strict plugin versioning, plugin should always update to the latest sha
