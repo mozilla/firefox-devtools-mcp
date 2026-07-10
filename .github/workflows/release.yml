@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
       - name: Checkout
@@ -44,3 +45,8 @@ jobs:
             firefox-devtools-mcp-${{ github.ref_name }}.tar.gz \
             dist-mcpb/*.mcpb \
             --generate-notes
+
+      - name: Trigger npm publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run publish.yml --ref ${{ github.ref_name }}
