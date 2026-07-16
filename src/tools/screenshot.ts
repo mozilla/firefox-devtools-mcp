@@ -18,6 +18,9 @@ const SAVE_TO_SCHEMA = {
 export const screenshotPageTool = {
   name: 'screenshot_page',
   description: 'Capture page screenshot as base64 PNG.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -29,6 +32,9 @@ export const screenshotPageTool = {
 export const screenshotByUidTool = {
   name: 'screenshot_by_uid',
   description: 'Capture element screenshot by UID as base64 PNG.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {

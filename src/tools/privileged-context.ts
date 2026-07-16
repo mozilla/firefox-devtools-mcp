@@ -12,6 +12,9 @@ export const listPrivilegedContextsTool = {
   name: 'list_privileged_contexts',
   description:
     'List privileged (privileged) browsing contexts. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Use restart_firefox with env parameter to enable.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {},
@@ -22,6 +25,9 @@ export const selectPrivilegedContextTool = {
   name: 'select_privileged_context',
   description:
     'Select a privileged browsing context by ID and set WebDriver Classic context to "chrome" . Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -38,6 +44,9 @@ export const evaluatePrivilegedScriptTool = {
   name: 'evaluate_privileged_script',
   description:
     'Execute JS function in the current privileged context. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Use select_privileged_context first to target a chrome context.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {

@@ -20,6 +20,9 @@ export const installExtensionTool = {
   name: 'install_extension',
   description:
     'Install a Firefox extension using WebDriver BiDi webExtension.install command. Supports installing from archive (.xpi/.zip), base64-encoded data, or unpacked directory.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -107,6 +110,9 @@ export const uninstallExtensionTool = {
   name: 'uninstall_extension',
   description:
     'Uninstall a Firefox extension using WebDriver BiDi webExtension.uninstall command. Requires the extension ID returned by install_extension or obtained from list_extensions.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -149,6 +155,9 @@ export const listExtensionsTool = {
     // privileged AddonManager API as a workaround for the currently missing
     // webExtension.getExtensions WebDriver BiDi command.
     'List installed Firefox extensions with UUIDs and background scripts. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {

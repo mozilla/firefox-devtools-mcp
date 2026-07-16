@@ -10,6 +10,9 @@ import type { McpToolResponse } from '../types/common.js';
 export const evaluateScriptTool = {
   name: 'evaluate_script',
   description: 'Execute JS function in page. Prefer UID tools for interactions.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {

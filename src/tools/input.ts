@@ -11,6 +11,9 @@ import type { McpToolResponse } from '../types/common.js';
 export const clickByUidTool = {
   name: 'click_by_uid',
   description: 'Click element by UID. Set dblClick for double-click.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -30,6 +33,9 @@ export const clickByUidTool = {
 export const hoverByUidTool = {
   name: 'hover_by_uid',
   description: 'Hover over element by UID.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -45,6 +51,9 @@ export const hoverByUidTool = {
 export const fillByUidTool = {
   name: 'fill_by_uid',
   description: 'Fill text input/textarea by UID.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -64,6 +73,9 @@ export const fillByUidTool = {
 export const dragByUidToUidTool = {
   name: 'drag_by_uid_to_uid',
   description: 'Drag element to another (HTML5 drag events).',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -83,6 +95,9 @@ export const dragByUidToUidTool = {
 export const fillFormByUidTool = {
   name: 'fill_form_by_uid',
   description: 'Fill multiple form fields at once.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -112,6 +127,9 @@ export const fillFormByUidTool = {
 export const uploadFileByUidTool = {
   name: 'upload_file_by_uid',
   description: 'Upload file to file input by UID.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {

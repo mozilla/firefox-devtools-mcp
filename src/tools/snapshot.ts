@@ -12,6 +12,9 @@ const DEFAULT_SNAPSHOT_LINES = 100;
 export const takeSnapshotTool = {
   name: 'take_snapshot',
   description: 'Capture DOM snapshot with stable UIDs. Retake after navigation.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -47,6 +50,9 @@ export const takeSnapshotTool = {
 export const resolveUidToSelectorTool = {
   name: 'resolve_uid_to_selector',
   description: 'Resolve UID to CSS selector. Fails if stale.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -62,6 +68,9 @@ export const resolveUidToSelectorTool = {
 export const clearSnapshotTool = {
   name: 'clear_snapshot',
   description: 'Clear snapshot cache. Usually not needed.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {},

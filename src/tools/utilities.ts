@@ -9,6 +9,9 @@ import type { McpToolResponse } from '../types/common.js';
 export const acceptDialogTool = {
   name: 'accept_dialog',
   description: 'Accept browser dialog. Provide promptText for prompts.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -23,6 +26,9 @@ export const acceptDialogTool = {
 export const dismissDialogTool = {
   name: 'dismiss_dialog',
   description: 'Dismiss browser dialog.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {},
@@ -33,6 +39,9 @@ export const dismissDialogTool = {
 export const navigateHistoryTool = {
   name: 'navigate_history',
   description: 'Navigate history back/forward. UIDs become stale.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -50,6 +59,9 @@ export const navigateHistoryTool = {
 export const setViewportSizeTool = {
   name: 'set_viewport_size',
   description: 'Set viewport dimensions in pixels.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {

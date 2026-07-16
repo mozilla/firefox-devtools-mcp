@@ -15,6 +15,9 @@ import type { McpToolResponse } from '../types/common.js';
 export const listNetworkRequestsTool = {
   name: 'list_network_requests',
   description: 'List network requests. Returns IDs for get_network_request.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -76,6 +79,9 @@ export const listNetworkRequestsTool = {
 export const getNetworkRequestTool = {
   name: 'get_network_request',
   description: 'Get request details by ID. URL lookup as fallback.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object' as const,
     properties: {

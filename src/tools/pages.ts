@@ -9,6 +9,9 @@ import type { McpToolResponse } from '../types/common.js';
 export const listPagesTool = {
   name: 'list_pages',
   description: 'List open tabs (index, title, URL). Selected tab is marked.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {},
@@ -18,6 +21,9 @@ export const listPagesTool = {
 export const newPageTool = {
   name: 'new_page',
   description: 'Open new tab at URL. Returns tab index.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -33,6 +39,9 @@ export const newPageTool = {
 export const navigatePageTool = {
   name: 'navigate_page',
   description: 'Navigate selected tab to URL.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -48,6 +57,9 @@ export const navigatePageTool = {
 export const selectPageTool = {
   name: 'select_page',
   description: 'Select active tab by index, URL, or title. Index takes precedence.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -71,6 +83,9 @@ export const selectPageTool = {
 export const closePageTool = {
   name: 'close_page',
   description: 'Close tab by index.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
