@@ -29,6 +29,9 @@ export const enableDebuggerTool = {
   name: 'enable_debugger',
   description:
     'Enable the JS debugger for the current page. Required before set_logpoint works. Requires Firefox 153+.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: { type: 'object', properties: {} },
 };
 
@@ -36,6 +39,9 @@ export const listScriptsTool = {
   name: 'list_scripts',
   description:
     'List all JavaScript files currently loaded in the page. Requires enable_debugger to have been called.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: { type: 'object', properties: {} },
 };
 
@@ -43,6 +49,9 @@ export const getScriptSourceTool = {
   name: 'get_script_source',
   description:
     'Get the source code of a JavaScript file loaded in the page. Requires enable_debugger to have been called.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -56,6 +65,9 @@ export const setLogpointTool = {
   name: 'set_logpoint',
   description:
     'Set a logpoint at a specific location. When execution reaches that line, the expression is evaluated and the result is stored without pausing. Use get_logpoint_results to retrieve collected values. Requires enable_debugger to have been called.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -73,6 +85,9 @@ export const setLogpointTool = {
 export const removeLogpointTool = {
   name: 'remove_logpoint',
   description: 'Remove a previously set logpoint.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -85,6 +100,9 @@ export const removeLogpointTool = {
 export const getLogpointResultsTool = {
   name: 'get_logpoint_results',
   description: 'Get the results collected by a logpoint since it was set.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {

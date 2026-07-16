@@ -32,6 +32,9 @@ const VALID_PRESETS = [
 export const profilerIsActiveTool = {
   name: 'profiler_is_active',
   description: 'Check whether the Firefox profiler is currently recording.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {},
@@ -59,6 +62,9 @@ export async function handleProfilerIsActive(_args: unknown): Promise<McpToolRes
 export const profilerStartTool = {
   name: 'profiler_start',
   description: `Start the Firefox profiler. Provide either a preset name or explicit recording options (entries, interval, features, threads). Cannot combine both. Valid presets: ${VALID_PRESETS.join(', ')}.`,
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -152,6 +158,9 @@ export const profilerStopTool = {
   name: 'profiler_stop',
   description:
     'Stop the Firefox profiler and save the recorded profile to a file in the downloads directory. Returns the path to the saved file, or null when nothing was saved.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {

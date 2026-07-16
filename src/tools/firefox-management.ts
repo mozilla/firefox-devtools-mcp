@@ -21,6 +21,9 @@ export const getFirefoxLogsTool = {
   name: 'get_firefox_output',
   description:
     'Retrieve Firefox output (stdout/stderr including MOZ_LOG, warnings, crashes, stack traces). Returns recent output from the capture file. Use filters to focus on specific content.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -116,6 +119,9 @@ export const getFirefoxInfoTool = {
   name: 'get_firefox_info',
   description:
     'Get information about the current Firefox instance configuration, including binary path, environment variables, and output file location.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {},
@@ -196,6 +202,9 @@ export const restartFirefoxTool = {
   name: 'restart_firefox',
   description:
     'Restart Firefox with different configuration. Allows changing binary path, environment variables, and other options. All current tabs will be closed.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {

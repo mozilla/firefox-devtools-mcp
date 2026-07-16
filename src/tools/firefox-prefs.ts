@@ -16,6 +16,9 @@ export const setFirefoxPrefsTool = {
   name: 'set_firefox_prefs',
   description:
     'Set Firefox preferences at runtime a privileged API. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -127,6 +130,9 @@ export const getFirefoxPrefsTool = {
   name: 'get_firefox_prefs',
   description:
     'Get Firefox preference values via a privileged API. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {

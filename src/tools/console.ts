@@ -14,6 +14,9 @@ import type { McpToolResponse } from '../types/common.js';
 export const listConsoleMessagesTool = {
   name: 'list_console_messages',
   description: 'List console messages. Supports filtering by level, time, text, source.',
+  annotations: {
+    readOnlyHint: true,
+  },
   inputSchema: {
     type: 'object',
     properties: {
@@ -50,6 +53,9 @@ export const listConsoleMessagesTool = {
 export const clearConsoleMessagesTool = {
   name: 'clear_console_messages',
   description: 'Clear collected console messages.',
+  annotations: {
+    readOnlyHint: false,
+  },
   inputSchema: {
     type: 'object',
     properties: {},
