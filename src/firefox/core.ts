@@ -185,6 +185,14 @@ export class FirefoxCore {
         }
       }
 
+      // Bug 2055849: fully avoid Firefox update processing, unless the mcp
+      // configuration already sets MOZ_DISABLE_UPDATE_PROCESSING itself.
+      if (!this.options.env || !('MOZ_DISABLE_UPDATE_PROCESSING' in this.options.env)) {
+        this.originalEnv.MOZ_DISABLE_UPDATE_PROCESSING = process.env.MOZ_DISABLE_UPDATE_PROCESSING;
+        process.env.MOZ_DISABLE_UPDATE_PROCESSING = '1';
+        logDebug('Set env MOZ_DISABLE_UPDATE_PROCESSING=1');
+      }
+
       // Standard path: launch a new Firefox via selenium-webdriver
       const firefoxOptions = new firefox.Options();
       firefoxOptions.enableBidi();
