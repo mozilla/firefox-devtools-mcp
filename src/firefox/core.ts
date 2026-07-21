@@ -279,6 +279,19 @@ export class FirefoxCore {
     this.firefoxVersion = (driverCapabilities.get('browserVersion') as string) ?? null;
     logDebug(`Browser version: ${this.firefoxVersion}`);
 
+    // In connect-existing mode, geckodriver can attach to a Firefox that was
+    // started with --marionette but without --remote-debugging-port. Marionette
+    // works, but the session has no BiDi endpoint, so most tools would later
+    // fail with confusing errors. Detect this early with an actionable message.
+    if (this.options.connectExisting && !driverCapabilities.get('webSocketUrl')) {
+      throw new Error(
+        'Connected to Firefox via Marionette, but the session has no WebDriver BiDi endpoint ' +
+          '(missing webSocketUrl capability). Restart Firefox with both flags: ' +
+          'firefox --marionette --remote-debugging-port. ' +
+          'Navigation, console, and network tools require BiDi.'
+      );
+    }
+
     // Remember current window handle (browsing context)
     this.currentContextId = await this.driver.getWindowHandle();
     logDebug(`Browsing context ID: ${this.currentContextId}`);
