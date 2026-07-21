@@ -141,19 +141,17 @@ Port forwarding between the host and device is handled automatically by geckodri
 
 ### Connect to existing Firefox
 
-Use `--connect-existing` to automate your real browsing session — with cookies, logins, and open tabs intact:
+Use `--connect-existing` to automate your real browsing session, with cookies, logins, and open tabs intact:
 
 ```bash
-# Start Firefox with Marionette enabled
-firefox --marionette
+# Start Firefox with Marionette and the Remote Agent (BiDi)
+firefox --marionette --remote-debugging-port
 
 # Run the MCP server
 npx @mozilla/firefox-devtools-mcp --connect-existing --marionette-port 2828
 ```
 
-Or set `marionette.enabled` to `true` in `about:config` (or `user.js`) to enable Marionette on every launch.
-
-BiDi-dependent features (console events, network events) are not available in connect-existing mode; all other features work normally.
+Both flags are required. `--marionette` lets the MCP attach to the running Firefox, and `--remote-debugging-port` starts the Remote Agent that provides the WebDriver BiDi endpoint used by navigation, console, and network tools. Setting `marionette.enabled` in `about:config` or `user.js` is not sufficient on its own, because the Remote Agent only starts when the command line flag is passed. If Firefox is running without it, the MCP server fails to connect and asks you to restart Firefox with both flags.
 
 > **Warning:** Do not leave Marionette enabled during normal browsing. It sets
 > `navigator.webdriver = true` and changes other browser fingerprint signals,
