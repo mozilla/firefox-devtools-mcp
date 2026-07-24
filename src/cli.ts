@@ -127,7 +127,7 @@ export const cliOptions = {
   connectExisting: {
     type: 'boolean',
     description:
-      'Connect to an already-running Firefox instance via Marionette instead of launching a new one. Firefox must be started with both --marionette and --remote-debugging-port; the BiDi endpoint is required for navigation, console, and network tools.',
+      'Connect to an already-running Firefox instance via Marionette instead of launching a new one. Firefox must be started with both --marionette and --remote-debugging-port.',
     default: (process.env.CONNECT_EXISTING ?? 'false') === 'true',
   },
   marionettePort: {
