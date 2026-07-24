@@ -287,8 +287,7 @@ export class FirefoxCore {
       throw new Error(
         'Connected to Firefox via Marionette, but the session has no WebDriver BiDi endpoint ' +
           '(missing webSocketUrl capability). Restart Firefox with both flags: ' +
-          'firefox --marionette --remote-debugging-port. ' +
-          'Navigation, console, and network tools require BiDi.'
+          'firefox --marionette --remote-debugging-port.'
       );
     }
 

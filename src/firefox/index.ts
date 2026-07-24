@@ -92,7 +92,7 @@ export class FirefoxClient {
       try {
         await this.consoleEvents.subscribe(undefined);
       } catch {
-        logDebug('Console events unavailable (BiDi not supported by this Firefox session)');
+        logDebug('Unable to subscribe to console events');
         this.consoleEvents = null;
       }
     }
@@ -100,7 +100,7 @@ export class FirefoxClient {
       try {
         await this.networkEvents.subscribe(undefined);
       } catch {
-        logDebug('Network events unavailable (BiDi not supported by this Firefox session)');
+        logDebug('Unable to subscribe to network events');
         this.networkEvents = null;
       }
     }
@@ -108,7 +108,7 @@ export class FirefoxClient {
       try {
         await this.debuggingEvents.subscribe();
       } catch {
-        logDebug('Debugging events unavailable (BiDi not supported by this Firefox session)');
+        logDebug('Unable to subscribe to debugging events');
         this.debuggingEvents = null;
       }
     }

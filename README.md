@@ -151,7 +151,7 @@ firefox --marionette --remote-debugging-port
 npx @mozilla/firefox-devtools-mcp --connect-existing --marionette-port 2828
 ```
 
-Both flags are required. `--marionette` lets the MCP attach to the running Firefox, and `--remote-debugging-port` starts the Remote Agent that provides the WebDriver BiDi endpoint used by navigation, console, and network tools. Setting `marionette.enabled` in `about:config` or `user.js` is not sufficient on its own, because the Remote Agent only starts when the command line flag is passed. If Firefox is running without it, the MCP server fails to connect and asks you to restart Firefox with both flags.
+Both flags are required because the MCP uses both WebDriver Classic (`--marionette`) and WebDriver BiDi (`--remote-debugging-port`). If Firefox is only started with `--marionette`, the MCP server fails to connect and asks you to restart Firefox with both flags.
 
 > **Warning:** Do not leave Marionette enabled during normal browsing. It sets
 > `navigator.webdriver = true` and changes other browser fingerprint signals,
