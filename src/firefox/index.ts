@@ -6,7 +6,7 @@ import type { FirefoxLaunchOptions, ConsoleMessage, LogpointResult } from './typ
 import { WebElement } from 'selenium-webdriver';
 import { FirefoxCore } from './core.js';
 import { logDebug } from '../utils/logger.js';
-import { ConsoleEvents, NetworkEvents, DebuggingEvents } from './events/index.js';
+import { ConsoleEvents, NetworkEvents, DebuggingEvents, DownloadEvents } from './events/index.js';
 import { DomInteractions } from './dom.js';
 import { PageManagement } from './pages.js';
 import { SnapshotManager, type Snapshot, type SnapshotOptions } from './snapshot/index.js';
@@ -20,6 +20,7 @@ export class FirefoxClient {
   private consoleEvents: ConsoleEvents | null = null;
   private networkEvents: NetworkEvents | null = null;
   private debuggingEvents: DebuggingEvents | null = null;
+  private downloadEvents: DownloadEvents | null = null;
   private dom: DomInteractions | null = null;
   private pages: PageManagement | null = null;
   private snapshot: SnapshotManager | null = null;
@@ -69,6 +70,8 @@ export class FirefoxClient {
       this.debuggingEvents = new DebuggingEvents(driver as any, (method, params) =>
         this.core.sendBiDiCommand(method, params)
       );
+
+      this.downloadEvents = new DownloadEvents(driver as any);
     }
 
     // Initialize DOM with UID resolver callback
@@ -110,6 +113,14 @@ export class FirefoxClient {
       } catch {
         logDebug('Unable to subscribe to debugging events');
         this.debuggingEvents = null;
+      }
+    }
+    if (this.downloadEvents) {
+      try {
+        await this.downloadEvents.subscribe(undefined);
+      } catch {
+        logDebug('Unable to subscribe to download events');
+        this.downloadEvents = null;
       }
     }
   }
@@ -364,6 +375,46 @@ export class FirefoxClient {
   }
 
   // ============================================================================
+  // Downloads
+  // ============================================================================
+
+  getDownloads(): any[] {
+    if (!this.downloadEvents) {
+      throw new Error(
+        'Download tracking not available (requires a recent Firefox with the Remote Agent running to enable BiDi)'
+      );
+    }
+    return this.downloadEvents.getDownloads();
+  }
+
+  clearDownloads(): void {
+    if (!this.downloadEvents) {
+      throw new Error(
+        'Download tracking not available (requires a recent Firefox with the Remote Agent running to enable BiDi)'
+      );
+    }
+    this.downloadEvents.clearDownloads();
+  }
+
+  /**
+   * Control how downloads are handled via the browser.setDownloadBehavior BiDi command.
+   * @param behavior 'allowed' saves downloads silently, 'denied' cancels them, 'default' resets
+   * @param destinationFolder absolute save path, only honored when behavior is 'allowed'
+   */
+  async setDownloadBehavior(
+    behavior: 'allowed' | 'denied' | 'default',
+    destinationFolder?: string
+  ): Promise<void> {
+    const downloadBehavior =
+      behavior === 'default'
+        ? null
+        : behavior === 'allowed'
+          ? { type: 'allowed', ...(destinationFolder ? { destinationFolder } : {}) }
+          : { type: 'denied' };
+    await this.core.sendBiDiCommand('browser.setDownloadBehavior', { downloadBehavior });
+  }
+
+  // ============================================================================
   // Snapshot
   // ============================================================================
 
@@ -538,6 +589,7 @@ export class FirefoxClient {
     this.consoleEvents = null;
     this.networkEvents = null;
     this.debuggingEvents = null;
+    this.downloadEvents = null;
     this.dom = null;
     this.pages = null;
     this.snapshot = null;

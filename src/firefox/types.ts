@@ -48,6 +48,24 @@ export interface NetworkRecord {
 }
 
 /**
+ * A tracked download, correlated across downloadWillBegin and downloadEnd
+ */
+export interface DownloadRecord {
+  /** BiDi download UUID, shared between the begin and end events */
+  id: string;
+  context: string;
+  navigation: string | null;
+  url: string;
+  suggestedFilename: string;
+  status: 'in_progress' | 'complete' | 'canceled';
+  startTimestamp: number;
+  endTimestamp?: number;
+  durationMs?: number;
+  /** Final saved path, present only when status is 'complete' */
+  filepath?: string;
+}
+
+/**
  * A single result captured by a logpoint hit
  */
 export interface LogpointResult {

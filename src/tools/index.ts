@@ -35,6 +35,16 @@ export {
   handleGetNetworkRequest,
 } from './network.js';
 
+// Download tools
+export {
+  listDownloadsTool,
+  clearDownloadsTool,
+  setDownloadBehaviorTool,
+  handleListDownloads,
+  handleClearDownloads,
+  handleSetDownloadBehavior,
+} from './downloads.js';
+
 // Snapshot tools
 export {
   takeSnapshotTool,

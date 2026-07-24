@@ -90,6 +90,7 @@ Then call tools like:
 - `list_pages`, `select_page`, `navigate_page`
 - `take_snapshot` then `click_by_uid` / `fill_by_uid`
 - `list_network_requests` (always‑on capture), `get_network_request`
+- `list_downloads` (always‑on capture), `set_download_behavior`
 - `screenshot_page`, `list_console_messages`
 
 ## CLI options
@@ -165,6 +166,7 @@ Both flags are required because the MCP uses both WebDriver Classic (`--marionet
 - Snapshot/UID: take/resolve/clear
 - Input: click/hover/fill/drag/upload/form fill
 - Network: list/get (ID‑first, filters, always‑on capture)
+- Downloads: list_downloads/clear_downloads (always‑on capture), set_download_behavior (allow/deny/default, optional destination folder)
 - Console: list/clear
 - Screenshot: page/by uid (with optional `saveTo` for CLI environments)
 - Script: evaluate_script

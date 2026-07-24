@@ -197,6 +197,11 @@ export async function run(
     ['list_network_requests', tools.handleListNetworkRequests],
     ['get_network_request', tools.handleGetNetworkRequest],
 
+    // Downloads
+    ['list_downloads', tools.handleListDownloads],
+    ['clear_downloads', tools.handleClearDownloads],
+    ['set_download_behavior', tools.handleSetDownloadBehavior],
+
     // Snapshot
     ['take_snapshot', tools.handleTakeSnapshot],
     ['resolve_uid_to_selector', tools.handleResolveUidToSelector],
@@ -278,6 +283,11 @@ export async function run(
     // Network
     tools.listNetworkRequestsTool,
     tools.getNetworkRequestTool,
+
+    // Downloads
+    tools.listDownloadsTool,
+    tools.clearDownloadsTool,
+    tools.setDownloadBehaviorTool,
 
     // Snapshot
     tools.takeSnapshotTool,
