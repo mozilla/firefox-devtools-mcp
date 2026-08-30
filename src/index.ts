@@ -16,7 +16,6 @@ import { parsePrefs, defaultProfileDir } from './cli.js';
 import type { parseArguments } from './cli.js';
 import { FirefoxDevTools } from './firefox/index.js';
 import type { FirefoxLaunchOptions } from './firefox/types.js';
-import { ExistingFirefoxIdleController } from './firefox/idle-connection.js';
 import { buildToolset } from './tools/registry.js';
 import { errorResponse } from './utils/response-helpers.js';
 
@@ -35,6 +34,7 @@ export let args = {} as Args;
 // Global context (lazy initialized on first tool call)
 let firefox: FirefoxDevTools | null = null;
 let nextLaunchOptions: FirefoxLaunchOptions | null = null;
+let existingFirefoxReconnectOptions: FirefoxLaunchOptions | null = null;
 // Warning generated during Firefox startup, surfaced in the first tool response.
 let pendingWarning: string | null = null;
 
@@ -58,6 +58,7 @@ export async function resetFirefox(): Promise<void> {
  */
 export function setNextLaunchOptions(options: FirefoxLaunchOptions): void {
   nextLaunchOptions = options;
+  existingFirefoxReconnectOptions = null;
   log('Next launch options updated');
 }
 
@@ -66,10 +67,6 @@ export function setNextLaunchOptions(options: FirefoxLaunchOptions): void {
  */
 export function isFirefoxRunning(): boolean {
   return firefox !== null;
-}
-
-function hasActiveExistingFirefoxConnection(): boolean {
-  return firefox?.getOptions().connectExisting === true;
 }
 
 /**
@@ -101,6 +98,9 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
     options = nextLaunchOptions;
     nextLaunchOptions = null; // Clear after use
     log('Using custom launch options from restart_firefox');
+  } else if (existingFirefoxReconnectOptions) {
+    options = existingFirefoxReconnectOptions;
+    log('Reconnecting to the previous existing Firefox target');
   } else {
     // Parse environment variables from CLI args (format: KEY=VALUE)
     let envVars: Record<string, string> | undefined;
@@ -144,6 +144,9 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
   try {
     await firefox.connect();
     log('Firefox DevTools connection established');
+    if (firefox.getOptions().connectExisting === true) {
+      existingFirefoxReconnectOptions = { ...firefox.getOptions() };
+    }
     pendingWarning = firefox.getAndClearProfileWarning();
     return firefox;
   } catch (error) {
@@ -183,13 +186,6 @@ export async function run(
   }
 
   args = parseArgsFn(SERVER_VERSION);
-
-  const idleConnection = new ExistingFirefoxIdleController({
-    enabled: Boolean(args.connectExisting),
-    hasActiveConnection: hasActiveExistingFirefoxConnection,
-    disconnect: resetFirefox,
-    onDisconnectError: (error) => logError('Error disconnecting idle Firefox session', error),
-  });
 
   if (args.logFile) {
     setupLogFile(args.logFile);
@@ -249,6 +245,13 @@ export async function run(
     };
   });
 
+  const connectExisting = Boolean(args.connectExisting);
+  const timeout = 30 * 60 * 1000; // 30 minutes
+  let idleTimer: NodeJS.Timeout | undefined;
+  let disconnecting: Promise<void> | undefined;
+  let activeCalls = 0;
+  let shuttingDown = false;
+
   // Handle tool execution
   server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest) => {
     const { name, arguments: args } = request.params;
@@ -259,27 +262,47 @@ export async function run(
       throw new Error(`Unknown tool: ${name}`);
     }
 
-    return idleConnection.runWithActivity(async () => {
-      try {
-        const result = await handler(args);
-        if (pendingWarning) {
-          // Return as isError so that agents acting as MCP clients (e.g. Claude)
-          // surface the message to the user.
-          // Also note the operation completed so the agent does not retry.
-          const operationNote =
-            result.content[0]?.type === 'text'
-              ? `\n\n[Note: The operation also completed — ${result.content[0].text}]`
-              : '';
-          const warning = pendingWarning;
-          pendingWarning = null;
-          return errorResponse(`${warning}${operationNote}`);
-        }
-        return result;
-      } catch (error) {
-        logError(`Error executing tool ${name}`, error);
-        throw error;
+    clearTimeout(idleTimer);
+    idleTimer = undefined;
+    activeCalls++;
+    try {
+      await disconnecting;
+      const result = await handler(args);
+      if (pendingWarning) {
+        // Return as isError so that agents acting as MCP clients (e.g. Claude)
+        // surface the message to the user.
+        // Also note the operation completed so the agent does not retry.
+        const operationNote =
+          result.content[0]?.type === 'text'
+            ? `\n\n[Note: The operation also completed — ${result.content[0].text}]`
+            : '';
+        const warning = pendingWarning;
+        pendingWarning = null;
+        return errorResponse(`${warning}${operationNote}`);
       }
-    });
+      return result;
+    } catch (error) {
+      logError(`Error executing tool ${name}`, error);
+      throw error;
+    } finally {
+      activeCalls--;
+      if (
+        connectExisting &&
+        !shuttingDown &&
+        activeCalls === 0 &&
+        firefox?.getOptions().connectExisting === true
+      ) {
+        idleTimer = setTimeout(() => {
+          idleTimer = undefined;
+          disconnecting = resetFirefox()
+            .catch((error) => logError('Error disconnecting idle Firefox session', error))
+            .finally(() => {
+              disconnecting = undefined;
+            });
+        }, timeout);
+        idleTimer.unref();
+      }
+    }
   });
 
   const transport = new StdioServerTransport();
@@ -291,7 +314,9 @@ export async function run(
   // Clean up the Marionette session so Firefox accepts new connections.
   // Without this, the session stays locked after the MCP client disconnects.
   const cleanup = async () => {
-    await idleConnection.dispose();
+    shuttingDown = true;
+    clearTimeout(idleTimer);
+    await disconnecting;
     await resetFirefox();
     await server.close();
     await flushLogs().catch(() => {});
