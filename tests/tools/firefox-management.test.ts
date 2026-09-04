@@ -106,6 +106,18 @@ describe('Firefox Management Tools', () => {
           })
         );
       });
+
+      it('should reject attempts to change system access through env', async () => {
+        const { handleRestartFirefox } = await import('../../src/tools/firefox-management.js');
+
+        const result = await handleRestartFirefox({
+          env: ['MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1'],
+        });
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('--allow-system-access');
+        expect(mockSetNextLaunchOptions).not.toHaveBeenCalled();
+      });
     });
 
     describe('when Firefox IS running', () => {

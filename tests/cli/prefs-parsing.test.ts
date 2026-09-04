@@ -115,6 +115,23 @@ describe('CLI --enable-privileged-context flag', () => {
   });
 });
 
+describe('CLI --allow-system-access flag', () => {
+  it('should default to false', () => {
+    const args = parseArguments('1.0.0', ['node', 'script']);
+    expect(args.allowSystemAccess).toBe(false);
+  });
+
+  it('should be true when --allow-system-access is passed', () => {
+    const args = parseArguments('1.0.0', ['node', 'script', '--allow-system-access']);
+    expect(args.allowSystemAccess).toBe(true);
+  });
+
+  it('should be available in the public option set', () => {
+    const args = parseArguments('1.0.0', ['node', 'script', '--allow-system-access'], false);
+    expect(args.allowSystemAccess).toBe(true);
+  });
+});
+
 describe('CLI --pref option', () => {
   it('should accept --pref argument', () => {
     const args = parseArguments('1.0.0', ['node', 'script', '--pref', 'test=value']);

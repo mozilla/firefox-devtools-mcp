@@ -19,7 +19,7 @@ Browser MCP servers carry inherent risks. A few key practices:
 
 - **Use a dedicated Firefox profile.** Never run the server against your regular profile — the agent has access to whatever the browser can reach, including cookies and saved sessions.
 - **Be cautious about which sites you visit.** Pages can return content designed to manipulate the agent (prompt injection). Stick to sites you control or trust.
-- **Enable only the tool modules you need.** The default `basic` preset already includes `evaluate_script`; `--tool-preset slim` drops it. Higher presets such as `--tool-preset developer` (debugging, network, console, profiler) and `--tool-preset mozilla` (privileged context) expand what the agent can do further.
+- **Enable only the tool modules you need.** The default `basic` preset already includes `evaluate_script`; `--tool-preset slim` drops it. Higher presets such as `--tool-preset developer` (debugging, network, console, profiler) expand what the agent can do further. The `mozilla` preset also selects privileged tools, which require separate consent through `--allow-system-access`.
 
 See [SECURITY.md](SECURITY.md) for a full breakdown of risks and how to report vulnerabilities.
 
@@ -132,10 +132,11 @@ You can pass flags or environment variables (names on the right):
 - `--connect-existing` — attach to an already-running Firefox instead of launching a new one (`CONNECT_EXISTING=true`)
 - `--marionette-port` — Marionette port for connect-existing mode, default 2828 (`MARIONETTE_PORT`)
 - `--pref name=value` — set Firefox preference at startup via `moz:firefoxOptions` (repeatable)
+- `--allow-system-access` — explicitly allow privileged Firefox access. This permits privileged modules to be exposed when selected and launches Firefox with the required system access. It does not select any tools by itself.
 - `--tool-preset` — select which tool modules to enable: `slim`, `basic` (default), `developer`, `mozilla`, or `all`. See [Tool modules and presets](#tool-modules-and-presets). (`TOOL_PRESET`)
 - `--tools` — explicit list of tool modules to enable, overriding `--tool-preset` entirely (e.g. `--tools pages network script`). See [Tool modules and presets](#tool-modules-and-presets).
 - `--enable-script` — _deprecated, use `--tool-preset developer` or `--tools ... script debugging`._ Selects the `developer` tool preset. (`ENABLE_SCRIPT=true`)
-- `--enable-privileged-context` — _deprecated, use `--tool-preset mozilla` or `--tools ... privileged prefs`._  Selects the `mozilla` tool preset. Requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` (`ENABLE_PRIVILEGED_CONTEXT=true`)
+- `--enable-privileged-context` — _deprecated, use `--tool-preset mozilla` or `--tools ... privileged prefs`._ Selects the `mozilla` tool preset. Requires `--allow-system-access`. (`ENABLE_PRIVILEGED_CONTEXT=true`)
 - `--android-device` — enable Firefox for Android mode; value is the ADB device serial (e.g. `emulator-5554`). Run `adb devices` to list connected devices. Omit the value or use `auto` to select the single connected device automatically.
 - `--android-wipe-app-data` — confirm that Android mode wipes all data of the target app. Required together with `--android-device`. (`ANDROID_WIPE_APP_DATA=true`)
 - `--android-package` — Android app package name, default `org.mozilla.firefox`. Other packages: `org.mozilla.firefox_beta` for Firefox Beta, `org.mozilla.fenix` for Firefox Nightly, `org.mozilla.fenix.debug` for Firefox Nightly Debug, `org.mozilla.geckoview_example` for geckoview (`ANDROID_PACKAGE`)
@@ -171,11 +172,24 @@ npx @mozilla/firefox-devtools-mcp --tool-preset developer
 
 # Enable only the modules you need
 npx @mozilla/firefox-devtools-mcp --tools pages network console
+
+# Explicitly allow and select privileged tools
+npx @mozilla/firefox-devtools-mcp@latest --tool-preset mozilla --allow-system-access
 ```
 
-The `prefs` and `privileged` modules require `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` and are only
-available in the Mozilla-internal build. The public package skips them even if requested and
-logs a warning naming the modules it dropped.
+The `prefs` and `privileged` modules require `--allow-system-access`. The flag grants permission
+and launches Firefox with the required environment, while `--tool-preset mozilla` or `--tools`
+selects which modules to expose. Without the flag, privileged modules are skipped even if selected.
+Passing `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS` through `--env` or `restart_firefox` does not grant access.
+
+For Codex:
+
+```bash
+codex mcp add firefox-devtools -- \
+  npx -y @mozilla/firefox-devtools-mcp@latest \
+  --tool-preset mozilla \
+  --allow-system-access
+```
 
 ### Useful preferences (`--pref`)
 
@@ -245,10 +259,10 @@ descriptions and parameters (generated from the source).
 - Console: list/clear (list supports optional `saveTo`)
 - Screenshot: page/by uid (with optional `saveTo` for CLI environments)
 - Script: evaluate_script (optional `sandbox` for an isolated realm; optional `saveTo` for bulky results)
-- Privileged Context: list/select privileged ("chrome") contexts, evaluate_privileged_script (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
-- WebExtension: install_extension, uninstall_extension, list_extensions (list requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
+- Privileged Context: list/select privileged ("chrome") contexts, evaluate_privileged_script (requires `--allow-system-access`)
+- WebExtension: install_extension, uninstall_extension, list_extensions (list requires `--allow-system-access`)
 - Firefox Management: get_firefox_info, get_firefox_output, restart_firefox
-- Firefox Preferences: get_firefox_prefs, set_firefox_prefs (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
+- Firefox Preferences: get_firefox_prefs, set_firefox_prefs (requires `--allow-system-access`)
 - Profiler: profiler_is_active, profiler_start (preset or explicit config), profiler_stop (saves profile to downloads directory)
 - Screencast: screencast_start (records the page viewport to a video file in the downloads directory), screencast_stop (requires Firefox 154+)
 - Utilities: accept/dismiss dialog, history back/forward, set viewport

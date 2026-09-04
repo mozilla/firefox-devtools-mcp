@@ -13,15 +13,16 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
-// Moz entry point: accepts all CLI arguments including --enable-privileged-context.
-// The public entry point (index.public.ts) strips that flag to prevent privileged tool exposure.
+// Moz entry point: accepts all CLI arguments including the deprecated
+// --enable-privileged-context selector. Privileged access still requires
+// --allow-system-access.
 import { parseArguments } from './cli.js';
 import { run } from './index.js';
 
 export { FirefoxDevTools } from './firefox/index.js';
 export { FirefoxDisconnectedError, isDisconnectionError } from './utils/errors.js';
 
-run(parseArguments, import.meta.url, true).catch((error) => {
+run(parseArguments, import.meta.url).catch((error) => {
   console.error('Fatal error in main', error);
   process.exit(1);
 });

@@ -1,7 +1,7 @@
 /**
  * Firefox Preferences Tools
  * Tools for getting and setting Firefox preferences via Services.prefs API
- * Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1
+ * Requires MCP startup with --allow-system-access
  */
 
 import { successResponse } from '../utils/response-helpers.js';
@@ -16,7 +16,7 @@ import type { McpToolResponse } from '../types/common.js';
 export const setFirefoxPrefsTool = {
   name: 'set_firefox_prefs',
   description:
-    'Set Firefox preferences at runtime a privileged API. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+    'Set Firefox preferences at runtime via a privileged API. Requires MCP startup with --allow-system-access.',
   annotations: {
     readOnlyHint: false,
   },
@@ -61,7 +61,7 @@ export const handleSetFirefoxPrefs = defineToolHandler(
       const contexts = result.contexts || [];
       if (contexts.length === 0) {
         throw new Error(
-          'No privileged contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
+          'No privileged contexts available. Ensure the MCP was started with --allow-system-access.'
         );
       }
 
@@ -115,7 +115,7 @@ export const handleSetFirefoxPrefs = defineToolHandler(
     } catch (error) {
       if (error instanceof Error && error.message.includes('UnsupportedOperationError')) {
         throw new Error(
-          'Chrome context access not enabled. Set MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 environment variable and restart Firefox.'
+          'Chrome context access not enabled. Restart the MCP with --allow-system-access.'
         );
       }
       throw error;
@@ -130,7 +130,7 @@ export const handleSetFirefoxPrefs = defineToolHandler(
 export const getFirefoxPrefsTool = {
   name: 'get_firefox_prefs',
   description:
-    'Get Firefox preference values via a privileged API. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+    'Get Firefox preference values via a privileged API. Requires MCP startup with --allow-system-access.',
   annotations: {
     readOnlyHint: true,
   },
@@ -167,7 +167,7 @@ export const handleGetFirefoxPrefs = defineToolHandler(
       const contexts = result.contexts || [];
       if (contexts.length === 0) {
         throw new Error(
-          'No privileged contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
+          'No privileged contexts available. Ensure the MCP was started with --allow-system-access.'
         );
       }
 
@@ -243,7 +243,7 @@ export const handleGetFirefoxPrefs = defineToolHandler(
     } catch (error) {
       if (error instanceof Error && error.message.includes('UnsupportedOperationError')) {
         throw new Error(
-          'Chrome context access not enabled. Set MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 environment variable and restart Firefox.'
+          'Chrome context access not enabled. Restart the MCP with --allow-system-access.'
         );
       }
       throw error;

@@ -62,6 +62,14 @@ describe('Tool registry', () => {
         .sort();
       expect(privileged).toEqual(['prefs', 'privileged']);
     });
+
+    it('registers list_extensions only in the privileged module', () => {
+      const owners = MODULES.filter((module) =>
+        module.tools.some(({ definition }) => definition.name === 'list_extensions')
+      ).map((module) => module.name);
+
+      expect(owners).toEqual(['privileged']);
+    });
   });
 
   describe('presets', () => {
@@ -97,6 +105,28 @@ describe('Tool registry', () => {
       expect(moduleNames).toEqual(
         MODULES.map((m) => m.name).filter((n) => PRESETS.slim.includes(n))
       );
+    });
+
+    it('does not select privileged modules from permission alone', () => {
+      const { moduleNames, handlers } = buildToolset({
+        preset: 'basic',
+        allowPrivileged: true,
+      });
+
+      expect(moduleNames).not.toContain('prefs');
+      expect(moduleNames).not.toContain('privileged');
+      expect(handlers.has('list_extensions')).toBe(false);
+    });
+
+    it('exposes privileged modules when selected and allowed', () => {
+      const { moduleNames, handlers } = buildToolset({
+        preset: 'mozilla',
+        allowPrivileged: true,
+      });
+
+      expect(moduleNames).toContain('prefs');
+      expect(moduleNames).toContain('privileged');
+      expect(handlers.has('list_extensions')).toBe(true);
     });
 
     it('lets --tools replace the preset entirely', () => {

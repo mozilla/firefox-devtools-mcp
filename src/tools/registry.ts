@@ -50,7 +50,7 @@ export function buildToolset(options: ToolsetOptions): Toolset {
  * - Otherwise the named `preset` applies (default: basic).
  * - Legacy `enableScript` / `enablePrivilegedContext` flags force the
  *   `developer` / `mozilla` presets on top and emit deprecation warnings.
- * - Privileged modules are dropped when `allowPrivileged` is false (public build).
+ * - Privileged modules are dropped when `allowPrivileged` is false.
  */
 function selectModules(options: ToolsetOptions): { moduleNames: string[]; warnings: string[] } {
   const { tools: requested, preset, enableScript, enablePrivilegedContext } = options;
@@ -118,7 +118,7 @@ function selectModules(options: ToolsetOptions): { moduleNames: string[]; warnin
     const dropped = moduleNames.filter((name) => privilegedModuleNames.has(name));
     if (dropped.length > 0) {
       warnings.push(
-        `Privileged tool modules are not available in this build and were skipped: ${dropped.join(', ')}`
+        `Privileged tool modules require --allow-system-access and were skipped: ${dropped.join(', ')}`
       );
     }
     moduleNames = moduleNames.filter((name) => !privilegedModuleNames.has(name));
