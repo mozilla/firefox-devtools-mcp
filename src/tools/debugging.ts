@@ -136,7 +136,7 @@ export const handleListScripts = defineToolHandler(
     const result = await firefox.sendBiDiCommand('moz:debugging.listScripts', {
       context: contextId,
     });
-    const scripts = (result as { scripts: string[] }).scripts;
+    const scripts = result.scripts;
     if (scripts.length === 0) {
       return successResponse('No scripts found');
     }
@@ -155,7 +155,7 @@ export const handleGetScriptSource = defineToolHandler(
       context: contextId,
       scriptUrl,
     });
-    return successResponse((result as { source: string }).source);
+    return successResponse(result.source);
   }
 );
 

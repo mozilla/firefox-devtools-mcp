@@ -2,7 +2,8 @@
  * Network event handling with lifecycle hooks
  */
 
-import type { BiDiFacade } from '../bidi.js';
+import type { Network } from 'webdriver-bidi-protocol';
+import { DataType, type BiDiFacade } from '../bidi.js';
 import { logDebug } from '../../utils/logger.js';
 
 // Memory protection constants
@@ -77,7 +78,7 @@ export class NetworkEvents {
         return;
       }
 
-      const requestId = req.request?.request || req.requestId;
+      const requestId = req.request.request;
 
       if (!requestId) {
         return;
@@ -87,12 +88,13 @@ export class NetworkEvents {
 
       const record = {
         id: requestId,
-        url: req.request?.url || '',
-        method: req.request?.method || 'GET',
+        url: req.request.url,
+        method: req.request.method,
         timestamp: Date.now(),
-        resourceType: this.guessResourceType(req.request?.url || ''),
-        isXHR: req.initiator?.type === 'xmlhttprequest' || req.initiator?.type === 'fetch',
-        requestHeaders: this.parseHeaders(req.request?.headers || []),
+        resourceType: this.guessResourceType(req.request.url),
+        isXHR:
+          req.request.initiatorType === 'xmlhttprequest' || req.request.initiatorType === 'fetch',
+        requestHeaders: this.parseHeaders(req.request.headers),
         timings: {
           requestTime: Date.now(),
         },
@@ -108,7 +110,7 @@ export class NetworkEvents {
         return;
       }
 
-      const requestId = resp.request?.request || resp.requestId;
+      const requestId = resp.request?.request;
 
       if (!requestId) {
         return;
@@ -128,7 +130,7 @@ export class NetworkEvents {
         return;
       }
 
-      const requestId = resp.request?.request || resp.requestId;
+      const requestId = resp.request?.request;
 
       if (!requestId) {
         return;
@@ -171,7 +173,7 @@ export class NetworkEvents {
 
     try {
       const result = await this.bidi.sendCommand('network.addDataCollector', {
-        dataTypes: ['request', 'response'],
+        dataTypes: [DataType.Request, DataType.Response],
         maxEncodedDataSize: MAX_ENCODED_DATA_SIZE,
       });
       this.collectorId = result?.collector ?? null;
@@ -192,7 +194,7 @@ export class NetworkEvents {
    * Returns a structured result so callers can render an appropriate marker
    * when the body was never collected, evicted, or the browser lacks support.
    */
-  async fetchBody(requestId: string, dataType: 'request' | 'response'): Promise<NetworkBodyResult> {
+  async fetchBody(requestId: string, dataType: Network.DataType): Promise<NetworkBodyResult> {
     if (!this.collectorId) {
       return { ok: false, reason: 'unsupported' };
     }

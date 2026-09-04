@@ -28,7 +28,8 @@
     "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
-    "useUnknownInCatchVariables": true
+    "useUnknownInCatchVariables": true,
+    "isolatedModules": true
   },
   "include": [
     "src/**/*"

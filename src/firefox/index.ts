@@ -4,6 +4,7 @@
 
 import type { FirefoxLaunchOptions, ConsoleMessage, LogpointResult } from './types.js';
 import { WebElement } from 'selenium-webdriver';
+import type { Browser, BrowsingContext, Network } from 'webdriver-bidi-protocol';
 import { FirefoxCore } from './core.js';
 import { BiDiFacade } from './bidi.js';
 import { logDebug } from '../utils/logger.js';
@@ -11,7 +12,7 @@ import { remoteValueToNative } from '../utils/remote-value.js';
 import { ConsoleEvents, NetworkEvents, DebuggingEvents, DownloadEvents } from './events/index.js';
 import type { NetworkBodyResult } from './events/network.js';
 import { DomInteractions } from './dom.js';
-import { PageManagement, type ReadinessState } from './pages.js';
+import { PageManagement } from './pages.js';
 import { CacheManagement, type CacheBehavior } from './cache.js';
 import { SnapshotManager, type Snapshot, type SnapshotOptions } from './snapshot/index.js';
 
@@ -101,12 +102,12 @@ export class FirefoxClient {
       driver,
       () => this.core.getCurrentContextId(),
       (id: string) => this.core.setCurrentContextId(id),
-      (method: string, params: Record<string, any>) => this.getBidi().sendCommand(method, params)
+      (method, params) => this.getBidi().sendCommand(method, params)
     );
 
     this.cache = new CacheManagement(
       () => this.core.getCurrentContextId(),
-      (method: string, params: Record<string, any>) => this.getBidi().sendCommand(method, params)
+      (method, params) => this.getBidi().sendCommand(method, params)
     );
   }
 
@@ -121,10 +122,14 @@ export class FirefoxClient {
    * native value; throws on a script exception.
    */
   async evaluate(expression: string): Promise<unknown> {
+    const context = this.core.getCurrentContextId();
+    if (!context) {
+      throw new Error('No active browsing context');
+    }
     const result = await this.getBidi().sendCommand('script.evaluate', {
       expression,
       awaitPromise: true,
-      target: { context: this.core.getCurrentContextId() },
+      target: { context },
     });
     if (result.type === 'success') {
       return remoteValueToNative(result.result);
@@ -256,7 +261,7 @@ export class FirefoxClient {
   // Pages / Navigation
   // ============================================================================
 
-  async navigate(url: string, wait?: ReadinessState): Promise<void> {
+  async navigate(url: string, wait?: BrowsingContext.ReadinessState): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
@@ -326,7 +331,7 @@ export class FirefoxClient {
     return await this.pages.selectTab(index);
   }
 
-  async createNewPage(url: string, wait?: ReadinessState): Promise<number> {
+  async createNewPage(url: string, wait?: BrowsingContext.ReadinessState): Promise<number> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
@@ -393,7 +398,7 @@ export class FirefoxClient {
    */
   async getNetworkRequestBody(
     requestId: string,
-    dataType: 'request' | 'response'
+    dataType: Network.DataType
   ): Promise<NetworkBodyResult> {
     if (!this.networkEvents) {
       throw new Error(
@@ -430,11 +435,11 @@ export class FirefoxClient {
    * @param behavior 'allowed' saves downloads silently, 'denied' cancels them, 'default' resets
    */
   async setDownloadBehavior(behavior: 'allowed' | 'denied' | 'default'): Promise<void> {
-    const downloadBehavior =
+    const downloadBehavior: Browser.DownloadBehavior | null =
       behavior === 'default'
         ? null
         : behavior === 'allowed'
-          ? { type: 'allowed' }
+          ? ({ type: 'allowed' } as unknown as Browser.DownloadBehavior)
           : { type: 'denied' };
     await this.getBidi().sendCommand('browser.setDownloadBehavior', { downloadBehavior });
   }
@@ -497,9 +502,8 @@ export class FirefoxClient {
    * Send raw BiDi command (for advanced operations)
    * @internal
    */
-  async sendBiDiCommand(method: string, params: Record<string, any> = {}): Promise<any> {
-    return await this.getBidi().sendCommand(method, params);
-  }
+  sendBiDiCommand: BiDiFacade['sendCommand'] = (method, params) =>
+    this.getBidi().sendCommand(method, params);
 
   /**
    * Get WebDriver instance (for advanced operations)
@@ -552,7 +556,7 @@ export class FirefoxClient {
     const result = await this.getBidi().sendCommand('moz:debugging.setBreakpoint', {
       location: { url, line },
     });
-    const logpointId = (result as { breakpoint: string }).breakpoint;
+    const logpointId = result.breakpoint;
     this.debuggingEvents.addLogpoint(logpointId, url, line, expression);
     return logpointId;
   }

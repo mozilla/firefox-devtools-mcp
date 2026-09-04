@@ -1,17 +1,14 @@
-/**
- * Network cache behaviour (WebDriver BiDi network.setCacheBehavior)
- */
-
-export type BiDiCommandFn = (method: string, params: Record<string, any>) => Promise<any>;
+import type { Network } from 'webdriver-bidi-protocol';
+import type { BiDiFacade } from './bidi';
 
 /**
  * WebDriver BiDi network.CacheBehavior.
  * - "default": normal HTTP cache behaviour
  * - "bypass": skip the cache, so every request goes to the network
  */
-export const CACHE_BEHAVIORS = ['default', 'bypass'] as const;
+export type CacheBehavior = Network.SetCacheBehaviorParameters['cacheBehavior'];
 
-export type CacheBehavior = (typeof CACHE_BEHAVIORS)[number];
+export const CACHE_BEHAVIORS: CacheBehavior[] = ['default', 'bypass'] as const;
 
 export function isCacheBehavior(value: unknown): value is CacheBehavior {
   return CACHE_BEHAVIORS.includes(value as CacheBehavior);
@@ -20,11 +17,11 @@ export function isCacheBehavior(value: unknown): value is CacheBehavior {
 export class CacheManagement {
   constructor(
     private getCurrentContextId: () => string | null,
-    private sendBiDiCommand: BiDiCommandFn
+    private sendBiDiCommand: BiDiFacade['sendCommand']
   ) {}
 
   async setCacheBehavior(behavior: CacheBehavior, options?: { global?: boolean }): Promise<void> {
-    const params: Record<string, unknown> = { cacheBehavior: behavior };
+    const params: Network.SetCacheBehaviorParameters = { cacheBehavior: behavior };
 
     // Omitting `contexts` applies the behaviour globally; passing the current
     // context scopes it to the selected tab, which is the default.

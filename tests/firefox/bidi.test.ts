@@ -34,7 +34,7 @@ describe('BidiFacade sendCommand WebSocket readiness', () => {
     const bidi = new BiDiFacade(driver as any);
 
     // Start the command (don't await yet)
-    const commandPromise = bidi.sendCommand('test.method', { foo: 'bar' });
+    const commandPromise = bidi.sendCommand('session.new', { capabilities: {} });
 
     // Give the async code a tick to execute
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -56,7 +56,7 @@ describe('BidiFacade sendCommand WebSocket readiness', () => {
 
     // ASSERT: send() should now have been called
     expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend).toHaveBeenCalledWith(expect.stringContaining('"method":"test.method"'));
+    expect(mockSend).toHaveBeenCalledWith(expect.stringContaining('"method":"session.new"'));
 
     // Simulate response to complete the promise
     if (eventListeners['message']) {

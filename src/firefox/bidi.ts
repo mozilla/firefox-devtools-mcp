@@ -1,8 +1,96 @@
 import EventEmitter from 'node:events';
 import { WebDriver } from 'selenium-webdriver';
+import type {
+  BrowsingContext,
+  Commands,
+  Event,
+  EmptyParams,
+  EmptyResult,
+  Network,
+} from 'webdriver-bidi-protocol';
 import { logDebug } from '../utils/logger.js';
 
-export class BiDiFacade extends EventEmitter {
+// Firefox-specific events
+type DebuggingPausedEvent = {
+  method: 'moz:debugging.paused';
+  params: { context: BrowsingContext.BrowsingContext; url: string; line: number; column: number };
+};
+type DebuggingResumedEvent = {
+  method: 'moz:debugging.resumed';
+  params: { context: BrowsingContext.BrowsingContext };
+};
+type FirefoxEvent = Event | DebuggingPausedEvent | DebuggingResumedEvent;
+type FirefoxEventMap = {
+  [M in FirefoxEvent['method']]: [Extract<FirefoxEvent, { method: M }>['params']];
+};
+type FirefoxEventName = keyof FirefoxEventMap;
+
+export type FirefoxCommands = Commands & {
+  // Firefox-specific extensions to standard commands
+  'browsingContext.getTree': {
+    params: { 'moz:scope'?: string };
+  };
+  'webExtension.install': {
+    params: { 'moz:permanent'?: boolean };
+  };
+  // Firefox-specific commands
+  'moz:debugging.setDebuggerEnabled': {
+    params: { enabled: boolean };
+    returnType: EmptyResult;
+  };
+  'moz:debugging.setBreakpoint': {
+    params: { location: { url: string; line: number } };
+    returnType: { breakpoint: string };
+  };
+  'moz:debugging.removeBreakpoint': {
+    params: { breakpoint: string };
+    returnType: EmptyResult;
+  };
+  'moz:debugging.resume': {
+    params: { context: BrowsingContext.BrowsingContext };
+    returnType: EmptyResult;
+  };
+  'moz:debugging.listScripts': {
+    params: { context: BrowsingContext.BrowsingContext };
+    returnType: { scripts: string[] };
+  };
+  'moz:debugging.getScriptSource': {
+    params: { context: BrowsingContext.BrowsingContext; scriptUrl: string };
+    returnType: { source: string };
+  };
+  'moz:profiler.start': {
+    params: EmptyParams;
+    returnType: { active: boolean };
+  };
+  'moz:profiler.stop': {
+    params: { discard?: boolean };
+    returnType: { path?: string };
+  };
+  'moz:profiler.isActive': {
+    params: EmptyParams;
+    returnType: { active: boolean };
+  };
+};
+
+// webdriver-bidi-protocol uses ambient const enums AND we're using vitest
+// which implies typescript's isolatedModules is true, meaning that
+// these enums are not available at runtime, so we create these helpers
+// for easier access to the correctly typed values
+export const ReadinessState = {
+  None: 'none' as BrowsingContext.ReadinessState,
+  Interactive: 'interactive' as BrowsingContext.ReadinessState,
+  Complete: 'complete' as BrowsingContext.ReadinessState,
+} as const satisfies Record<
+  keyof typeof BrowsingContext.ReadinessState,
+  BrowsingContext.ReadinessState
+>;
+
+export const DataType = {
+  Request: 'request' as Network.DataType,
+  Response: 'response' as Network.DataType,
+} as const satisfies Record<keyof typeof Network.DataType, Network.DataType>;
+
+export class BiDiFacade extends EventEmitter<FirefoxEventMap> {
   private listening = false;
   private nextCommandId = 1;
 
@@ -10,7 +98,7 @@ export class BiDiFacade extends EventEmitter {
     super();
   }
 
-  async subscribe(events: string | string[]) {
+  async subscribe(events: FirefoxEventName | FirefoxEventName[]) {
     const bidi = await this.driver.getBidi();
     if (!this.listening) {
       this.listenForEvents(bidi.socket);
@@ -19,7 +107,10 @@ export class BiDiFacade extends EventEmitter {
     await bidi.subscribe(events);
   }
 
-  async sendCommand(method: string, params: Record<string, any> = {}): Promise<any> {
+  async sendCommand<T extends keyof FirefoxCommands>(
+    method: T,
+    params: FirefoxCommands[T]['params'] = {}
+  ): Promise<FirefoxCommands[T]['returnType']> {
     const bidi = await this.driver.getBidi();
     // bidi.socket is a Node.js `ws` WebSocket (EventEmitter-style), but typed as browser WebSocket
     const ws = bidi.socket as any;

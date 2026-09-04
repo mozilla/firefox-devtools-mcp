@@ -177,11 +177,6 @@ export const handleSelectPrivilegedContext = defineToolHandler(
   }
 );
 
-const EvaluateResultType = {
-  Exception: 'exception',
-  Success: 'success',
-};
-
 export const handleEvaluatePrivilegedScript = defineToolHandler(
   async (args: unknown): Promise<McpToolResponse> => {
     const {
@@ -214,7 +209,7 @@ export const handleEvaluatePrivilegedScript = defineToolHandler(
       target: { context },
     });
 
-    if (result.type === EvaluateResultType.Success) {
+    if (result.type === 'success') {
       // JSON.stringify returns undefined for an undefined script result
       const json = JSON.stringify(remoteValueToNative(result.result), null, 2) ?? 'undefined';
 
@@ -235,7 +230,7 @@ export const handleEvaluatePrivilegedScript = defineToolHandler(
       return successResponse(
         'Script ran in chrome context and returned:\n```json\n' + json + '\n```'
       );
-    } else if (result.type === EvaluateResultType.Exception) {
+    } else {
       const exceptionDetails = result.exceptionDetails;
       return errorResponse(
         new Error(
@@ -245,8 +240,6 @@ export const handleEvaluatePrivilegedScript = defineToolHandler(
             '\n```'
         )
       );
-    } else {
-      return errorResponse(`Unexpected script.callFunction result type: ${result.type}`);
     }
   }
 );

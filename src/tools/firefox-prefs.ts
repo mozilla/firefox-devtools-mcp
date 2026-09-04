@@ -66,7 +66,7 @@ export const handleSetFirefoxPrefs = defineToolHandler(
       }
 
       const driver = firefox.getDriver();
-      const chromeContextId = contexts[0].context;
+      const chromeContextId = contexts[0]!.context;
 
       // Remember current context
       const originalContextId = firefox.getCurrentContextId();
@@ -172,7 +172,7 @@ export const handleGetFirefoxPrefs = defineToolHandler(
       }
 
       const driver = firefox.getDriver();
-      const chromeContextId = contexts[0].context;
+      const chromeContextId = contexts[0]!.context;
 
       // Remember current context
       const originalContextId = firefox.getCurrentContextId();

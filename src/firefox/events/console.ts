@@ -45,11 +45,11 @@ export class ConsoleEvents {
 
     this.bidi.on('log.entryAdded', (entry) => {
       const message: ConsoleMessage = {
-        level: (entry.level as ConsoleMessage['level']) || 'info',
-        text: entry.text || (entry.args ? JSON.stringify(entry.args) : ''),
+        level: entry.level || 'info',
+        text: entry.text || ('args' in entry && entry.args ? JSON.stringify(entry.args) : ''),
         timestamp: entry.timestamp || Date.now(),
         source: entry.source?.realm,
-        args: entry.args,
+        args: 'args' in entry ? entry.args : [],
       };
       this.consoleMessages.push(message);
       logDebug(`Console [${message.level}]: ${message.text}`);

@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
+import { ReadinessState } from '@/firefox/bidi.js';
 import {
   isCommonScheme,
   isReadinessState,
@@ -153,7 +154,7 @@ describe('PageManagement', () => {
     it('honours an explicit wait for common schemes', async () => {
       const { pages, sendBiDiCommand } = createMocks();
 
-      await pages.navigate(HTTPS_URL, 'complete');
+      await pages.navigate(HTTPS_URL, ReadinessState.Complete);
       expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
         context: 'ctx-1',
         url: HTTPS_URL,
@@ -164,14 +165,14 @@ describe('PageManagement', () => {
     it('honours an explicit wait for uncommon schemes rather than downgrading it', async () => {
       const { pages, sendBiDiCommand } = createMocks();
 
-      await pages.navigate(MOZ_EXT_URL, 'complete');
+      await pages.navigate(MOZ_EXT_URL, ReadinessState.Complete);
       expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
         context: 'ctx-1',
         url: MOZ_EXT_URL,
         wait: 'complete',
       });
 
-      await pages.navigate('about:blank', 'interactive');
+      await pages.navigate('about:blank', ReadinessState.Interactive);
       expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
         context: 'ctx-1',
         url: 'about:blank',
@@ -182,7 +183,7 @@ describe('PageManagement', () => {
     it('allows an explicit wait to opt out of waiting on a common scheme', async () => {
       const { pages, sendBiDiCommand } = createMocks();
 
-      await pages.navigate(HTTPS_URL, 'none');
+      await pages.navigate(HTTPS_URL, ReadinessState.None);
       expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
         context: 'ctx-1',
         url: HTTPS_URL,
@@ -262,7 +263,7 @@ describe('PageManagement', () => {
         sendBiDiCommand
       );
 
-      await pages.createNewPage(HTTPS_URL, 'complete');
+      await pages.createNewPage(HTTPS_URL, ReadinessState.Complete);
       expect(sendBiDiCommand).toHaveBeenCalledWith('browsingContext.navigate', {
         context: 'handle-2',
         url: HTTPS_URL,

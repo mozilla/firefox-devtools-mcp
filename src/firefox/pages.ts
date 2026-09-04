@@ -3,6 +3,8 @@
  */
 
 import { WebDriver } from 'selenium-webdriver';
+import type { BrowsingContext } from 'webdriver-bidi-protocol';
+import { ReadinessState, type BiDiFacade } from './bidi.js';
 import { log, logDebug } from '../utils/logger.js';
 
 const COMMON_URL_SCHEMES = ['http:', 'https:', 'data:', 'blob:', 'file:'];
@@ -19,20 +21,16 @@ export function isCommonScheme(url: string): boolean {
   }
 }
 
-export type BiDiCommandFn = (method: string, params: Record<string, any>) => Promise<any>;
-
 /**
  * WebDriver BiDi browsingContext.ReadinessState.
  * - "none": return as soon as navigation starts
  * - "interactive": wait for DOMContentLoaded
  * - "complete": wait for the load event, including subresources
  */
-export const READINESS_STATES = ['none', 'interactive', 'complete'] as const;
+export const READINESS_STATES = [...Object.values(ReadinessState)];
 
-export type ReadinessState = (typeof READINESS_STATES)[number];
-
-export function isReadinessState(value: unknown): value is ReadinessState {
-  return READINESS_STATES.includes(value as ReadinessState);
+export function isReadinessState(value: unknown): value is BrowsingContext.ReadinessState {
+  return READINESS_STATES.includes(value as BrowsingContext.ReadinessState);
 }
 
 export class PageManagement {
@@ -40,7 +38,7 @@ export class PageManagement {
     private driver: WebDriver,
     private getCurrentContextId: () => string | null,
     private setCurrentContextId: (id: string) => void,
-    private sendBiDiCommand: BiDiCommandFn
+    private sendBiDiCommand: BiDiFacade['sendCommand']
   ) {}
 
   /**
@@ -50,7 +48,7 @@ export class PageManagement {
    * @param waitOverride - Explicit readiness state to wait for. When omitted,
    *   common schemes wait for "interactive" and uncommon schemes do not wait.
    */
-  async navigate(url: string, waitOverride?: ReadinessState): Promise<void> {
+  async navigate(url: string, waitOverride?: BrowsingContext.ReadinessState): Promise<void> {
     const contextId = this.getCurrentContextId();
     if (!contextId) {
       throw new Error(`Cannot navigate: no browsing context ID`);
@@ -60,7 +58,8 @@ export class PageManagement {
     // All uncommon schemes use wait time "none".
     // An explicit override is honoured for every scheme: silently downgrading it
     // would discard what the caller asked for with no way to tell.
-    const wait: ReadinessState = waitOverride ?? (isCommonScheme(url) ? 'interactive' : 'none');
+    const wait =
+      waitOverride ?? (isCommonScheme(url) ? ReadinessState.Interactive : ReadinessState.None);
 
     // Navigate using direct BiDi
     await this.sendBiDiCommand('browsingContext.navigate', {
@@ -206,7 +205,7 @@ export class PageManagement {
   /**
    * Create new page (tab)
    */
-  async createNewPage(url: string, waitOverride?: ReadinessState): Promise<number> {
+  async createNewPage(url: string, waitOverride?: BrowsingContext.ReadinessState): Promise<number> {
     await this.driver.switchTo().newWindow('tab');
     const handles = await this.driver.getAllWindowHandles();
     const newIdx = handles.length - 1;

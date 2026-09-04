@@ -2,6 +2,7 @@
  * JavaScript evaluation tool
  */
 
+import type { Script } from 'webdriver-bidi-protocol';
 import { successResponse, errorResponse, previewExcerpt } from '../utils/response-helpers.js';
 import { remoteValueToNative } from '../utils/remote-value.js';
 import { validateFunction } from '../utils/js-validation.js';
@@ -65,12 +66,6 @@ export const evaluateScriptTool = {
 const DEFAULT_TIMEOUT = 5000; // 5 seconds
 const TIMEOUT = Symbol('Timeout');
 
-// Types from the WebDriver BiDi specification.
-const EvaluateResultType = {
-  Exception: 'exception',
-  Success: 'success',
-};
-
 export const handleEvaluateScript = defineToolHandler(
   async (args: unknown): Promise<McpToolResponse> => {
     const {
@@ -98,7 +93,7 @@ export const handleEvaluateScript = defineToolHandler(
     const scriptTimeout = timeout ?? DEFAULT_TIMEOUT;
 
     // Prepare arguments: resolve UIDs to references shared ids if provided
-    const resolvedArgs: unknown[] = [];
+    const resolvedArgs: Script.LocalValue[] = [];
     if (fnArgs && fnArgs.length > 0) {
       for (const arg of fnArgs) {
         try {
@@ -126,17 +121,24 @@ export const handleEvaluateScript = defineToolHandler(
     }
 
     // Execute with resolved args (empty array if no args)
+    const context = firefox.getCurrentContextId();
+    if (!context) {
+      throw new Error('No active browsing context');
+    }
     const callFunctionPromise = firefox.sendBiDiCommand('script.callFunction', {
       functionDeclaration: fnString,
       awaitPromise: true,
       arguments: resolvedArgs,
-      target: { context: firefox.getCurrentContextId(), ...(sandbox !== undefined && { sandbox }) },
+      target: {
+        context,
+        ...(sandbox !== undefined && { sandbox }),
+      },
     });
 
     // Race against timeout as WebDriver BiDi callFunction has no built-in
     // timeout feature.
     const result = await Promise.race([
-      new Promise((r) => setTimeout(() => r(TIMEOUT), scriptTimeout)),
+      new Promise<typeof TIMEOUT>((r) => setTimeout(() => r(TIMEOUT), scriptTimeout)),
       callFunctionPromise,
     ]);
 
@@ -148,7 +150,7 @@ export const handleEvaluateScript = defineToolHandler(
             'Try simplifying the script or increasing the timeout parameter.'
         )
       );
-    } else if (result.type === EvaluateResultType.Success) {
+    } else if (result.type === 'success') {
       // JSON.stringify returns undefined for an undefined script result
       const json = JSON.stringify(remoteValueToNative(result.result), null, 2) ?? 'undefined';
 
@@ -167,7 +169,7 @@ export const handleEvaluateScript = defineToolHandler(
       }
 
       return successResponse('Script ran on page and returned:\n```json\n' + json + '\n```');
-    } else if (result.type === EvaluateResultType.Exception) {
+    } else {
       const exceptionDetails = result.exceptionDetails;
       return errorResponse(
         new Error(
@@ -177,8 +179,6 @@ export const handleEvaluateScript = defineToolHandler(
             '\n```'
         )
       );
-    } else {
-      return errorResponse(`Unexpected script.callFunction result type: ${result.type}`);
     }
   }
 );

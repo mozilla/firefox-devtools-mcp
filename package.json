@@ -97,7 +97,8 @@
     "tsup": "8.5.0",
     "tsx": "4.21.0",
     "typescript": "5.3.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.8",
+    "webdriver-bidi-protocol": "^0.4.3"
   },
   "files": [
     "dist",

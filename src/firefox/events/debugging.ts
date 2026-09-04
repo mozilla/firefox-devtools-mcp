@@ -96,21 +96,15 @@ export class DebuggingEvents {
         awaitPromise: false,
       });
 
-      const evalResult = result as {
-        type: string;
-        result?: unknown;
-        exceptionDetails?: { text: string };
-      };
-
-      if (evalResult.type === 'exception') {
+      if (result.type === 'exception') {
         entry.results.push({
           value: null,
-          error: evalResult.exceptionDetails?.text ?? 'Unknown error',
+          error: result.exceptionDetails?.text ?? 'Unknown error',
           timestamp: Date.now(),
         });
       } else {
         entry.results.push({
-          value: evalResult.result,
+          value: result.result,
           timestamp: Date.now(),
         });
       }

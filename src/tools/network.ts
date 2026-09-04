@@ -3,6 +3,9 @@
  * Provides network request inspection capabilities
  */
 
+import type { Network } from 'webdriver-bidi-protocol';
+import type { FirefoxClient } from '../firefox/index.js';
+import { DataType } from '../firefox/bidi.js';
 import {
   successResponse,
   errorResponse,
@@ -162,14 +165,9 @@ export const setNetworkCacheTool = {
  * the whole tool call. Absent support degrades to an 'unsupported' marker.
  */
 async function safeFetchBody(
-  firefox: {
-    getNetworkRequestBody?: (
-      id: string,
-      dataType: 'request' | 'response'
-    ) => Promise<NetworkBodyResult>;
-  },
+  firefox: FirefoxClient,
   id: string,
-  dataType: 'request' | 'response'
+  dataType: Network.DataType
 ): Promise<NetworkBodyResult> {
   if (typeof firefox.getNetworkRequestBody !== 'function') {
     return { ok: false, reason: 'unsupported' };
@@ -538,8 +536,8 @@ export const handleGetNetworkRequest = defineToolHandler(
     };
 
     const [responseBodyResult, requestBodyResult] = await Promise.all([
-      safeFetchBody(firefox, request.id, 'response'),
-      safeFetchBody(firefox, request.id, 'request'),
+      safeFetchBody(firefox, request.id, DataType.Response),
+      safeFetchBody(firefox, request.id, DataType.Request),
     ]);
 
     if (saveTo) {

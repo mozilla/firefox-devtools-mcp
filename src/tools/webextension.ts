@@ -9,6 +9,8 @@
  * Note: list_extensions requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1
  */
 
+import type { WebExtension } from 'webdriver-bidi-protocol';
+import type { FirefoxCommands } from '../firefox/bidi.js';
 import { successResponse } from '../utils/response-helpers.js';
 import { defineModule, defineToolHandler, type ToolDefinition } from './module.js';
 import type { McpToolResponse } from '../types/common.js';
@@ -65,27 +67,24 @@ export const handleInstallExtension = defineToolHandler(
     }
 
     // Validate required fields based on type
-    if ((type === 'archivePath' || type === 'path') && !path) {
-      throw new Error(`path parameter is required for type "${type}"`);
-    }
-    if (type === 'base64' && !value) {
-      throw new Error('value parameter is required for type "base64"');
+    let extensionData!: WebExtension.ExtensionData;
+    if (type === 'archivePath' || type === 'path') {
+      if (!path) {
+        throw new Error(`path parameter is required for type "${type}"`);
+      }
+      extensionData = { type, path };
+    } else {
+      if (!value) {
+        throw new Error('value parameter is required for type "base64"');
+      }
+      extensionData = { type, value };
     }
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    // Build extensionData parameter
-    const extensionData: Record<string, string> = { type };
-    if (path) {
-      extensionData.path = path;
-    }
-    if (value) {
-      extensionData.value = value;
-    }
-
     // Build BiDi command parameters
-    const params: Record<string, any> = { extensionData };
+    const params: FirefoxCommands['webExtension.install']['params'] = { extensionData };
     if (permanent !== undefined) {
       params['moz:permanent'] = permanent;
     }
@@ -252,7 +251,7 @@ export const handleListExtensions = defineToolHandler(
       }
 
       const driver = firefox.getDriver();
-      const chromeContextId = contexts[0].context;
+      const chromeContextId = contexts[0]!.context;
       const originalContextId = firefox.getCurrentContextId();
 
       try {

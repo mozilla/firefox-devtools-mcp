@@ -1,3 +1,4 @@
+import type { BrowsingContext } from 'webdriver-bidi-protocol';
 import { successResponse, errorResponse } from '../utils/response-helpers.js';
 import { compareVersions } from '../utils/version.js';
 import type { FirefoxDevTools } from '../firefox/index.js';
@@ -81,7 +82,7 @@ export const handleScreencastStart = defineToolHandler(
       throw new Error('No active browsing context to record');
     }
 
-    const params: Record<string, unknown> = { context: contextId };
+    const params: BrowsingContext.StartScreencastParameters = { context: contextId };
 
     const video: Record<string, number> = {};
     if (frameRate !== undefined) {
@@ -156,7 +157,7 @@ export const handleScreencastStop = defineToolHandler(
     }
 
     const result = await firefox.sendBiDiCommand('browsingContext.stopScreencast', {
-      screencast: screencastId,
+      screencast: screencastId!,
     });
 
     activeRecordings.delete(screencastId as string);

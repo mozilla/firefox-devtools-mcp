@@ -2,9 +2,10 @@
  * Page navigation and management tools for MCP
  */
 
+import type { BrowsingContext } from 'webdriver-bidi-protocol';
 import { successResponse, previewExcerpt, truncationFooter } from '../utils/response-helpers.js';
 import { saveOutput } from '../utils/save-output.js';
-import { READINESS_STATES, isReadinessState, type ReadinessState } from '../firefox/pages.js';
+import { READINESS_STATES, isReadinessState } from '../firefox/pages.js';
 import {
   defineModule,
   defineToolHandler,
@@ -33,7 +34,7 @@ const waitSchema = {
  * An unknown value is rejected rather than ignored: silently falling back to the
  * default would leave the caller believing it waited for something it did not.
  */
-function parseWait(value: unknown): ReadinessState | undefined {
+function parseWait(value: unknown): BrowsingContext.ReadinessState | undefined {
   if (value === undefined || value === null) {
     return undefined;
   }
@@ -46,7 +47,7 @@ function parseWait(value: unknown): ReadinessState | undefined {
 }
 
 /** Echo the readiness state back only when the caller asked for one. */
-function waitSuffix(wait: ReadinessState | undefined): string {
+function waitSuffix(wait: BrowsingContext.ReadinessState | undefined): string {
   return wait ? ` (waited for: ${wait})` : '';
 }
 
