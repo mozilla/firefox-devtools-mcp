@@ -4,7 +4,7 @@
 
 import { join } from 'node:path';
 import { MCP_PROFILE_DIR_NAME } from '@/firefox/profile.js';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { FirefoxCore } from '@/firefox/core.js';
 import type { FirefoxLaunchOptions } from '@/firefox/types.js';
 
@@ -389,18 +389,55 @@ describe('FirefoxCore connect() profile handling', () => {
     );
   });
 
-  // Bug 2062055: geckodriver path should always be resolved before calling
-  // the ServiceBuilder.
-  it('should build the geckodriver service with an explicit binary path', async () => {
-    const { FirefoxCore } = await import('@/firefox/core.js');
+  // Bug 2062055 and its follow-up. Giving the DriverService an executable also
+  // opts out of Selenium Manager resolving the Firefox binary, so the explicit
+  // path is only correct where Selenium Manager cannot run.
+  describe('geckodriver resolution', () => {
+    const platform = process.platform;
+    const arch = process.arch;
 
-    const core = new FirefoxCore({ headless: true });
-    await core.connect();
+    const setPlatform = (value: NodeJS.Platform, archValue: string) => {
+      Object.defineProperty(process, 'platform', { value, configurable: true });
+      Object.defineProperty(process, 'arch', { value: archValue, configurable: true });
+    };
 
-    expect(mockServiceBuilderCtor).toHaveBeenCalledTimes(1);
-    const [geckodriverPath] = mockServiceBuilderCtor.mock.calls[0] as [unknown];
-    expect(typeof geckodriverPath).toBe('string');
-    expect(String(geckodriverPath)).toContain('geckodriver');
+    afterEach(() => {
+      setPlatform(platform, arch);
+    });
+
+    it.each([
+      ['win32', 'x64'],
+      ['linux', 'arm64'],
+    ] as const)(
+      'resolves geckodriver explicitly on %s/%s, where Selenium Manager cannot',
+      async (osName, archName) => {
+        setPlatform(osName, archName);
+        const { FirefoxCore } = await import('@/firefox/core.js');
+
+        await new FirefoxCore({ headless: true }).connect();
+
+        expect(mockServiceBuilderCtor).toHaveBeenCalledTimes(1);
+        const [geckodriverPath] = mockServiceBuilderCtor.mock.calls[0] as [unknown];
+        expect(typeof geckodriverPath).toBe('string');
+        expect(String(geckodriverPath)).toContain('geckodriver');
+      }
+    );
+
+    it.each([
+      ['linux', 'x64'],
+      ['darwin', 'arm64'],
+    ] as const)(
+      'leaves the service executable unset on %s/%s, so Selenium Manager still finds Firefox',
+      async (osName, archName) => {
+        setPlatform(osName, archName);
+        const { FirefoxCore } = await import('@/firefox/core.js');
+
+        await new FirefoxCore({ headless: true }).connect();
+
+        expect(mockServiceBuilderCtor).toHaveBeenCalledTimes(1);
+        expect(mockServiceBuilderCtor.mock.calls[0]).toHaveLength(0);
+      }
+    );
   });
 });
 
