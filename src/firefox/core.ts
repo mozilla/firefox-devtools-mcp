@@ -364,18 +364,10 @@ export class FirefoxCore {
         }
       }
 
-      // Resolve geckodriver ourselves only where Selenium Manager cannot do the
-      // job, because giving the service an executable costs more than it looks.
-      // selenium-webdriver calls getBinaryPaths() only when the DriverService
-      // has none, and that single call resolves geckodriver *and* the Firefox
-      // binary it injects into moz:firefoxOptions.binary. Passing a path
-      // therefore also opts out of finding Firefox, which is exactly what the
-      // Android branch above relies on and what broke desktop users with no
-      // system Firefox in 0.10.2.
-      //   win32: ServiceBuilder() invoked from the MCP hangs (Bug 2040849).
-      //   non-x64 Linux: Selenium Manager ships an x86-64 binary that cannot
-      //   execute on aarch64 (Bug 2062055).
-      // Everywhere else Selenium Manager works, so let it resolve both.
+      // Giving the service an executable skips getBinaryPaths(), which resolves
+      // geckodriver *and* the Firefox binary injected into moz:firefoxOptions.binary.
+      // Only do that where Selenium Manager cannot run: win32 hangs when invoked from
+      // the MCP (Bug 2040849), non-x64 Linux ships an x86-64 binary (Bug 2062055).
       const mustResolveGeckodriver =
         process.platform === 'win32' || (process.platform === 'linux' && process.arch !== 'x64');
 
