@@ -380,12 +380,51 @@ export const handleRestartFirefox = defineToolHandler(async (input: unknown) => 
   }
 });
 
+// ============================================================================
+// Tool: close_firefox_session
+// ============================================================================
+
+export const closeFirefoxSessionTool = {
+  name: 'close_firefox_session',
+  description:
+    'Ends the browser session. If the server connected to your existing Firefox, ' +
+    'this releases the connection and leaves Firefox running. If the server started Firefox itself, this closes it. ' +
+    'Call this when the browser task is complete and no further browser interaction is expected.',
+  annotations: {
+    readOnlyHint: false,
+  },
+  inputSchema: {
+    type: 'object',
+    properties: {},
+  },
+} satisfies ToolDefinition;
+
+export const handleCloseFirefoxSession = defineToolHandler(async (_args: unknown) => {
+  const { getFirefoxIfRunning, resetFirefox } = await import('../index.js');
+
+  const currentFirefox = getFirefoxIfRunning();
+  if (!currentFirefox) {
+    return successResponse('No Firefox session is currently active.');
+  }
+
+  // Read options before calling resetFirefox().
+  const { connectExisting } = currentFirefox.getOptions();
+  await resetFirefox();
+
+  return successResponse(
+    connectExisting
+      ? 'Disconnected from Firefox. The browser is still running.'
+      : 'Closed the Firefox instance started by this server, a new session will start if you use browser tools again.'
+  );
+});
+
 export const module = defineModule({
   name: 'management',
-  description: 'Inspect Firefox info/output and restart the browser.',
+  description: 'Inspect Firefox options and logs, restart and close the browser.',
   tools: [
     [getFirefoxLogsTool, handleGetFirefoxLogs],
     [getFirefoxInfoTool, handleGetFirefoxInfo],
     [restartFirefoxTool, handleRestartFirefox],
+    [closeFirefoxSessionTool, handleCloseFirefoxSession],
   ],
 });

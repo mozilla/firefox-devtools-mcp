@@ -1,5 +1,5 @@
 /**
- * Unit tests for Firefox management tools (restart_firefox, get_firefox_info, get_firefox_output)
+ * Unit tests for Firefox management tools (close_firefox_session, restart_firefox, get_firefox_info, get_firefox_output)
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -25,6 +25,81 @@ vi.mock('../../src/index.js', () => ({
 }));
 
 describe('Firefox Management Tools', () => {
+  describe('closeFirefoxSession', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      mockArgs.firefoxPath = undefined;
+      mockArgs.profilePath = undefined;
+    });
+
+    describe('when Firefox is NOT running', () => {
+      beforeEach(() => {
+        mockGetFirefoxIfRunning.mockReturnValue(null);
+      });
+
+      it('should respond when firefox session was not found', async () => {
+        const { handleCloseFirefoxSession } = await import('../../src/tools/firefox-management.js');
+
+        const result = await handleCloseFirefoxSession({});
+
+        // Make sure only the getFirefoxIfRunning variant was called
+        expect(mockGetFirefoxIfRunning).toHaveBeenCalled();
+        expect(mockGetFirefox).not.toHaveBeenCalled();
+
+        expect(mockResetFirefox).not.toHaveBeenCalled();
+        expect(result.content[0].text).toContain('No Firefox session is currently active.');
+      });
+    });
+
+    describe('when Firefox is running', () => {
+      const mockFirefoxInstance = {
+        getOptions: vi.fn(),
+        ensureConnected: vi.fn(),
+        close: vi.fn(),
+      };
+
+      beforeEach(() => {
+        mockGetFirefoxIfRunning.mockReturnValue(mockFirefoxInstance);
+      });
+
+      it('should reset firefox when connect-existing=false', async () => {
+        mockFirefoxInstance.getOptions.mockReturnValue({
+          connectExisting: false,
+        });
+
+        const { handleCloseFirefoxSession } = await import('../../src/tools/firefox-management.js');
+        const result = await handleCloseFirefoxSession({});
+
+        // Make sure only the getFirefoxIfRunning variant was called
+        expect(mockGetFirefoxIfRunning).toHaveBeenCalled();
+        expect(mockGetFirefox).not.toHaveBeenCalled();
+
+        expect(mockResetFirefox).toHaveBeenCalled();
+        expect(result.content[0].text).toContain(
+          'Closed the Firefox instance started by this server, a new session will start if you use browser tools again.'
+        );
+      });
+
+      it('should reset firefox when connect-existing=true', async () => {
+        mockFirefoxInstance.getOptions.mockReturnValue({
+          connectExisting: true,
+        });
+
+        const { handleCloseFirefoxSession } = await import('../../src/tools/firefox-management.js');
+        const result = await handleCloseFirefoxSession({});
+
+        // Make sure only the getFirefoxIfRunning variant was called
+        expect(mockGetFirefoxIfRunning).toHaveBeenCalled();
+        expect(mockGetFirefox).not.toHaveBeenCalled();
+
+        expect(mockResetFirefox).toHaveBeenCalled();
+        expect(result.content[0].text).toContain(
+          'Disconnected from Firefox. The browser is still running.'
+        );
+      });
+    });
+  });
+
   describe('restartFirefoxTool schema', () => {
     it('should have profilePath in input schema properties', () => {
       const { properties } = restartFirefoxTool.inputSchema as {
