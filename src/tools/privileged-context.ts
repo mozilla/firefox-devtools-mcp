@@ -1,6 +1,6 @@
 /**
  * Privileged context management tools for MCP
- * Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1
+ * Requires MCP startup with --allow-system-access
  */
 
 import { successResponse, errorResponse, previewExcerpt } from '../utils/response-helpers.js';
@@ -17,7 +17,7 @@ import type { McpToolResponse } from '../types/common.js';
 export const listPrivilegedContextsTool = {
   name: 'list_privileged_contexts',
   description:
-    'List privileged (privileged) browsing contexts. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Use restart_firefox with env parameter to enable.',
+    'List privileged (chrome) browsing contexts. Requires MCP startup with --allow-system-access.',
   annotations: {
     readOnlyHint: true,
   },
@@ -30,7 +30,7 @@ export const listPrivilegedContextsTool = {
 export const selectPrivilegedContextTool = {
   name: 'select_privileged_context',
   description:
-    'Select a privileged browsing context by ID and set WebDriver Classic context to "chrome" . Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+    'Select a privileged browsing context by ID and set WebDriver Classic context to "chrome". Requires MCP startup with --allow-system-access.',
   annotations: {
     readOnlyHint: false,
   },
@@ -49,7 +49,7 @@ export const selectPrivilegedContextTool = {
 export const evaluatePrivilegedScriptTool = {
   name: 'evaluate_privileged_script',
   description:
-    'Execute JS function in a privileged (chrome) browsing context. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var. Get context ids from list_privileged_contexts.',
+    'Execute JS function in a privileged (chrome) browsing context. Requires MCP startup with --allow-system-access. Get context ids from list_privileged_contexts.',
   annotations: {
     readOnlyHint: false,
   },
@@ -95,7 +95,7 @@ function formatContextList(contexts: any[]): string {
 }
 
 const SYSTEM_ACCESS_ERROR =
-  'Privileged context access not enabled. Set MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 environment variable and restart Firefox.';
+  'Privileged context access not enabled. Restart the MCP with --allow-system-access.';
 
 // Top-level entries of the chrome-scoped tree are the privileged contexts;
 // their children are content tabs and must not be accepted.
@@ -162,7 +162,7 @@ export const handleSelectPrivilegedContext = defineToolHandler(
     } catch {
       return errorResponse(
         new Error(
-          `Switched to context ${contextId} but failed to set Marionette privileged context. Your Firefox build may not support privileged context or MOZ_REMOTE_ALLOW_SYSTEM_ACCESS is not set.`
+          `Switched to context ${contextId} but failed to set Marionette privileged context. Your Firefox build may not support privileged context or the MCP was not started with --allow-system-access.`
         )
       );
     }

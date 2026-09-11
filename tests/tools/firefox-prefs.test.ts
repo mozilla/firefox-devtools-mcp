@@ -105,7 +105,7 @@ describe('Firefox Prefs Tool Handlers', () => {
       expect(result.content[0].text).toContain('No preferences to set');
     });
 
-    it('should return helpful error when MOZ_REMOTE_ALLOW_SYSTEM_ACCESS results in no privileged contexts', async () => {
+    it('should return helpful error when system access is unavailable', async () => {
       delete process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS;
 
       // Without MOZ_REMOTE_ALLOW_SYSTEM_ACCESS, no privileged contexts are available
@@ -122,7 +122,7 @@ describe('Firefox Prefs Tool Handlers', () => {
       const result = await handleSetFirefoxPrefs({ prefs: { 'test.pref': 'value' } });
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('MOZ_REMOTE_ALLOW_SYSTEM_ACCESS');
+      expect(result.content[0].text).toContain('--allow-system-access');
     });
 
     it('should set preferences successfully', async () => {
@@ -250,7 +250,7 @@ describe('Firefox Prefs Tool Handlers', () => {
       expect(result.content[0].text).toContain('names parameter is required');
     });
 
-    it('should return helpful error when MOZ_REMOTE_ALLOW_SYSTEM_ACCESS results in no privileged contexts', async () => {
+    it('should return helpful error when system access is unavailable', async () => {
       delete process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS;
 
       // Without MOZ_REMOTE_ALLOW_SYSTEM_ACCESS, no privileged contexts are available
@@ -267,7 +267,7 @@ describe('Firefox Prefs Tool Handlers', () => {
       const result = await handleGetFirefoxPrefs({ names: ['test.pref'] });
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('MOZ_REMOTE_ALLOW_SYSTEM_ACCESS');
+      expect(result.content[0].text).toContain('--allow-system-access');
     });
 
     it('should get preferences successfully', async () => {

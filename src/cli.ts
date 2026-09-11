@@ -184,6 +184,12 @@ export const cliOptions = {
     description:
       'Path to a file where MCP server logs will be written. Set DEBUG=* to also enable verbose debug logs.',
   },
+  allowSystemAccess: {
+    type: 'boolean',
+    description:
+      'Allow privileged Firefox access. Use with --tool-preset mozilla or an explicit privileged tool selection.',
+    default: false,
+  },
   tools: {
     type: 'array',
     string: true,
@@ -205,7 +211,7 @@ export const cliOptions = {
     type: 'string',
     description:
       `Preset selecting which tool modules to enable: ${PRESET_NAMES.join(' < ')}. ` +
-      'Ignored when --tools is given. Privileged modules (mozilla/all) require MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1.',
+      'Ignored when --tools is given. Privileged modules (mozilla/all) require --allow-system-access.',
     default: process.env.TOOL_PRESET || 'basic',
   },
   enableScript: {
@@ -217,7 +223,7 @@ export const cliOptions = {
   enablePrivilegedContext: {
     type: 'boolean',
     description:
-      'Deprecated: use --tools/--tool-preset. Enable privileged context tools and Firefox prefs tools. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1.',
+      'Deprecated: use --tools/--tool-preset. Enable privileged context tools and Firefox prefs tools. Requires --allow-system-access.',
     default: (process.env.ENABLE_PRIVILEGED_CONTEXT ?? 'false') === 'true',
   },
   unrestrictedSavePaths: {

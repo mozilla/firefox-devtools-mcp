@@ -180,7 +180,7 @@ describe('Privileged Context Tool Handlers', () => {
       });
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('MOZ_REMOTE_ALLOW_SYSTEM_ACCESS');
+      expect(result.content[0].text).toContain('--allow-system-access');
     });
   });
 

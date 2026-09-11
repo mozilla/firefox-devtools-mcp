@@ -33,13 +33,13 @@ Lets the agent execute arbitrary JavaScript in any page context. If the agent is
 
 ### Privileged context tools (modules `privileged` and `prefs`)
 
-Tools that operate in Firefox's privileged (chrome) context: listing and selecting privileged contexts, evaluating privileged scripts, reading and writing Firefox preferences, and listing extensions. These tools require the `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` environment variable to be set, which is checked by the WebDriver implementation in Firefox to allow using any command that targets privileged contexts. They are only available in the Mozilla-internal build; the public package skips them even if requested.
+Tools that operate in Firefox's privileged (chrome) context include listing and selecting privileged contexts, evaluating privileged scripts, reading and writing Firefox preferences, and listing extensions. They are exposed only when the MCP starts with `--allow-system-access` and the user also selects the `mozilla` preset or the privileged modules explicitly. The flag launches Firefox with the system access required by WebDriver. Neither `--env` nor later tool calls can substitute for this startup consent.
 
 Unless you are developing or modifying Firefox itself, you likely do not need these modules. To set preferences at startup, you can always use the `--pref name=value` command-line argument instead. If you are missing commands or features to debug web content, please file a bug on [Bugzilla](https://bugzilla.mozilla.org/enter_bug.cgi?format=__default__&blocked=2026717&product=Developer%20Infrastructure&component=Firefox%20MCP) or reach out in the [#firefox-devtools-mcp Matrix room](https://chat.mozilla.org/#/room/#firefox-devtools-mcp:mozilla.org).
 
-> **Warning:** When the privileged modules are used together with `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`, the agent gains access to privileged Firefox APIs with no web-content sandbox boundary. Depending on what the agent does with that access, this can extend to operating-system–level actions. Only use this combination in fully isolated environments.
+> **Warning:** When privileged modules are used with `--allow-system-access`, the agent gains access to privileged Firefox APIs with no web-content sandbox boundary. Depending on what the agent does with that access, this can extend to operating-system–level actions. Only use this combination in fully isolated environments.
 
-The deprecated `--enable-script` and `--enable-privileged-context` flags select the `developer` and `mozilla` presets respectively. They still work, but `--tool-preset` and `--tools` describe what is actually enabled.
+The deprecated `--enable-script` and `--enable-privileged-context` flags select the `developer` and `mozilla` presets respectively. They do not grant system access. `--tool-preset` and `--tools` describe what is selected, while `--allow-system-access` is the separate consent step for privileged modules.
 
 ## Risky Flags
 
