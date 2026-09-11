@@ -2,7 +2,7 @@
 
 # Tool reference
 
-The server exposes 54 tools grouped into 16 modules. Which modules are
+The server exposes 55 tools grouped into 16 modules. Which modules are
 enabled depends on `--tool-preset` or `--tools`; see
 [Tool modules and presets](../README.md#tool-modules-and-presets) in the README.
 
@@ -21,7 +21,7 @@ Mozilla-internal build and `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`; the public packag
 | `screenshot`              | 2     | yes  | yes   | yes       | yes     | yes |
 | `downloads`               | 3     | -    | yes   | yes       | yes     | yes |
 | `utilities`               | 4     | -    | yes   | yes       | yes     | yes |
-| `management`              | 3     | -    | yes   | yes       | yes     | yes |
+| `management`              | 4     | -    | yes   | yes       | yes     | yes |
 | `webextension`            | 2     | -    | yes   | yes       | yes     | yes |
 | `profiler`                | 3     | -    | -     | yes       | yes     | yes |
 | `screencast`              | 2     | -    | yes   | yes       | yes     | yes |
@@ -391,7 +391,7 @@ Parameters:
 
 ## management
 
-Inspect Firefox info/output and restart the browser.
+Inspect Firefox options and logs, restart and close the browser.
 
 ### `get_firefox_output`
 
@@ -425,6 +425,12 @@ Parameters:
 - `headless` (boolean, optional) - Run in headless mode (optional, keeps current if not specified)
 - `startUrl` (string, optional) - URL to navigate to after restart (optional, uses about:blank if not specified)
 - `prefs` (object, optional) - Firefox preferences to set at startup. Values are auto-typed: true/false become booleans, integers become numbers, everything else is a string. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1.
+
+### `close_firefox_session`
+
+Ends the browser session. If the server connected to your existing Firefox, this releases the connection and leaves Firefox running. If the server started Firefox itself, this closes it. Call this when the browser task is complete and no further browser interaction is expected.
+
+No parameters.
 
 ## webextension
 
