@@ -34,6 +34,7 @@ export let args = {} as Args;
 // Global context (lazy initialized on first tool call)
 let firefox: FirefoxDevTools | null = null;
 let nextLaunchOptions: FirefoxLaunchOptions | null = null;
+let existingFirefoxReconnectOptions: FirefoxLaunchOptions | null = null;
 // Warning generated during Firefox startup, surfaced in the first tool response.
 let pendingWarning: string | null = null;
 
@@ -57,6 +58,7 @@ export async function resetFirefox(): Promise<void> {
  */
 export function setNextLaunchOptions(options: FirefoxLaunchOptions): void {
   nextLaunchOptions = options;
+  existingFirefoxReconnectOptions = null;
   log('Next launch options updated');
 }
 
@@ -96,6 +98,9 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
     options = nextLaunchOptions;
     nextLaunchOptions = null; // Clear after use
     log('Using custom launch options from restart_firefox');
+  } else if (existingFirefoxReconnectOptions) {
+    options = existingFirefoxReconnectOptions;
+    log('Reconnecting to the previous existing Firefox target');
   } else {
     // Parse environment variables from CLI args (format: KEY=VALUE)
     let envVars: Record<string, string> | undefined;
@@ -139,6 +144,9 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
   try {
     await firefox.connect();
     log('Firefox DevTools connection established');
+    if (firefox.getOptions().connectExisting === true) {
+      existingFirefoxReconnectOptions = { ...firefox.getOptions() };
+    }
     pendingWarning = firefox.getAndClearProfileWarning();
     return firefox;
   } catch (error) {
@@ -237,6 +245,13 @@ export async function run(
     };
   });
 
+  const connectExisting = Boolean(args.connectExisting);
+  const timeout = 30 * 60 * 1000; // 30 minutes
+  let idleTimer: NodeJS.Timeout | undefined;
+  let disconnecting: Promise<void> | undefined;
+  let activeCalls = 0;
+  let shuttingDown = false;
+
   // Handle tool execution
   mcpServer.server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest) => {
     const { name, arguments: args } = request.params;
@@ -247,7 +262,11 @@ export async function run(
       throw new Error(`Unknown tool: ${name}`);
     }
 
+    clearTimeout(idleTimer);
+    idleTimer = undefined;
+    activeCalls++;
     try {
+      await disconnecting;
       const result = await handler(args);
       if (pendingWarning) {
         // Return as isError so that agents acting as MCP clients (e.g. Claude)
@@ -265,6 +284,24 @@ export async function run(
     } catch (error) {
       logError(`Error executing tool ${name}`, error);
       throw error;
+    } finally {
+      activeCalls--;
+      if (
+        connectExisting &&
+        !shuttingDown &&
+        activeCalls === 0 &&
+        firefox?.getOptions().connectExisting === true
+      ) {
+        idleTimer = setTimeout(() => {
+          idleTimer = undefined;
+          disconnecting = resetFirefox()
+            .catch((error) => logError('Error disconnecting idle Firefox session', error))
+            .finally(() => {
+              disconnecting = undefined;
+            });
+        }, timeout);
+        idleTimer.unref();
+      }
     }
   });
 
@@ -277,6 +314,9 @@ export async function run(
   // Clean up the Marionette session so Firefox accepts new connections.
   // Without this, the session stays locked after the MCP client disconnects.
   const cleanup = async () => {
+    shuttingDown = true;
+    clearTimeout(idleTimer);
+    await disconnecting;
     await resetFirefox();
     await mcpServer.close();
     await flushLogs().catch(() => {});
