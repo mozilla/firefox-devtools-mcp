@@ -6,7 +6,7 @@
  * list_extensions: Uses chrome-privileged AddonManager API as workaround for
  *                  missing webExtension.getExtensions BiDi command
  *
- * Note: list_extensions requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1
+ * Note: list_extensions requires MCP startup with --allow-system-access
  */
 
 import type { WebExtension } from 'webdriver-bidi-protocol';
@@ -147,10 +147,9 @@ export const handleUninstallExtension = defineToolHandler(
 export const listExtensionsTool = {
   name: 'list_extensions',
   description:
-    // MOZ_REMOTE_ALLOW_SYSTEM_ACCESS is required because the tool relies on the
-    // privileged AddonManager API as a workaround for the currently missing
-    // webExtension.getExtensions WebDriver BiDi command.
-    'List installed Firefox extensions with UUIDs and background scripts. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.',
+    // System access is required because the tool relies on the privileged
+    // AddonManager API while webExtension.getExtensions is unavailable.
+    'List installed Firefox extensions with UUIDs and background scripts. Requires MCP startup with --allow-system-access.',
   annotations: {
     readOnlyHint: true,
   },
@@ -246,7 +245,7 @@ export const handleListExtensions = defineToolHandler(
       const contexts = result.contexts || [];
       if (contexts.length === 0) {
         throw new Error(
-          'No privileged contexts available. Ensure MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 is set.'
+          'No privileged contexts available. Ensure the MCP was started with --allow-system-access.'
         );
       }
 
@@ -340,7 +339,7 @@ export const handleListExtensions = defineToolHandler(
     } catch (error) {
       if (error instanceof Error && error.message.includes('UnsupportedOperationError')) {
         throw new Error(
-          'Chrome context access not enabled. Set MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 environment variable and restart Firefox.'
+          'Chrome context access not enabled. Restart the MCP with --allow-system-access.'
         );
       }
       throw error;

@@ -5,6 +5,7 @@
 
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { errorResponse, successResponse } from '../utils/response-helpers.js';
+import { isSystemAccessEnvironmentVariable, SYSTEM_ACCESS_ENV } from '../system-access.js';
 import { defineModule, defineToolHandler, type ToolDefinition } from './module.js';
 
 // ============================================================================
@@ -214,7 +215,7 @@ export const restartFirefoxTool = {
           type: 'string',
         },
         description:
-          'New environment variables in KEY=VALUE format (optional, e.g., ["MOZ_LOG=HTMLMediaElement:5", "MOZ_LOG_FILE=/tmp/ff.log"])',
+          'New environment variables in KEY=VALUE format (optional, e.g., ["MOZ_LOG=HTMLMediaElement:5", "MOZ_LOG_FILE=/tmp/ff.log"]). System access is controlled only by the MCP startup flag.',
       },
       headless: {
         type: 'boolean',
@@ -228,7 +229,7 @@ export const restartFirefoxTool = {
       prefs: {
         type: 'object',
         description:
-          'Firefox preferences to set at startup. Values are auto-typed: true/false become booleans, integers become numbers, everything else is a string. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1.',
+          'Firefox preferences to set at startup. Values are auto-typed: true/false become booleans, integers become numbers, everything else is a string. Requires --allow-system-access.',
         additionalProperties: {
           oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }],
         },
@@ -264,6 +265,11 @@ export const handleRestartFirefox = defineToolHandler(async (input: unknown) => 
     for (const envStr of env) {
       const [key, ...valueParts] = envStr.split('=');
       if (key && valueParts.length > 0) {
+        if (isSystemAccessEnvironmentVariable(key)) {
+          throw new Error(
+            `${SYSTEM_ACCESS_ENV} is controlled by --allow-system-access and cannot be changed by restart_firefox`
+          );
+        }
         newEnv[key] = valueParts.join('=');
       }
     }

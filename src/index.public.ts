@@ -13,16 +13,15 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
-// Public entry point: --enable-privileged-context is excluded from the CLI so
-// privileged tools can never be enabled in the public package.
-// The moz entry point (index.moz.ts) accepts all CLI arguments.
+// Public entry point: the deprecated --enable-privileged-context selector is
+// excluded from the CLI. Privileged access requires --allow-system-access.
 import { parseArguments } from './cli.js';
 import { run } from './index.js';
 
 export { FirefoxDevTools } from './firefox/index.js';
 export { FirefoxDisconnectedError, isDisconnectionError } from './utils/errors.js';
 
-run((v) => parseArguments(v, process.argv, false), import.meta.url, false).catch((error) => {
+run((v) => parseArguments(v, process.argv, false), import.meta.url).catch((error) => {
   console.error('Fatal error in main', error);
   process.exit(1);
 });

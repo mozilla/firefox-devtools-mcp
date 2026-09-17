@@ -19,6 +19,7 @@ import { FirefoxDevTools } from './firefox/index.js';
 import type { FirefoxLaunchOptions } from './firefox/types.js';
 import { buildToolset } from './tools/registry.js';
 import { errorResponse } from './utils/response-helpers.js';
+import { applySystemAccessPolicy, clearSystemAccessEnvironment } from './system-access.js';
 
 type Args = ReturnType<typeof parseArguments>;
 
@@ -30,7 +31,7 @@ if (!major || major < 20) {
 }
 
 // Set by run() before the server starts; initialized to satisfy the type checker.
-export let args = {} as Args;
+export let args = {} as Readonly<Args>;
 
 // Global context (lazy initialized on first tool call)
 let firefox: FirefoxDevTools | null = null;
@@ -141,6 +142,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
     };
   }
 
+  options = applySystemAccessPolicy(options, args.allowSystemAccess === true);
   firefox = new FirefoxDevTools(options);
   try {
     await firefox.connect();
@@ -166,10 +168,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
 
 export async function run(
   parseArgsFn: (version: string) => Args,
-  importMetaUrl: string,
-  // Fail closed: privileged tools must be opted into explicitly (index.moz.ts
-  // passes true). A caller that omits this never exposes privileged modules.
-  allowPrivileged = false
+  importMetaUrl: string
 ): Promise<void> {
   // Only run if this entry file is executed directly (not imported as a library).
   // We need to normalize both paths to handle different execution contexts (npx, node, etc.)
@@ -187,7 +186,9 @@ export async function run(
     return;
   }
 
-  args = parseArgsFn(SERVER_VERSION);
+  args = Object.freeze(parseArgsFn(SERVER_VERSION));
+  const allowSystemAccess = args.allowSystemAccess === true;
+  clearSystemAccessEnvironment(process.env);
 
   if (args.logFile) {
     setupLogFile(args.logFile);
@@ -206,7 +207,7 @@ export async function run(
     preset: args.toolPreset,
     enableScript: Boolean(args.enableScript),
     enablePrivilegedContext: Boolean(args.enablePrivilegedContext),
-    allowPrivileged,
+    allowPrivileged: allowSystemAccess,
   });
   for (const warning of warnings) {
     log(warning);

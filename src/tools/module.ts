@@ -45,9 +45,8 @@ export interface ToolEntry {
 
 /**
  * A group of related tools that can be enabled or disabled as a unit.
- * `privileged` modules require the moz build and MOZ_REMOTE_ALLOW_SYSTEM_ACCESS
- * at runtime; they are dropped entirely when the server is not allowed to expose
- * privileged tools (see buildToolset).
+ * `privileged` modules require MCP startup consent; they are dropped entirely
+ * when the server is not allowed to expose privileged tools (see buildToolset).
  */
 export interface ToolModule {
   name: string;
