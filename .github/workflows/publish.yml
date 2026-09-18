@@ -4,13 +4,24 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      npm-publish:
+        description: 'Publish to npm'
+        default: false
+        type: boolean
+      mcp-publish:
+        description: 'Publish to the MCP Registry'
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.npm-publish }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -37,3 +48,69 @@ jobs:
 
       - name: Publish moz package
         run: npm run publish:moz -- --access public --provenance
+
+  publish-mcp-registry:
+    runs-on: ubuntu-latest
+    needs: publish
+    # Runs when the npm job succeeded, and also when it was skipped, which is the case
+    # when re-publishing to the registry alone. Referencing cancelled() replaces the
+    # implicit success() gate that would otherwise skip this job on a skipped dependency.
+    if: ${{ !cancelled() && (needs.publish.result == 'success' || needs.publish.result == 'skipped') && (github.event_name != 'workflow_dispatch' || inputs.mcp-publish) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Install mcp-publisher
+        run: |
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+          VERSION=v1.8.1
+          URL="https://github.com/modelcontextprotocol/registry/releases/download/${VERSION}/mcp-publisher_${OS}.tar.gz"
+          curl -fL -o mcp-publisher.tar.gz "$URL"
+          curl -fL -o mcp-publisher.tar.gz.sigstore.json "${URL}.sigstore.json"
+          cosign verify-blob mcp-publisher.tar.gz \
+            --bundle mcp-publisher.tar.gz.sigstore.json \
+            --certificate-identity-regexp="https://github.com/modelcontextprotocol/registry/\.github/workflows/.*" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+          rm mcp-publisher.tar.gz
+
+      - name: Sync server.json version with package.json
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            const { version } = require('./package.json');
+            const server = JSON.parse(fs.readFileSync('server.json', 'utf8'));
+            server.version = version;
+            server.packages = server.packages.map((pkg) => ({ ...pkg, version }));
+            fs.writeFileSync('server.json', JSON.stringify(server, null, 2) + '\n');
+          "
+
+      - name: Wait for npm package availability
+        run: |
+          PKG=$(node -p "require('./package.json').name + '@' + require('./package.json').version")
+          for attempt in 1 2 3 4 5; do
+            if npm view "$PKG" version --prefer-online > /dev/null 2>&1; then
+              echo "$PKG is available on npm."
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "Attempt $attempt: $PKG is not on npm yet, waiting 60s."
+              sleep 60
+            fi
+          done
+          echo "Timed out waiting for $PKG to appear on npm."
+          exit 1
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish

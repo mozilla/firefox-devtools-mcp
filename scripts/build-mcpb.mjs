@@ -26,6 +26,14 @@ try {
     cpSync(resolve(root, file), resolve(stagingDir, file));
   }
 
+  // mcpName claims the MCP registry entry of the npm package, not of this bundle
+  const stagedPkg = JSON.parse(readFileSync(resolve(stagingDir, 'package.json'), 'utf8'));
+  delete stagedPkg.mcpName;
+  writeFileSync(
+    resolve(stagingDir, 'package.json'),
+    JSON.stringify(stagedPkg, null, 2) + '\n'
+  );
+
   console.log('Installing production dependencies...');
   execSync('npm ci --omit=dev', { cwd: stagingDir, stdio: 'inherit' });
 

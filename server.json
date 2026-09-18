@@ -1,0 +1,52 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mozilla/firefox-devtools-mcp",
+  "title": "Firefox DevTools MCP",
+  "description": "Control and debug Firefox: navigate, fill forms, inspect network and console, profile.",
+  "version": "0.10.3",
+  "websiteUrl": "https://github.com/mozilla/firefox-devtools-mcp",
+  "repository": {
+    "url": "https://github.com/mozilla/firefox-devtools-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@mozilla/firefox-devtools-mcp",
+      "version": "0.10.3",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "named",
+          "name": "--tool-preset",
+          "description": "Tool modules to expose. Higher presets widen what the agent can do.",
+          "isRequired": false,
+          "format": "string",
+          "default": "developer",
+          "choices": [
+            "slim",
+            "basic",
+            "developer"
+          ]
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "FIREFOX_HEADLESS",
+          "description": "Set to true to run Firefox without a visible window.",
+          "isRequired": false,
+          "format": "boolean"
+        },
+        {
+          "name": "START_URL",
+          "description": "URL to open when the server starts.",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
