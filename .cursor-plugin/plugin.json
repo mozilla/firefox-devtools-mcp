@@ -1,0 +1,25 @@
+{
+  "name": "firefox-devtools-mcp",
+  "description": "Give your agent a real Firefox. Navigate pages, fill forms and verify changes in a second engine, and inspect the console, network activity, JavaScript debugger and performance profiler to find the cause of a bug instead of guessing. Supports Firefox for Android.",
+  "version": "0.10.3",
+  "author": {
+    "name": "Mozilla"
+  },
+  "homepage": "https://github.com/mozilla/firefox-devtools-mcp",
+  "repository": "https://github.com/mozilla/firefox-devtools-mcp",
+  "license": "MIT OR Apache-2.0",
+  "mcpServers": {
+    "firefox-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mozilla/firefox-devtools-mcp@latest",
+        "--auto-profile",
+        "--tool-preset",
+        "developer",
+        "--pref",
+        "remote.prefs.recommended=false"
+      ]
+    }
+  }
+}

@@ -49,4 +49,4 @@ jobs:
       - name: Trigger npm publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run publish.yml --ref ${{ github.ref_name }}
+        run: gh workflow run publish.yml --ref ${{ github.ref_name }} -f npm-publish=true -f mcp-publish=true

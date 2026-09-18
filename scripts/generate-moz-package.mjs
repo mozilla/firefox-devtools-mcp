@@ -30,6 +30,9 @@ const moz = {
 // Remove scripts that don't apply to the moz package
 delete moz.scripts;
 
+// mcpName claims the MCP registry entry of the public package, not this one
+delete moz.mcpName;
+
 const outPath = resolve(root, 'package.moz.json');
 writeFileSync(outPath, JSON.stringify(moz, null, 2) + '\n');
 console.log(`Written ${outPath}`);

@@ -1,0 +1,19 @@
+{
+  "name": "firefox-devtools-mcp",
+  "version": "0.10.3",
+  "description": "Control Firefox for browsing, web testing, and debugging. Fill forms, capture network and console activity, take screenshots, run scripts, and profile performance. Supports Android devices.",
+  "mcpServers": {
+    "firefox-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mozilla/firefox-devtools-mcp@latest",
+        "--auto-profile",
+        "--tool-preset",
+        "developer",
+        "--pref",
+        "remote.prefs.recommended=false"
+      ]
+    }
+  }
+}
