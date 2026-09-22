@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.4] - 2026-09-22
+
+No changes to the server itself. This release publishes it through additional channels.
+
+### Added
+- The server is now published to the official MCP Registry as `io.github.mozilla/firefox-devtools-mcp`, so MCP clients and directories that read the registry can discover and install it
+- `gemini-extension.json`, so Gemini CLI can install the server straight from the repository with `gemini extensions install`
+- `.cursor-plugin/plugin.json`, describing the server to Cursor. It takes effect once the plugin is accepted into the Cursor marketplace
+
 ## [0.10.3] - 2026-09-18
 
 ### Added
