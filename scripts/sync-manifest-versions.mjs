@@ -18,7 +18,7 @@ const setVersion = (doc) => ({ ...doc, version });
 
 /** Each entry maps a file to the update it needs, since several carry the version more than once. */
 const targets = [
-  ['.cursor-plugin/plugin.json', setVersion],
+  ['plugin.json', setVersion],
   ['gemini-extension.json', setVersion],
   ['manifest.mcpb.json', setVersion],
   [

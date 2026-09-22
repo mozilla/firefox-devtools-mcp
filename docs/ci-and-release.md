@@ -67,12 +67,11 @@ MCP Registry
   `package.json` they ship, since neither artifact is the package registered under that name.
 
 Client plugin manifests
-- `plugins/*/.claude-plugin/` (Claude), `.cursor-plugin/plugin.json` (Cursor) and
-  `gemini-extension.json` (Gemini CLI) let each client install the server from this
-  repository. The root `.claude-plugin/marketplace.json` is the marketplace listing, not a
-  plugin manifest. Gemini reads its file directly; Cursor additionally requires submission
-  to the Cursor marketplace before the plugin is discoverable.
-- The Claude manifests carry no `version`. The other two do, and `npm run sync:manifests`
+- `plugins/*/.claude-plugin/` (Claude), `gemini-extension.json` (Gemini CLI) and the root
+  `plugin.json` plus `mcp.json` (the Agent Plugins standard, which cursor.directory reads)
+  let each client install the server from this repository. The root
+  `.claude-plugin/marketplace.json` is the marketplace listing, not a plugin manifest.
+- The Claude manifests and `mcp.json` carry no `version`. The others do, and `npm run sync:manifests`
   copies it from `package.json`, along with `manifest.mcpb.json`, `server.json` and the two
   version fields in `package-lock.json`. Since each manifest launches the server with `@latest`,
   the field is metadata only and does not pin what gets installed.
