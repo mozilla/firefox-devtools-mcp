@@ -3,7 +3,7 @@
   "name": "io.github.mozilla/firefox-devtools-mcp",
   "title": "Firefox DevTools MCP",
   "description": "Control and debug Firefox: navigate, fill forms, inspect network and console, profile.",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "websiteUrl": "https://github.com/mozilla/firefox-devtools-mcp",
   "repository": {
     "url": "https://github.com/mozilla/firefox-devtools-mcp",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@mozilla/firefox-devtools-mcp",
-      "version": "0.10.3",
+      "version": "0.10.4",
       "transport": {
         "type": "stdio"
       },
