@@ -3,10 +3,12 @@
  * Handles snapshot creation using bundled injected script
  */
 
-import { WebDriver, WebElement } from 'selenium-webdriver';
+import { BrowsingContext, Script } from 'webdriver-bidi-protocol';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BiDiFacade } from '../bidi.js';
+import { nativeToLocalValue } from '../../utils/local-value.js';
 import { logDebug } from '../../utils/logger.js';
 import type { Snapshot, SnapshotJson, InjectedScriptResult } from './types.js';
 import { formatSnapshotTree } from './formatter.js';
@@ -25,15 +27,13 @@ export interface SnapshotOptions {
  * Uses bundled injected script for snapshot creation
  */
 export class SnapshotManager {
-  private driver: WebDriver;
   private resolver: UidResolver;
   private injectedScript: string | null = null;
   /** Counter handed to the injected script so UIDs stay unique across snapshots */
   private nextElementId = 0;
 
-  constructor(driver: WebDriver) {
-    this.driver = driver;
-    this.resolver = new UidResolver(driver);
+  constructor(private bidi: BiDiFacade) {
+    this.resolver = new UidResolver(bidi);
   }
 
   /**
@@ -89,7 +89,10 @@ export class SnapshotManager {
    * Take a snapshot of the current page
    * Returns text and JSON, no DOM mutations
    */
-  async takeSnapshot(options?: SnapshotOptions): Promise<Snapshot> {
+  async takeSnapshot(
+    context: BrowsingContext.BrowsingContext,
+    options?: SnapshotOptions
+  ): Promise<Snapshot> {
     if (options?.selector || options?.includeAll) {
       const optionsOutput: string[] = [];
       if (options.selector) {
@@ -104,7 +107,7 @@ export class SnapshotManager {
     }
 
     // Execute bundled injected script
-    const result = await this.executeInjectedScript(this.nextElementId, options);
+    const result = await this.executeInjectedScript(context, this.nextElementId, options);
 
     if (typeof result?.nextElementId === 'number') {
       this.nextElementId = result.nextElementId;
@@ -159,28 +162,35 @@ export class SnapshotManager {
   /**
    * Resolve UID to a CSS selector generated on demand
    */
-  async resolveUidToSelector(uid: string): Promise<string> {
-    return await this.resolver.resolveUidToSelector(uid);
+  async resolveUidToSelector(
+    context: BrowsingContext.BrowsingContext,
+    uid: string
+  ): Promise<string> {
+    return await this.resolver.resolveUidToSelector(context, uid);
   }
 
   /**
    * Resolve UID to the WebElement it was assigned to
    */
-  async resolveUidToElement(uid: string): Promise<WebElement> {
-    return await this.resolver.resolveUidToElement(uid);
+  async resolveUidToElement(
+    context: BrowsingContext.BrowsingContext,
+    uid: string
+  ): Promise<Script.SharedReference> {
+    return await this.resolver.resolveUidToElement(context, uid);
   }
 
   /**
    * Clear snapshot UIDs
    */
-  async clear(): Promise<void> {
-    await this.resolver.clear();
+  async clear(context: BrowsingContext.BrowsingContext): Promise<void> {
+    await this.resolver.clear(context);
   }
 
   /**
    * Execute bundled injected snapshot script
    */
   private async executeInjectedScript(
+    context: BrowsingContext.BrowsingContext,
     nextElementId: number,
     options?: SnapshotOptions
   ): Promise<InjectedScriptResult> {
@@ -189,24 +199,26 @@ export class SnapshotManager {
     // Inject and execute the bundled script
     // The script exposes window.__createSnapshot via IIFE global
     // Guard: Only inject once, then reuse
-    const result = await this.driver.executeScript<InjectedScriptResult>(
+    const result = await this.bidi.callFunction<InjectedScriptResult>(
+      context,
       `
-      // Only inject the bundle if not already present
-      if (typeof window.__createSnapshot === 'undefined') {
-        ${scriptSource}
-        // Register the snapshot and UID resolution functions globally
-        if (typeof __SnapshotInjected !== 'undefined' && __SnapshotInjected.createSnapshot) {
-          window.__createSnapshot = __SnapshotInjected.createSnapshot;
-          window.__resolveUid = __SnapshotInjected.resolveUid;
-          window.__uidToSelector = __SnapshotInjected.uidToSelector;
-          window.__clearUidRegistry = __SnapshotInjected.clearUidRegistry;
+      (nextElementId, options) => {
+        // Only inject the bundle if not already present
+        if (typeof window.__createSnapshot === 'undefined') {
+          ${scriptSource}
+          // Register the snapshot and UID resolution functions globally
+          if (typeof __SnapshotInjected !== 'undefined' && __SnapshotInjected.createSnapshot) {
+            window.__createSnapshot = __SnapshotInjected.createSnapshot;
+            window.__resolveUid = __SnapshotInjected.resolveUid;
+            window.__uidToSelector = __SnapshotInjected.uidToSelector;
+            window.__clearUidRegistry = __SnapshotInjected.clearUidRegistry;
+          }
         }
+        // Call it with options
+        return window.__createSnapshot(nextElementId, options);
       }
-      // Call it with options
-      return window.__createSnapshot(arguments[0], arguments[1]);
       `,
-      nextElementId,
-      options || {}
+      [nativeToLocalValue(nextElementId), nativeToLocalValue(options || {})]
     );
 
     return result;

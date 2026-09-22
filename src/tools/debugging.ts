@@ -198,7 +198,7 @@ export const handleGetLogpointResults = defineToolHandler(
       if (r.error) {
         return `[${i + 1}] Error: ${r.error}`;
       }
-      return `[${i + 1}] ${JSON.stringify(remoteValueToNative(r.value))}`;
+      return `[${i + 1}] ${JSON.stringify(remoteValueToNative(r.value!))}`;
     });
     return successResponse(lines.join('\n'));
   }

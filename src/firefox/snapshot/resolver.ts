@@ -4,12 +4,13 @@
  * during the snapshot (see injected/uidRegistry.ts)
  */
 
-import { WebDriver, WebElement } from 'selenium-webdriver';
+import type { BrowsingContext, Script } from 'webdriver-bidi-protocol';
+import { BiDiFacade } from '../bidi.js';
+import { nativeToLocalValue } from '../../utils/local-value.js';
 import { logDebug } from '../../utils/logger.js';
 
-const RESOLVE_SCRIPT = 'return window.__resolveUid ? window.__resolveUid(arguments[0]) : null;';
-const SELECTOR_SCRIPT =
-  'return window.__uidToSelector ? window.__uidToSelector(arguments[0]) : null;';
+const RESOLVE_SCRIPT = '(el) => window.__resolveUid ? window.__resolveUid(el) : null';
+const SELECTOR_SCRIPT = '(el) => window.__uidToSelector ? window.__uidToSelector(el) : null';
 const CLEAR_SCRIPT = 'if (window.__clearUidRegistry) { window.__clearUidRegistry(); }';
 
 /**
@@ -17,15 +18,15 @@ const CLEAR_SCRIPT = 'if (window.__clearUidRegistry) { window.__clearUidRegistry
  * Separated from SnapshotManager for better modularity
  */
 export class UidResolver {
-  constructor(private driver: WebDriver) {}
+  constructor(private bidi: BiDiFacade) {}
 
   /**
    * Forget all UID associations in the page, making existing UIDs unresolvable.
    * Best effort: the registry dies with the page anyway.
    */
-  async clear(): Promise<void> {
+  async clear(context: BrowsingContext.BrowsingContext): Promise<void> {
     try {
-      await this.driver.executeScript(CLEAR_SCRIPT);
+      await this.bidi.evaluate(CLEAR_SCRIPT, context);
       logDebug('Snapshot UIDs cleared');
     } catch {
       logDebug('Unable to clear snapshot UIDs (page may be navigating)');
@@ -35,8 +36,13 @@ export class UidResolver {
   /**
    * Resolve UID to a CSS selector, generated on demand from the element it points at
    */
-  async resolveUidToSelector(uid: string): Promise<string> {
-    const selector = await this.driver.executeScript<string | null>(SELECTOR_SCRIPT, uid);
+  async resolveUidToSelector(
+    context: BrowsingContext.BrowsingContext,
+    uid: string
+  ): Promise<string> {
+    const selector = await this.bidi.callFunction<string | null>(context, SELECTOR_SCRIPT, [
+      nativeToLocalValue(uid),
+    ]);
     if (!selector) {
       throw new Error(notFoundMessage(uid));
     }
@@ -47,14 +53,19 @@ export class UidResolver {
   /**
    * Resolve UID to the element it was assigned to during the snapshot
    */
-  async resolveUidToElement(uid: string): Promise<WebElement> {
-    const element = await this.driver.executeScript<WebElement | null>(RESOLVE_SCRIPT, uid);
-    if (!element) {
+  async resolveUidToElement(
+    context: BrowsingContext.BrowsingContext,
+    uid: string
+  ): Promise<Script.SharedReference> {
+    const element = await this.bidi.callFunctionRaw(context, RESOLVE_SCRIPT, [
+      nativeToLocalValue(uid),
+    ]);
+    if (element?.type !== 'node' || !element.sharedId) {
       throw new Error(notFoundMessage(uid));
     }
 
     logDebug(`Resolved element for UID: ${uid}`);
-    return element;
+    return { sharedId: element.sharedId };
   }
 }
 

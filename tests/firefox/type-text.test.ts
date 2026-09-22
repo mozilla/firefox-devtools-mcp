@@ -4,113 +4,117 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { Key } from 'selenium-webdriver';
-import { DomInteractions } from '../../src/firefox/dom.js';
+import type { BrowsingContext, Input, Script } from 'webdriver-bidi-protocol';
+import type { BiDiFacade } from '../../src/firefox/bidi.js';
+import { DomInteractions, textKeyActions } from '../../src/firefox/dom.js';
 
-interface MockActions {
-  keyDown: ReturnType<typeof vi.fn>;
-  keyUp: ReturnType<typeof vi.fn>;
-  sendKeys: ReturnType<typeof vi.fn>;
-  perform: ReturnType<typeof vi.fn>;
+const CONTEXT = 'context-1' as BrowsingContext.BrowsingContext;
+
+function createBidi(focusResult: unknown = true) {
+  const sendCommand = vi.fn(async (method: string) => {
+    if (method === 'input.performActions') {
+      return {};
+    }
+    throw new Error(`Unexpected command: ${method}`);
+  });
+  const callFunction = vi.fn(async (_, functionDeclaration: string) => {
+    if (functionDeclaration.includes('checkVisibility')) {
+      return true;
+    }
+    if (functionDeclaration.includes('activeElement')) {
+      return focusResult;
+    }
+    return undefined;
+  });
+  const evaluate = vi.fn(async () => undefined);
+  const bidi = { sendCommand, callFunction, evaluate } as unknown as BiDiFacade;
+  return { bidi, sendCommand, callFunction };
 }
 
-function createDriver(focusResult: unknown = true) {
-  const calls: Array<[string, string]> = [];
-  const actions: MockActions = {
-    keyDown: vi.fn((k: string) => {
-      calls.push(['keyDown', k]);
-      return actions;
-    }),
-    keyUp: vi.fn((k: string) => {
-      calls.push(['keyUp', k]);
-      return actions;
-    }),
-    sendKeys: vi.fn((text: string) => {
-      calls.push(['sendKeys', text]);
-      return actions;
-    }),
-    perform: vi.fn().mockResolvedValue(undefined),
-  };
-  const driver = {
-    actions: vi.fn(() => actions),
-    executeScript: vi.fn(async (script: string) =>
-      script.includes('activeElement') ? focusResult : undefined
-    ),
-  };
-  return { driver, actions, calls };
+/**
+ * Pull the key actions out of every input.performActions call, since that is
+ * the only place typeText's sequencing is observable through the bidi facade.
+ */
+function keyActions(sendCommand: ReturnType<typeof vi.fn>): Input.KeySourceAction[] {
+  return sendCommand.mock.calls
+    .filter(([method]) => method === 'input.performActions')
+    .flatMap(([, params]) => params.actions as Input.SourceActions[])
+    .filter((source): source is Input.KeySourceActions => source.type === 'key')
+    .flatMap((source) => source.actions);
 }
 
 describe('DomInteractions.typeText', () => {
   it('should type the text on the focused element', async () => {
-    const { driver, actions, calls } = createDriver();
-    const dom = new DomInteractions(driver as never);
+    const { bidi, sendCommand } = createBidi();
+    const dom = new DomInteractions(bidi);
 
-    await dom.typeText('hello');
+    await dom.typeText(CONTEXT, 'hello');
 
-    expect(calls).toEqual([['sendKeys', 'hello']]);
-    expect(actions.perform).toHaveBeenCalledTimes(1);
+    expect(keyActions(sendCommand)).toEqual(textKeyActions('hello'));
   });
 
   it('should press the submit key after the text in the same sequence', async () => {
-    const { driver, actions, calls } = createDriver();
-    const dom = new DomInteractions(driver as never);
+    const { bidi, sendCommand } = createBidi();
+    const dom = new DomInteractions(bidi);
 
-    await dom.typeText('hello', { submitKey: 'Enter' });
+    await dom.typeText(CONTEXT, 'hello', { submitKey: 'Enter' });
 
-    expect(calls).toEqual([
-      ['sendKeys', 'hello'],
-      ['keyDown', Key.RETURN],
-      ['keyUp', Key.RETURN],
+    expect(keyActions(sendCommand)).toEqual([
+      ...textKeyActions('hello'),
+      { type: 'keyDown', value: Key.RETURN },
+      { type: 'keyUp', value: Key.RETURN },
     ]);
-    expect(actions.perform).toHaveBeenCalledTimes(1);
   });
 
   it('should hold modifiers of the submit key around it', async () => {
-    const { driver, calls } = createDriver();
-    const dom = new DomInteractions(driver as never);
+    const { bidi, sendCommand } = createBidi();
+    const dom = new DomInteractions(bidi);
 
-    await dom.typeText('hello', { submitKey: 'shift+Enter' });
+    await dom.typeText(CONTEXT, 'hello', { submitKey: 'shift+Enter' });
 
-    expect(calls).toEqual([
-      ['sendKeys', 'hello'],
-      ['keyDown', Key.SHIFT],
-      ['keyDown', Key.RETURN],
-      ['keyUp', Key.RETURN],
-      ['keyUp', Key.SHIFT],
+    expect(keyActions(sendCommand)).toEqual([
+      ...textKeyActions('hello'),
+      { type: 'keyDown', value: Key.SHIFT },
+      { type: 'keyDown', value: Key.RETURN },
+      { type: 'keyUp', value: Key.RETURN },
+      { type: 'keyUp', value: Key.SHIFT },
     ]);
   });
 
   it('should focus a uid first and still type through the actions keyboard', async () => {
-    const { driver, calls } = createDriver();
-    const sendKeys = vi.fn();
-    const resolveUid = vi.fn().mockResolvedValue({ sendKeys, isDisplayed: async () => true });
-    const dom = new DomInteractions(driver as never, resolveUid);
+    const { bidi, sendCommand, callFunction } = createBidi();
+    const sharedRef: Script.SharedReference = { sharedId: 'shared-1' };
+    const resolveUid = vi.fn().mockResolvedValue(sharedRef);
+    const dom = new DomInteractions(bidi, resolveUid);
 
-    await dom.typeText('hello', { uid: 'uid-1' });
+    await dom.typeText(CONTEXT, 'hello', { uid: 'uid-1' });
 
-    expect(resolveUid).toHaveBeenCalledWith('uid-1');
-    expect(sendKeys).not.toHaveBeenCalled();
-    expect(calls).toEqual([['sendKeys', 'hello']]);
+    expect(resolveUid).toHaveBeenCalledWith(CONTEXT, 'uid-1');
+    expect(callFunction).toHaveBeenCalledWith(CONTEXT, expect.stringContaining('activeElement'), [
+      sharedRef,
+    ]);
+    expect(keyActions(sendCommand)).toEqual(textKeyActions('hello'));
   });
 
   it('should reject a uid that cannot take focus before typing anything', async () => {
-    const { driver, calls } = createDriver(false);
-    const resolveUid = vi.fn().mockResolvedValue({ isDisplayed: async () => true });
-    const dom = new DomInteractions(driver as never, resolveUid);
+    const { bidi, sendCommand } = createBidi(false);
+    const resolveUid = vi.fn().mockResolvedValue({ sharedId: 'shared-2' });
+    const dom = new DomInteractions(bidi, resolveUid);
 
-    await expect(dom.typeText('hello', { uid: 'uid-2' })).rejects.toThrow(
+    await expect(dom.typeText(CONTEXT, 'hello', { uid: 'uid-2' })).rejects.toThrow(
       /uid-2 cannot receive keyboard focus/
     );
-    expect(calls).toEqual([]);
+    expect(keyActions(sendCommand)).toEqual([]);
   });
 
-  it('should reject an invalid submit key before touching the driver', async () => {
-    const { driver, calls } = createDriver();
-    const dom = new DomInteractions(driver as never);
+  it('should reject an invalid submit key before touching the bidi session', async () => {
+    const { bidi, sendCommand, callFunction } = createBidi();
+    const dom = new DomInteractions(bidi);
 
-    await expect(dom.typeText('hello', { submitKey: 'foobar' })).rejects.toThrow(
+    await expect(dom.typeText(CONTEXT, 'hello', { submitKey: 'foobar' })).rejects.toThrow(
       /unknown key "foobar"/
     );
-    expect(calls).toEqual([]);
-    expect(driver.actions).not.toHaveBeenCalled();
+    expect(sendCommand).not.toHaveBeenCalled();
+    expect(callFunction).not.toHaveBeenCalled();
   });
 });

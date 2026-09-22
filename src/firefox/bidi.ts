@@ -7,8 +7,10 @@ import type {
   EmptyParams,
   EmptyResult,
   Network,
+  Script,
 } from 'webdriver-bidi-protocol';
 import { logDebug } from '../utils/logger.js';
+import { remoteValueToNative } from '../utils/remote-value.js';
 
 // Firefox-specific events
 type DebuggingPausedEvent = {
@@ -152,6 +154,57 @@ export class BiDiFacade extends EventEmitter<FirefoxEventMap> {
         reject(new Error(`BiDi command timeout: ${method}`));
       }, 10000);
     });
+  }
+
+  async evaluate<T = unknown>(
+    context: BrowsingContext.BrowsingContext,
+    expression: string
+  ): Promise<T> {
+    return remoteValueToNative(await this.evaluateRaw(expression, context)) as T;
+  }
+
+  async evaluateRaw(
+    context: BrowsingContext.BrowsingContext,
+    expression: string
+  ): Promise<Script.RemoteValue> {
+    const result = await this.sendCommand('script.evaluate', {
+      expression,
+      awaitPromise: true,
+      target: { context },
+    });
+    if (result.type === 'success') {
+      return result.result;
+    }
+    throw new Error(
+      `Script evaluation failed: ${result.exceptionDetails?.text ?? 'unknown error'}`
+    );
+  }
+
+  async callFunction<T = unknown>(
+    context: BrowsingContext.BrowsingContext,
+    functionDeclaration: string,
+    args: Script.LocalValue[]
+  ): Promise<T> {
+    return remoteValueToNative(await this.callFunctionRaw(context, functionDeclaration, args)) as T;
+  }
+
+  async callFunctionRaw(
+    context: BrowsingContext.BrowsingContext,
+    functionDeclaration: string,
+    args: Script.LocalValue[]
+  ): Promise<Script.RemoteValue> {
+    const result = await this.sendCommand('script.callFunction', {
+      functionDeclaration,
+      arguments: args,
+      awaitPromise: true,
+      target: { context },
+    });
+    if (result.type === 'success') {
+      return result.result;
+    }
+    throw new Error(
+      `Script evaluation failed: ${result.exceptionDetails?.text ?? 'unknown error'}`
+    );
   }
 
   private listenForEvents(ws: any) {

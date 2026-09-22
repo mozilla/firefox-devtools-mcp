@@ -97,8 +97,7 @@ export const handleEvaluateScript = defineToolHandler(
     if (fnArgs && fnArgs.length > 0) {
       for (const arg of fnArgs) {
         try {
-          const element = await firefox.resolveUidToElement(arg.uid);
-          resolvedArgs.push({ sharedId: await element.getId() });
+          resolvedArgs.push(await firefox.resolveUidToElement(arg.uid));
         } catch (error) {
           const errorMsg = (error as Error).message;
 
