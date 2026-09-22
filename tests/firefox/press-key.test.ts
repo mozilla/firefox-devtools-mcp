@@ -4,110 +4,111 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { Key } from 'selenium-webdriver';
+import type { BrowsingContext, Input, Script } from 'webdriver-bidi-protocol';
 import { DomInteractions } from '../../src/firefox/dom.js';
+import type { BiDiFacade } from '../../src/firefox/bidi.js';
 
-interface MockActions {
-  keyDown: ReturnType<typeof vi.fn>;
-  keyUp: ReturnType<typeof vi.fn>;
-  sendKeys: ReturnType<typeof vi.fn>;
-  perform: ReturnType<typeof vi.fn>;
+const CONTEXT = 'context-1' as BrowsingContext.BrowsingContext;
+
+function createBidi(focusResult: unknown = true) {
+  const sendCommand = vi.fn(async (method: string) => {
+    if (method === 'input.performActions') {
+      return {};
+    }
+    throw new Error(`Unexpected command: ${method}`);
+  });
+  const callFunction = vi.fn(async (_, functionDeclaration: string) => {
+    if (functionDeclaration.includes('checkVisibility')) {
+      return true;
+    }
+    if (functionDeclaration.includes('activeElement')) {
+      return focusResult;
+    }
+    return undefined;
+  });
+  const evaluate = vi.fn(async () => undefined);
+  const bidi = { sendCommand, callFunction, evaluate } as unknown as BiDiFacade;
+  return { bidi, sendCommand, callFunction };
 }
 
-function createDriver(focusResult: unknown = true) {
-  const calls: Array<[string, string]> = [];
-  const actions: MockActions = {
-    keyDown: vi.fn((k: string) => {
-      calls.push(['keyDown', k]);
-      return actions;
-    }),
-    keyUp: vi.fn((k: string) => {
-      calls.push(['keyUp', k]);
-      return actions;
-    }),
-    sendKeys: vi.fn(() => actions),
-    perform: vi.fn().mockResolvedValue(undefined),
-  };
-  const driver = {
-    actions: vi.fn(() => actions),
-    executeScript: vi.fn(async (script: string) =>
-      script.includes('activeElement') ? focusResult : undefined
-    ),
-  };
-  return { driver, actions, calls };
+/**
+ * Pull the key actions out of every input.performActions call, since that is
+ * the only place pressKey's sequencing is observable through the bidi facade.
+ */
+function keyActions(sendCommand: ReturnType<typeof vi.fn>): Input.KeySourceAction[] {
+  return sendCommand.mock.calls
+    .filter(([method]) => method === 'input.performActions')
+    .flatMap(([, params]) => params.actions as Input.SourceActions[])
+    .filter((source): source is Input.KeySourceActions => source.type === 'key')
+    .flatMap((source) => source.actions);
 }
 
 describe('DomInteractions.pressKey', () => {
   it('should press and release the key on the focused element', async () => {
-    const { driver, calls } = createDriver();
-    const dom = new DomInteractions(driver as never);
+    const { bidi, sendCommand } = createBidi();
+    const dom = new DomInteractions(bidi);
 
-    await dom.pressKey('Escape');
+    await dom.pressKey(CONTEXT, 'Escape');
 
-    expect(calls).toEqual([
-      ['keyDown', Key.ESCAPE],
-      ['keyUp', Key.ESCAPE],
+    expect(keyActions(sendCommand)).toEqual([
+      { type: 'keyDown', value: Key.ESCAPE },
+      { type: 'keyUp', value: Key.ESCAPE },
     ]);
   });
 
   it('should hold modifiers around the key and release them in reverse order', async () => {
-    const { driver, calls } = createDriver();
-    const dom = new DomInteractions(driver as never);
+    const { bidi, sendCommand } = createBidi();
+    const dom = new DomInteractions(bidi);
 
-    await dom.pressKey('ctrl+shift+t');
+    await dom.pressKey(CONTEXT, 'ctrl+shift+t');
 
-    expect(calls).toEqual([
-      ['keyDown', Key.CONTROL],
-      ['keyDown', Key.SHIFT],
-      ['keyDown', 't'],
-      ['keyUp', 't'],
-      ['keyUp', Key.SHIFT],
-      ['keyUp', Key.CONTROL],
+    expect(keyActions(sendCommand)).toEqual([
+      { type: 'keyDown', value: Key.CONTROL },
+      { type: 'keyDown', value: Key.SHIFT },
+      { type: 'keyDown', value: 't' },
+      { type: 'keyUp', value: 't' },
+      { type: 'keyUp', value: Key.SHIFT },
+      { type: 'keyUp', value: Key.CONTROL },
     ]);
   });
 
-  it('should focus a uid and still use the actions keyboard, not element sendKeys', async () => {
-    const { driver, actions, calls } = createDriver();
-    const sendKeys = vi.fn();
-    const resolveUid = vi.fn().mockResolvedValue({ sendKeys, isDisplayed: async () => true });
-    const dom = new DomInteractions(driver as never, resolveUid);
+  it('should focus a uid before pressing the key', async () => {
+    const { bidi, sendCommand, callFunction } = createBidi();
+    const sharedRef: Script.SharedReference = { sharedId: 'shared-1' };
+    const resolveUid = vi.fn().mockResolvedValue(sharedRef);
+    const dom = new DomInteractions(bidi, resolveUid);
 
-    await dom.pressKey('Enter', 'uid-1');
+    await dom.pressKey(CONTEXT, 'Enter', 'uid-1');
 
-    expect(resolveUid).toHaveBeenCalledWith('uid-1');
-    // Element Send Keys appends a NULL key that the page sees as a second
-    // keydown, so the uid path must not use it.
-    expect(sendKeys).not.toHaveBeenCalled();
-    expect(actions.sendKeys).not.toHaveBeenCalled();
-    expect(calls).toEqual([
-      ['keyDown', Key.RETURN],
-      ['keyUp', Key.RETURN],
+    expect(resolveUid).toHaveBeenCalledWith(CONTEXT, 'uid-1');
+    expect(callFunction).toHaveBeenCalledWith(CONTEXT, expect.stringContaining('activeElement'), [
+      sharedRef,
+    ]);
+    expect(keyActions(sendCommand)).toEqual([
+      { type: 'keyDown', value: Key.RETURN },
+      { type: 'keyUp', value: Key.RETURN },
     ]);
   });
 
   it('should reject a uid that cannot take focus instead of pressing elsewhere', async () => {
-    const { driver, calls } = createDriver(false);
-    const resolveUid = vi.fn().mockResolvedValue({ isDisplayed: async () => true });
-    const dom = new DomInteractions(driver as never, resolveUid);
+    const { bidi, sendCommand } = createBidi(false);
+    const resolveUid = vi.fn().mockResolvedValue({ sharedId: 'shared-2' });
+    const dom = new DomInteractions(bidi, resolveUid);
 
-    await expect(dom.pressKey('Escape', 'uid-2')).rejects.toThrow(
+    await expect(dom.pressKey(CONTEXT, 'Escape', 'uid-2')).rejects.toThrow(
       /uid-2 cannot receive keyboard focus/
     );
-    expect(calls).toEqual([]);
+    expect(keyActions(sendCommand)).toEqual([]);
   });
 
-  it('should require a resolveUid callback when a uid is given', async () => {
-    const { driver } = createDriver();
-    const dom = new DomInteractions(driver as never);
+  it('should reject an invalid combination before touching the bidi session', async () => {
+    const { bidi, sendCommand, callFunction } = createBidi();
+    const dom = new DomInteractions(bidi);
 
-    await expect(dom.pressKey('Escape', 'uid-3')).rejects.toThrow(/resolveUid callback not set/);
-  });
-
-  it('should reject an invalid combination before touching the driver', async () => {
-    const { driver, calls } = createDriver();
-    const dom = new DomInteractions(driver as never);
-
-    await expect(dom.pressKey('ctrl+k+l')).rejects.toThrow(/more than one non-modifier key/);
-    expect(calls).toEqual([]);
-    expect(driver.actions).not.toHaveBeenCalled();
+    await expect(dom.pressKey(CONTEXT, 'ctrl+k+l')).rejects.toThrow(
+      /more than one non-modifier key/
+    );
+    expect(sendCommand).not.toHaveBeenCalled();
+    expect(callFunction).not.toHaveBeenCalled();
   });
 });

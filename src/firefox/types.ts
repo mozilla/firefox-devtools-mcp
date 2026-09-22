@@ -2,6 +2,8 @@
  * WebDriver BiDi types for Firefox
  */
 
+import type { Script } from 'webdriver-bidi-protocol';
+
 export type BrowsingContextId = string;
 
 /**
@@ -69,7 +71,7 @@ export interface DownloadRecord {
  * A single result captured by a logpoint hit
  */
 export interface LogpointResult {
-  value: unknown;
+  value: Script.RemoteValue | null;
   error?: string;
   timestamp: number;
 }

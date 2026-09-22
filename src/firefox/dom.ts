@@ -2,9 +2,9 @@
  * DOM interactions: evaluate, element lookup, input actions
  */
 
-import { Key, WebDriver, WebElement } from 'selenium-webdriver';
-import type { Driver as FirefoxDriver } from 'selenium-webdriver/firefox.js';
-import type { Actions } from 'selenium-webdriver/lib/input.js';
+import { Key } from 'selenium-webdriver';
+import type { BrowsingContext, Input, Script } from 'webdriver-bidi-protocol';
+import type { BiDiFacade } from './bidi';
 
 /**
  * Key names accepted by press_key. Names are matched case-insensitively.
@@ -133,35 +133,54 @@ export function parseKeyCombo(combo: string): KeyCombo {
   return { modifiers, key };
 }
 
-/**
- * Queue a key press on an action sequence: hold the modifiers, tap the key,
- * then release the modifiers in reverse order.
- */
-function appendKeyPress(actions: Actions, { modifiers, key }: KeyCombo): void {
+export function textKeyActions(text: string): Input.KeySourceAction[] {
+  return [...text].flatMap((ch) => [
+    { type: 'keyDown', value: ch },
+    { type: 'keyUp', value: ch },
+  ]);
+}
+
+function comboKeyActions({ modifiers, key }: KeyCombo): Input.KeySourceAction[] {
+  const actions: Input.KeySourceAction[] = [];
   for (const modifier of modifiers) {
-    actions.keyDown(modifier);
+    actions.push({ type: 'keyDown', value: modifier });
   }
-  actions.keyDown(key);
-  actions.keyUp(key);
+  actions.push({ type: 'keyDown', value: key });
+  actions.push({ type: 'keyUp', value: key });
   for (const modifier of [...modifiers].reverse()) {
-    actions.keyUp(modifier);
+    actions.push({ type: 'keyUp', value: modifier });
   }
+  return actions;
 }
 
 export class DomInteractions {
   constructor(
-    private driver: WebDriver,
-    private resolveUid?: (uid: string) => Promise<WebElement>
+    private bidi: BiDiFacade,
+    private resolveUid: (
+      context: BrowsingContext.BrowsingContext,
+      uid: string
+    ) => Promise<Script.SharedReference> = () => {
+      throw new Error('Not implemented');
+    }
   ) {}
 
   /**
-   * Wait until an element reports isDisplayed(), ignoring failures.
+   * Wait until an element is visible, ignoring failures.
    */
-  private async waitForVisible(el: WebElement, timeout = 5000): Promise<void> {
+  private async waitForVisible(
+    context: BrowsingContext.BrowsingContext,
+    el: Script.SharedReference,
+    timeout = 5000
+  ): Promise<void> {
     const deadline = Date.now() + timeout;
     while (Date.now() < deadline) {
       try {
-        if (await el.isDisplayed()) {
+        const isVisible = await this.bidi.callFunction(
+          context,
+          'el => el.checkVisibility({ opacityProperty: true, visibilityProperty: true })',
+          [el]
+        );
+        if (isVisible) {
           return;
         }
       } catch {
@@ -172,6 +191,50 @@ export class DomInteractions {
     // Visibility wait is best-effort; don't throw
   }
 
+  private async scrollAndGetInViewCenterPoint(
+    context: BrowsingContext.BrowsingContext,
+    el: Script.SharedReference
+  ): Promise<{ x: number; y: number }> {
+    return await this.bidi.callFunction(
+      context,
+      `
+      async (el) => {
+        let rect = el.getBoundingClientRect();
+        if (rect.left >= innerWidth || rect.right <= 0 || rect.top >= innerHeight || rect.bottom <= 0) {
+          el.scrollIntoView({ behavior: "instant" });
+          rect = el.getBoundingClientRect();
+        }
+        const left = Math.min(Math.max(rect.left, 0), innerWidth);
+        const right = Math.min(Math.max(rect.right, 0), innerWidth);
+        const top = Math.min(Math.max(rect.top, 0), innerHeight);
+        const bottom = Math.min(Math.max(rect.bottom, 0), innerHeight);
+        return { x: (left + right) / 2, y: (top + bottom) / 2 };
+      }
+      `,
+      [el]
+    );
+  }
+
+  private async sendKeyActions(
+    context: BrowsingContext.BrowsingContext,
+    actions: Input.KeySourceAction[]
+  ): Promise<void> {
+    await this.bidi.sendCommand('input.performActions', {
+      context,
+      actions: [{ type: 'key', id: 'mcp_keyboard', actions }],
+    });
+  }
+
+  private async sendPointerActions(
+    context: BrowsingContext.BrowsingContext,
+    actions: Input.PointerSourceAction[]
+  ): Promise<void> {
+    await this.bidi.sendCommand('input.performActions', {
+      context,
+      actions: [{ type: 'pointer', id: 'mcp_mouse', actions }],
+    });
+  }
+
   // ============================================================================
   // UID-based input methods
   // ============================================================================
@@ -180,109 +243,105 @@ export class DomInteractions {
    * Click element by UID
    * Requires resolveUid callback to be set (from SnapshotManager)
    */
-  async clickByUid(uid: string, dblClick = false): Promise<void> {
-    if (!this.resolveUid) {
-      throw new Error('clickByUid: resolveUid callback not set. Ensure snapshot is initialized.');
-    }
-    const el = await this.resolveUid(uid);
-    await this.waitForVisible(el, 5000);
-
+  async clickByUid(
+    context: BrowsingContext.BrowsingContext,
+    uid: string,
+    dblClick = false
+  ): Promise<void> {
+    const el = await this.resolveUid(context, uid);
+    await this.waitForVisible(context, el);
+    const { x, y } = await this.scrollAndGetInViewCenterPoint(context, el);
+    const actions: Input.PointerSourceAction[] = [
+      { type: 'pointerMove', x, y },
+      { type: 'pointerDown', button: 0 },
+      { type: 'pointerUp', button: 0 },
+    ];
     if (dblClick) {
-      await this.driver.actions({ async: true }).doubleClick(el).perform();
-    } else {
-      await el.click();
+      actions.push({ type: 'pointerDown', button: 0 });
+      actions.push({ type: 'pointerUp', button: 0 });
     }
-
-    // Wait for events to propagate
-    await this.waitForEventsAfterAction();
+    await this.sendPointerActions(context, actions);
   }
 
   /**
    * Hover over element by UID
    */
-  async hoverByUid(uid: string): Promise<void> {
-    if (!this.resolveUid) {
-      throw new Error('hoverByUid: resolveUid callback not set. Ensure snapshot is initialized.');
-    }
-    const el = await this.resolveUid(uid);
-    await this.driver.actions({ async: true }).move({ origin: el }).perform();
-
-    // Wait for events to propagate
-    await this.waitForEventsAfterAction();
+  async hoverByUid(context: BrowsingContext.BrowsingContext, uid: string): Promise<void> {
+    const el = await this.resolveUid(context, uid);
+    await this.waitForVisible(context, el);
+    const { x, y } = await this.scrollAndGetInViewCenterPoint(context, el);
+    await this.sendPointerActions(context, [{ type: 'pointerMove', x, y }]);
   }
 
   /**
    * Fill input field by UID
    */
-  async fillByUid(uid: string, value: string): Promise<void> {
-    if (!this.resolveUid) {
-      throw new Error('fillByUid: resolveUid callback not set. Ensure snapshot is initialized.');
-    }
-    const el = await this.resolveUid(uid);
-
-    try {
-      await el.clear();
-    } catch {
-      // Some inputs may not support clear(); fall back to select-all + delete
-      await el.sendKeys(Key.chord(Key.CONTROL, 'a'), Key.DELETE);
-    }
-
-    await el.sendKeys(value);
-
-    // Wait for events to propagate
-    await this.waitForEventsAfterAction();
+  async fillByUid(
+    context: BrowsingContext.BrowsingContext,
+    uid: string,
+    value: string
+  ): Promise<void> {
+    const el = await this.resolveUid(context, uid);
+    await this.bidi.callFunction(
+      context,
+      `
+      (el) => {
+        if (el.nodeName === 'INPUT' || el.nodeName === 'TEXTAREA') {
+          el.value = '';
+        } else if (el.isContentEditable) {
+         el.textContent = '';
+        }
+        el.focus();
+      }
+      `,
+      [el]
+    );
+    await this.sendKeyActions(context, textKeyActions(value));
   }
 
   /**
    * Drag & drop by UIDs
    * Uses JS events fallback for better compatibility
    */
-  async dragByUidToUid(fromUid: string, toUid: string): Promise<void> {
-    if (!this.resolveUid) {
-      throw new Error(
-        'dragByUidToUid: resolveUid callback not set. Ensure snapshot is initialized.'
-      );
-    }
-
-    const fromEl = await this.resolveUid(fromUid);
-    const toEl = await this.resolveUid(toUid);
-
+  async dragByUidToUid(
+    context: BrowsingContext.BrowsingContext,
+    fromUid: string,
+    toUid: string
+  ): Promise<void> {
+    const [sourceElement, targetElement] = await Promise.all([
+      this.resolveUid(context, fromUid),
+      this.resolveUid(context, toUid),
+    ]);
     // Use JS drag events fallback for compatibility (Actions DnD not used)
-    await this.driver.executeScript(
+    await this.bidi.callFunction(
+      context,
       `
-      var srcEl = arguments[0], tgtEl = arguments[1];
-      if (!srcEl || !tgtEl) throw new Error('dragAndDrop: element not found');
-      function dispatch(type, target, dt) {
-        var evt = new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt });
-        return target.dispatchEvent(evt);
+      (src, tgt) => {
+        function dispatch(type, target, dt) {
+          var evt = new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt });
+          return target.dispatchEvent(evt);
+        }
+        var dt = typeof DataTransfer !== 'undefined' ? new DataTransfer() : undefined;
+        dispatch('dragstart', src, dt);
+        dispatch('dragenter', tgt, dt);
+        dispatch('dragover', tgt, dt);
+        dispatch('drop', tgt, dt);
+        dispatch('dragend', src, dt);
       }
-      var dt = typeof DataTransfer !== 'undefined' ? new DataTransfer() : undefined;
-      dispatch('dragstart', srcEl, dt);
-      dispatch('dragenter', tgtEl, dt);
-      dispatch('dragover', tgtEl, dt);
-      dispatch('drop', tgtEl, dt);
-      dispatch('dragend', srcEl, dt);
-    `,
-      fromEl,
-      toEl
+      `,
+      [sourceElement, targetElement]
     );
-
-    // Wait for events to propagate
-    await this.waitForEventsAfterAction();
   }
 
   /**
    * Fill multiple form fields by UIDs
    */
-  async fillFormByUid(elements: Array<{ uid: string; value: string }>): Promise<void> {
-    if (!this.resolveUid) {
-      throw new Error(
-        'fillFormByUid: resolveUid callback not set. Ensure snapshot is initialized.'
-      );
-    }
-
+  async fillFormByUid(
+    context: BrowsingContext.BrowsingContext,
+    elements: Array<{ uid: string; value: string }>
+  ): Promise<void> {
     for (const { uid, value } of elements) {
-      await this.fillByUid(uid, value);
+      await this.fillByUid(context, uid, value);
     }
   }
 
@@ -290,37 +349,32 @@ export class DomInteractions {
    * Upload file by UID
    * Handles hidden file inputs by making them visible
    */
-  async uploadFileByUid(uid: string, filePath: string): Promise<void> {
-    if (!this.resolveUid) {
-      throw new Error(
-        'uploadFileByUid: resolveUid callback not set. Ensure snapshot is initialized.'
-      );
-    }
-
-    const el = await this.resolveUid(uid);
-
+  async uploadFileByUid(
+    context: BrowsingContext.BrowsingContext,
+    uid: string,
+    filePath: string
+  ): Promise<void> {
+    const el = await this.resolveUid(context, uid);
     // Ensure it's an <input type=file>; if hidden, unhide via JS
-    await this.driver.executeScript(
+    await this.bidi.callFunction(
+      context,
       `
-      var element = arguments[0];
-      if (!element) throw new Error('uploadFile: element not found');
-      if (element.tagName !== 'INPUT' || element.type !== 'file')
-        throw new Error('uploadFile: element must be <input type=file>');
-      var style = window.getComputedStyle(element);
-      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-        var s = element.style;
-        s.display = 'block'; s.visibility = 'visible'; s.opacity = '1';
-        s.position = 'fixed'; s.left = '0px'; s.top = '0px';
-        s.zIndex = '2147483647';
+      (element) => {
+        if (element.tagName !== 'INPUT' || element.type !== 'file')
+          throw new Error('uploadFile: element must be <input type=file>');
+        var style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+          var s = element.style;
+          s.display = 'block'; s.visibility = 'visible'; s.opacity = '1';
+          s.position = 'fixed'; s.left = '0px'; s.top = '0px';
+          s.zIndex = '2147483647';
+        }
+        element.focus();
       }
-    `,
-      el
+      `,
+      [el]
     );
-
-    await el.sendKeys(filePath);
-
-    // Wait for events to propagate
-    await this.waitForEventsAfterAction();
+    await this.sendKeyActions(context, textKeyActions(filePath));
   }
 
   /**
@@ -328,20 +382,17 @@ export class DomInteractions {
    * @param key Key name or combination, such as "Escape", "Enter" or "ctrl+shift+t"
    * @param uid Element UID to focus first. Defaults to the focused element.
    */
-  async pressKey(key: string, uid?: string): Promise<void> {
-    const combo = parseKeyCombo(key);
-
+  async pressKey(
+    context: BrowsingContext.BrowsingContext,
+    key: string,
+    uid?: string
+  ): Promise<void> {
     if (uid) {
       // If a uid was provided, focus the element first so that actions will be
       // applied to it.
-      await this.focusByUid(uid);
+      await this.focusByUid(context, uid);
     }
-
-    const actions = this.driver.actions({ async: true });
-    appendKeyPress(actions, combo);
-    await actions.perform();
-
-    await this.waitForEventsAfterAction();
+    await this.sendKeyActions(context, comboKeyActions(parseKeyCombo(key)));
   }
 
   /**
@@ -351,6 +402,7 @@ export class DomInteractions {
    * @param options.submitKey Key to press after the text, such as "Enter" or "Tab"
    */
   async typeText(
+    context: BrowsingContext.BrowsingContext,
     text: string,
     options: { uid?: string | undefined; submitKey?: string | undefined } = {}
   ): Promise<void> {
@@ -358,50 +410,34 @@ export class DomInteractions {
     const submit = options.submitKey === undefined ? undefined : parseKeyCombo(options.submitKey);
 
     if (options.uid) {
-      await this.focusByUid(options.uid);
+      await this.focusByUid(context, options.uid);
     }
 
     // One sequence, so that the text and the key land on the same element.
-    const actions = this.driver.actions({ async: true });
-    actions.sendKeys(text);
+    const actions = textKeyActions(text);
     if (submit) {
-      appendKeyPress(actions, submit);
+      actions.push(...comboKeyActions(submit));
     }
-    await actions.perform();
-
-    await this.waitForEventsAfterAction();
+    await this.sendKeyActions(context, actions);
   }
 
   /**
    * Focus the element for the provided uid. Throws if the element cannot be
    * focused.
    */
-  private async focusByUid(uid: string): Promise<void> {
-    if (!this.resolveUid) {
-      throw new Error('pressKey: resolveUid callback not set. Ensure snapshot is initialized.');
-    }
-    const el = await this.resolveUid(uid);
-    await this.waitForVisible(el, 5000);
-    const focused = await this.driver.executeScript(
-      'arguments[0].focus(); return arguments[0].getRootNode().activeElement === arguments[0];',
-      el
+  private async focusByUid(context: BrowsingContext.BrowsingContext, uid: string): Promise<void> {
+    const el = await this.resolveUid(context, uid);
+    await this.waitForVisible(context, el, 5000);
+    const focused = await this.bidi.callFunction(
+      context,
+      '(el) => { el.focus(); return el.getRootNode().activeElement === el; }',
+      [el]
     );
     if (!focused) {
       throw new Error(
         `pressKey: uid ${uid} cannot receive keyboard focus. Target a focusable element, or omit uid to send the key to the currently focused element.`
       );
     }
-  }
-
-  /**
-   * Wait for events to propagate after user action
-   * Gives the page time to respond to interactions
-   */
-  private async waitForEventsAfterAction(): Promise<void> {
-    // Wait for microtask/raf to allow event handlers to fire
-    await this.driver.executeScript('return new Promise(r => requestAnimationFrame(() => r()))');
-    // Small additional delay for good measure
-    await new Promise((resolve) => setTimeout(resolve, 50));
   }
 
   // ============================================================================
@@ -413,13 +449,16 @@ export class DomInteractions {
    * @param fullPage Capture the whole document via the Firefox-only full screenshot endpoint
    * @returns PNG as base64 string
    */
-  async takeScreenshotPage(fullPage = false): Promise<string> {
-    if (fullPage) {
-      // Note: when switching screenshots to WebDriver BiDi (Bug 2071799), we
-      // can use { origin: "document" } to handle full page screenshots.
-      return await (this.driver as FirefoxDriver).takeFullPageScreenshot();
-    }
-    return await this.driver.takeScreenshot();
+  async takeScreenshotPage(
+    context: BrowsingContext.BrowsingContext,
+    fullPage = false
+  ): Promise<string> {
+    const result = await this.bidi.sendCommand('browsingContext.captureScreenshot', {
+      context,
+      format: { type: 'png' },
+      origin: fullPage ? 'document' : 'viewport',
+    });
+    return result.data;
   }
 
   /**
@@ -428,25 +467,20 @@ export class DomInteractions {
    * @param uid Element UID from snapshot
    * @returns PNG as base64 string
    */
-  async takeScreenshotByUid(uid: string): Promise<string> {
-    if (!this.resolveUid) {
-      throw new Error(
-        'takeScreenshotByUid: resolveUid callback not set. Ensure snapshot is initialized.'
-      );
-    }
+  async takeScreenshotByUid(
+    context: BrowsingContext.BrowsingContext,
+    uid: string
+  ): Promise<string> {
+    const el = await this.resolveUid(context, uid);
+    await this.waitForVisible(context, el);
+    await this.scrollAndGetInViewCenterPoint(context, el);
 
-    const el = await this.resolveUid(uid);
-
-    // Scroll element into view
-    await this.driver.executeScript(
-      'arguments[0].scrollIntoView({block: "center", inline: "center"});',
-      el
-    );
-
-    // Wait for scroll to complete
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // Take screenshot of element (Selenium automatically crops to element bounds)
-    return await el.takeScreenshot();
+    // Take screenshot of element (WebDriver BiDi automatically crops to element bounds)
+    const result = await this.bidi.sendCommand('browsingContext.captureScreenshot', {
+      context,
+      format: { type: 'png' },
+      clip: { type: 'element', element: el },
+    });
+    return result.data;
   }
 }

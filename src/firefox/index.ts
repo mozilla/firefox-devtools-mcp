@@ -3,12 +3,10 @@
  */
 
 import type { FirefoxLaunchOptions, ConsoleMessage, LogpointResult } from './types.js';
-import { WebElement } from 'selenium-webdriver';
-import type { Browser, BrowsingContext, Network } from 'webdriver-bidi-protocol';
+import type { Browser, BrowsingContext, Network, Script } from 'webdriver-bidi-protocol';
 import { FirefoxCore } from './core.js';
 import { BiDiFacade } from './bidi.js';
 import { logDebug } from '../utils/logger.js';
-import { remoteValueToNative } from '../utils/remote-value.js';
 import { ConsoleEvents, NetworkEvents, DebuggingEvents, DownloadEvents } from './events/index.js';
 import type { NetworkBodyResult } from './events/network.js';
 import { DomInteractions } from './dom.js';
@@ -36,11 +34,33 @@ export class FirefoxClient {
     this.core = new FirefoxCore(options);
   }
 
-  getBidi(): BiDiFacade {
+  private getBidi(): BiDiFacade {
     if (!this.bidi) {
       throw new Error('Not connected');
     }
     return this.bidi;
+  }
+
+  private getDom(): DomInteractions {
+    if (!this.dom) {
+      throw new Error('Not connected');
+    }
+    return this.dom;
+  }
+
+  private getSnapshot(): SnapshotManager {
+    if (!this.snapshot) {
+      throw new Error('Not connected');
+    }
+    return this.snapshot;
+  }
+
+  private getContext(): BrowsingContext.BrowsingContext {
+    const context = this.core.getCurrentContextId();
+    if (!context) {
+      throw new Error('No active browsing context');
+    }
+    return context;
   }
 
   /**
@@ -54,7 +74,7 @@ export class FirefoxClient {
     this.bidi = new BiDiFacade(driver);
 
     // Initialize snapshot manager first
-    this.snapshot = new SnapshotManager(driver);
+    this.snapshot = new SnapshotManager(this.bidi);
 
     this.consoleEvents = new ConsoleEvents(this.bidi, {
       autoClearOnNavigate: false,
@@ -94,8 +114,10 @@ export class FirefoxClient {
     }
 
     // Initialize DOM with UID resolver callback
-    this.dom = new DomInteractions(driver, (uid: string) =>
-      this.snapshot!.resolveUidToElement(uid)
+    this.dom = new DomInteractions(
+      this.bidi,
+      (context: BrowsingContext.BrowsingContext, uid: string) =>
+        this.snapshot!.resolveUidToElement(context, uid)
     );
 
     this.pages = new PageManagement(
@@ -122,82 +144,44 @@ export class FirefoxClient {
    * native value; throws on a script exception.
    */
   async evaluate(expression: string): Promise<unknown> {
-    const context = this.core.getCurrentContextId();
-    if (!context) {
-      throw new Error('No active browsing context');
-    }
-    const result = await this.getBidi().sendCommand('script.evaluate', {
-      expression,
-      awaitPromise: true,
-      target: { context },
-    });
-    if (result.type === 'success') {
-      return remoteValueToNative(result.result);
-    }
-    throw new Error(
-      `Script evaluation failed: ${result.exceptionDetails?.text ?? 'unknown error'}`
-    );
+    return await this.getBidi().evaluate(expression, this.getContext());
   }
 
   // UID-based input methods
 
   async clickByUid(uid: string, dblClick = false): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.clickByUid(uid, dblClick);
+    return await this.getDom().clickByUid(this.getContext(), uid, dblClick);
   }
 
   async hoverByUid(uid: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.hoverByUid(uid);
+    return await this.getDom().hoverByUid(this.getContext(), uid);
   }
 
   async fillByUid(uid: string, value: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.fillByUid(uid, value);
+    return await this.getDom().fillByUid(this.getContext(), uid, value);
   }
 
   async dragByUidToUid(fromUid: string, toUid: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.dragByUidToUid(fromUid, toUid);
+    return await this.getDom().dragByUidToUid(this.getContext(), fromUid, toUid);
   }
 
   async fillFormByUid(elements: Array<{ uid: string; value: string }>): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.fillFormByUid(elements);
+    return await this.getDom().fillFormByUid(this.getContext(), elements);
   }
 
   async uploadFileByUid(uid: string, filePath: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.uploadFileByUid(uid, filePath);
+    return await this.getDom().uploadFileByUid(this.getContext(), uid, filePath);
   }
 
   async pressKey(key: string, uid?: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.pressKey(key, uid);
+    return await this.getDom().pressKey(this.getContext(), key, uid);
   }
 
   async typeText(
     text: string,
     options?: { uid?: string | undefined; submitKey?: string | undefined }
   ): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.typeText(text, options);
+    return await this.getDom().typeText(this.getContext(), text, options);
   }
 
   // ============================================================================
@@ -423,31 +407,19 @@ export class FirefoxClient {
   // ============================================================================
 
   async takeSnapshot(options?: SnapshotOptions): Promise<Snapshot> {
-    if (!this.snapshot) {
-      throw new Error('Not connected');
-    }
-    return await this.snapshot.takeSnapshot(options);
+    return await this.getSnapshot().takeSnapshot(this.getContext(), options);
   }
 
   async resolveUidToSelector(uid: string): Promise<string> {
-    if (!this.snapshot) {
-      throw new Error('Not connected');
-    }
-    return await this.snapshot.resolveUidToSelector(uid);
+    return await this.getSnapshot().resolveUidToSelector(this.getContext(), uid);
   }
 
-  async resolveUidToElement(uid: string): Promise<WebElement> {
-    if (!this.snapshot) {
-      throw new Error('Not connected');
-    }
-    return await this.snapshot.resolveUidToElement(uid);
+  async resolveUidToElement(uid: string): Promise<Script.SharedReference> {
+    return await this.getSnapshot().resolveUidToElement(this.getContext(), uid);
   }
 
   async clearSnapshot(): Promise<void> {
-    if (!this.snapshot) {
-      throw new Error('Not connected');
-    }
-    await this.snapshot.clear();
+    await this.getSnapshot().clear(this.getContext());
   }
 
   // ============================================================================
@@ -458,17 +430,11 @@ export class FirefoxClient {
    * @param fullPage Capture the whole scrollable document instead of the viewport
    */
   async takeScreenshotPage(fullPage = false): Promise<string> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.takeScreenshotPage(fullPage);
+    return await this.getDom().takeScreenshotPage(this.getContext(), fullPage);
   }
 
   async takeScreenshotByUid(uid: string): Promise<string> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.takeScreenshotByUid(uid);
+    return await this.getDom().takeScreenshotByUid(this.getContext(), uid);
   }
 
   // ============================================================================
