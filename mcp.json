@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "firefox-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mozilla/firefox-devtools-mcp@latest",
+        "--auto-profile",
+        "--tool-preset",
+        "developer",
+        "--pref",
+        "remote.prefs.recommended=false"
+      ]
+    }
+  }
+}
