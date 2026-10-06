@@ -34,7 +34,7 @@ export class FirefoxClient {
     this.core = new FirefoxCore(options);
   }
 
-  private getBidi(): BiDiFacade {
+  getBidi(): BiDiFacade {
     if (!this.bidi) {
       throw new Error('Not connected');
     }

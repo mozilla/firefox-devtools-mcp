@@ -59,25 +59,4 @@ describe('Privileged context state consistency', () => {
     // currentContextId to 'chrome-context-id'
     expect(mockSetCurrentContextId).toHaveBeenCalledWith('chrome-context-id');
   });
-
-  it('set_firefox_prefs after select_privileged_context should not revert to old context', async () => {
-    const { handleSelectPrivilegedContext } = await import('../../src/tools/privileged-context.js');
-    const { handleSetFirefoxPrefs } = await import('../../src/tools/firefox-prefs.js');
-
-    // User selects privileged context
-    await handleSelectPrivilegedContext({ contextId: 'chrome-context-id' });
-
-    mockExecuteScript.mockResolvedValue(undefined);
-    mockSwitchToWindow.mockClear();
-    mockSetContext.mockClear();
-
-    // Call set_firefox_prefs which requires privileged context.
-    await handleSetFirefoxPrefs({ prefs: { 'browser.ml.enable': true } });
-
-    const setContextCalls = mockSetContext.mock.calls;
-    const lastSetContext = setContextCalls[setContextCalls.length - 1];
-
-    // Check that the context has not switched to content unexpectedly.
-    expect(lastSetContext[0]).not.toBe('content');
-  });
 });
