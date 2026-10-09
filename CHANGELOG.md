@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.5] - 2026-10-09
+
+### Fixed
+- `set_firefox_prefs` and `get_firefox_prefs` work again. They now use WebDriver BiDi to run in the privileged context
+- `list_pages` no longer fails when the URL or title of a tab cannot be read. That tab is listed with `(unknown)` values instead
+
+### Changed
+- `take_snapshot` and the UID-based input tools now use WebDriver BiDi instead of WebDriver Classic
+- The snapshot script now runs in a sandbox, so page scripts cannot interfere with it and it does not add globals to the page
+- The Cursor plugin manifest is replaced by the root `plugin.json` and `mcp.json` files from the Agent Plugins 1.0 standard, which cursor.directory reads
+
 ## [0.10.4] - 2026-09-22
 
 No changes to the server itself. This release publishes it through additional channels.
