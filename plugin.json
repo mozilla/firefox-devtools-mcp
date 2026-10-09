@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "firefox-devtools-mcp",
-  "version": "0.10.4",
+  "version": "0.10.5",
   "description": "Control Firefox for browsing, web testing, and debugging. Fill forms, capture network and console activity, take screenshots, run scripts, and profile performance. Supports Android devices.",
   "author": {
     "name": "Mozilla"
