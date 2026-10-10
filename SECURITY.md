@@ -23,7 +23,7 @@ Tools are grouped into modules, selected with `--tool-preset` (a named group) or
 | `slim` | `pages`, `snapshot`, `input`, `screenshot` | Read and interact with pages |
 | `basic` (default) | `downloads`, `script`, `utilities`, `management`, `webextension`, `screencast` | **`evaluate_script`**, extension install, downloads |
 | `developer` | `debugging`, `network`, `console`, `profiler` | Request and response bodies, breakpoints |
-| `mozilla` | `launch`, `prefs`, `privileged` | Privileged (chrome) context, Firefox preferences, browser relaunch |
+| `mozilla` | `launch`, `prefs`, `privileged`, `bidi` | Privileged (chrome) context, Firefox preferences, browser relaunch, raw BiDi commands |
 
 > **Note:** `evaluate_script` is part of the default `basic` preset. It is included because agents commonly fall back to it when the higher-level tools cannot handle a page, but it also means the default configuration lets the agent run arbitrary JavaScript in any page context (see below). Use `--tool-preset slim`, or an explicit `--tools` list without `script`, when you do not want that.
 
@@ -38,6 +38,10 @@ Tools that operate in Firefox's privileged (chrome) context: listing and selecti
 Unless you are developing or modifying Firefox itself, you likely do not need these modules. To set preferences at startup, you can always use the `--pref name=value` command-line argument instead. If you are missing commands or features to debug web content, please file a bug on [Bugzilla](https://bugzilla.mozilla.org/enter_bug.cgi?format=__default__&blocked=2026717&product=Developer%20Infrastructure&component=Firefox%20MCP) or reach out in the [#firefox-devtools-mcp Matrix room](https://chat.mozilla.org/#/room/#firefox-devtools-mcp:mozilla.org).
 
 > **Warning:** When the privileged modules are used together with `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`, the agent gains access to privileged Firefox APIs with no web-content sandbox boundary. Depending on what the agent does with that access, this can extend to operating-system–level actions. Only use this combination in fully isolated environments.
+
+### Raw BiDi commands (module `bidi`)
+
+`send_bidi_command` sends any WebDriver BiDi command the agent names. That covers what the other modules expose, including script evaluation, network interception and extension install, so enabling `bidi` makes a narrower `--tools` list meaningless. It is only in the `mozilla` and `all` presets. With `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` it can also reach privileged contexts. Commands that would end the server's own session (`session.end`, `session.new`, `browser.close`) are refused.
 
 ### Browser relaunch (module `launch`)
 

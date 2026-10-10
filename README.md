@@ -151,14 +151,14 @@ the preset is ignored.
 
 Modules: `pages`, `snapshot`, `input`, `network`, `console`, `screenshot`, `downloads`,
 `utilities`, `management`, `launch`, `webextension`, `profiler`, `screencast`, `script`,
-`debugging`, `prefs`, `privileged`.
+`debugging`, `prefs`, `privileged`, `bidi`.
 
 Presets (each is a superset of the previous):
 
 - `slim` — `pages`, `snapshot`, `input`, `screenshot`
 - `basic` (default) — `slim` plus `downloads`, `script`, `utilities`, `management`, `webextension`, `screencast`
 - `developer` — `basic` plus `debugging`, `network`, `console`, `profiler`
-- `mozilla` — `developer` plus `launch`, `prefs`, `privileged`
+- `mozilla` — `developer` plus `launch`, `prefs`, `privileged`, `bidi`
 - `all` — every module
 
 Note that `basic`, the default, includes `script` and therefore the `evaluate_script` tool.
@@ -248,6 +248,7 @@ descriptions and parameters (generated from the source).
 - Console: list/clear (list supports optional `saveTo`)
 - Screenshot: page/by uid (with optional `saveTo` for CLI environments)
 - Script: evaluate_script (optional `sandbox` for an isolated realm; optional `saveTo` for bulky results)
+- BiDi: send_bidi_command (raw WebDriver BiDi command, optional `saveTo`; `mozilla` preset or `--tools bidi`)
 - Privileged Context: list/select privileged ("chrome") contexts, evaluate_privileged_script (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 - WebExtension: install_extension, uninstall_extension, list_extensions (list requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 - Firefox Management: get_firefox_info, get_firefox_output, close_firefox_session

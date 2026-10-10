@@ -2,7 +2,7 @@
 
 # Tool reference
 
-The server exposes 55 tools grouped into 17 modules. Which modules are
+The server exposes 56 tools grouped into 18 modules. Which modules are
 enabled depends on `--tool-preset` or `--tools`; see
 [Tool modules and presets](../README.md#tool-modules-and-presets) in the README.
 
@@ -31,6 +31,7 @@ the Mozilla-internal build; the public package drops both.
 | `debugging`               | 6     | -    | -     | yes       | yes     | yes |
 | `prefs` (privileged)      | 2     | -    | -     | -         | yes     | yes |
 | `privileged` (privileged) | 4     | -    | -     | -         | yes     | yes |
+| `bidi`                    | 1     | -    | -     | -         | yes     | yes |
 
 ## Contents
 
@@ -51,6 +52,7 @@ the Mozilla-internal build; the public package drops both.
 - [debugging](#debugging)
 - [prefs](#prefs)
 - [privileged](#privileged)
+- [bidi](#bidi)
 
 ## pages
 
@@ -665,3 +667,18 @@ Parameters:
 - `name` (string, optional) - Optional: Filter by partial name match (case-insensitive, e.g., "shopify")
 - `isActive` (boolean, optional) - Optional: Filter by enabled (true) or disabled (false) status
 - `isSystem` (boolean, optional) - Optional: Filter by system/built-in (true) or user-installed (false) extensions
+
+## bidi
+
+Send raw WebDriver BiDi commands.
+
+### `send_bidi_command`
+
+Send a raw WebDriver BiDi command and return its result. Escape hatch for BiDi features no other tool covers; prefer a dedicated tool when one exists.
+
+Parameters:
+
+- `method` (string, required) - BiDi command name, e.g. browsingContext.getTree
+- `params` (object, optional) - Command parameters (default: {})
+- `saveTo` (boolean | string, optional) - Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `preview` (number, optional) - Number of characters of the saved result to return inline as a preview when saveTo is used. Omit for no preview.
