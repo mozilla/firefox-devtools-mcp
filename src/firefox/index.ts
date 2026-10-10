@@ -437,6 +437,10 @@ export class FirefoxClient {
     return await this.getDom().takeScreenshotByUid(this.getContext(), uid);
   }
 
+  async printPage(options: { landscape?: boolean; background?: boolean } = {}): Promise<string> {
+    return await this.getDom().printPage(this.getContext(), options);
+  }
+
   // ============================================================================
   // Internal / Advanced
   // ============================================================================

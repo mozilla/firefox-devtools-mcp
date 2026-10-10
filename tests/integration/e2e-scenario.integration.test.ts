@@ -564,6 +564,12 @@ describe('E2E Scenario: Screenshot', () => {
 
     expect(fullPage.height).toBeGreaterThan(viewport.height);
   }, 15000);
+
+  it('should print the page to a PDF', async () => {
+    const pdf = Buffer.from(await firefox.printPage(), 'base64');
+
+    expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+  }, 15000);
 });
 
 /**

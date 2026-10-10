@@ -18,6 +18,7 @@ import { module as input } from './input.js';
 import { module as network } from './network.js';
 import { module as consoleModule } from './console.js';
 import { module as screenshot } from './screenshot.js';
+import { module as print } from './print.js';
 import { module as downloads } from './downloads.js';
 import { module as utilities } from './utilities.js';
 import { module as management } from './firefox-management.js';
@@ -40,6 +41,7 @@ export const MODULES: ToolModule[] = [
   network,
   consoleModule,
   screenshot,
+  print,
   downloads,
   utilities,
   management,
@@ -61,6 +63,7 @@ const SLIM = ['pages', 'snapshot', 'input', 'screenshot'];
 const BASIC = [
   ...SLIM,
   'downloads',
+  'print',
   // script is often used as a workaround by agents when they can't deal with
   // the page using high level tools.
   'script',

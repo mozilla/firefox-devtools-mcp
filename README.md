@@ -247,6 +247,7 @@ descriptions and parameters (generated from the source).
 - Downloads: list_downloads/clear_downloads (always‑on capture), set_download_behavior (allow/deny/default)
 - Console: list/clear (list supports optional `saveTo`)
 - Screenshot: page/by uid (with optional `saveTo` for CLI environments)
+- Print: print_page (saves the page as PDF, with optional landscape and backgrounds)
 - Script: evaluate_script (optional `sandbox` for an isolated realm; optional `saveTo` for bulky results)
 - Privileged Context: list/select privileged ("chrome") contexts, evaluate_privileged_script (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 - WebExtension: install_extension, uninstall_extension, list_extensions (list requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
