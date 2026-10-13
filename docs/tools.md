@@ -20,6 +20,7 @@ the Mozilla-internal build; the public package drops both.
 | `network`                 | 3     | -    | -     | yes       | yes     | yes |
 | `console`                 | 2     | -    | -     | yes       | yes     | yes |
 | `screenshot`              | 2     | yes  | yes   | yes       | yes     | yes |
+| `print`                   | 1     | -    | yes   | yes       | yes     | yes |
 | `downloads`               | 3     | -    | yes   | yes       | yes     | yes |
 | `utilities`               | 4     | -    | yes   | yes       | yes     | yes |
 | `management`              | 3     | -    | yes   | yes       | yes     | yes |
@@ -41,6 +42,7 @@ the Mozilla-internal build; the public package drops both.
 - [network](#network)
 - [console](#console)
 - [screenshot](#screenshot)
+- [print](#print)
 - [downloads](#downloads)
 - [utilities](#utilities)
 - [management](#management)
@@ -328,6 +330,22 @@ Parameters:
 
 - `uid` (string, required) - Element UID from snapshot
 - `saveTo` (boolean | string, optional) - Save the screenshot to a file instead of returning it as image data in the response. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+
+## print
+
+Print the page to PDF.
+
+### `print_page`
+
+_Read-only._
+
+Print the current page to a PDF file using print CSS. Returns the saved file path.
+
+Parameters:
+
+- `landscape` (boolean, optional) - Use landscape orientation (default: false)
+- `background` (boolean, optional) - Print background colors and images (default: false)
+- `saveTo` (boolean | string, optional) - Where to save the PDF. Pass a file path, an existing directory (generated file inside), or true or omit it (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
 
 ## downloads
 

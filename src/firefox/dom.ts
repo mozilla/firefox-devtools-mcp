@@ -461,6 +461,19 @@ export class DomInteractions {
     return result.data;
   }
 
+  /** @returns PDF as base64 string */
+  async printPage(
+    context: BrowsingContext.BrowsingContext,
+    options: { landscape?: boolean; background?: boolean } = {}
+  ): Promise<string> {
+    const result = await this.bidi.sendCommand('browsingContext.print', {
+      context,
+      orientation: options.landscape ? 'landscape' : 'portrait',
+      background: options.background === true,
+    });
+    return result.data;
+  }
+
   /**
    * Take screenshot of element by UID
    * Scrolls element into view, then captures it
