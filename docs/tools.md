@@ -2,7 +2,7 @@
 
 # Tool reference
 
-The server exposes 56 tools grouped into 18 modules. Which modules are
+The server exposes 57 tools grouped into 19 modules. Which modules are
 enabled depends on `--tool-preset` or `--tools`; see
 [Tool modules and presets](../README.md#tool-modules-and-presets) in the README.
 
