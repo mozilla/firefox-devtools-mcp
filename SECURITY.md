@@ -41,7 +41,7 @@ Unless you are developing or modifying Firefox itself, you likely do not need th
 
 ### Raw BiDi commands (module `bidi`)
 
-`send_bidi_command` sends any WebDriver BiDi command the agent names. That covers what the other modules expose, including script evaluation, network interception and extension install, so enabling `bidi` makes a narrower `--tools` list meaningless. It is only in the `mozilla` and `all` presets. With `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` it can also reach privileged contexts. Commands that would end the server's own session (`session.end`, `session.new`, `browser.close`) are refused.
+`send_bidi_command` sends any WebDriver BiDi command the agent names. That covers what the other modules expose, including script evaluation, network interception and extension install, so enabling `bidi` makes a narrower `--tools` list meaningless. It requires the Mozilla-internal build, and the public package omits it even when `--tools bidi` explicitly selects it. In the internal build it is available through the `mozilla` and `all` presets or an explicit `--tools bidi` selection. With `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` it can also reach privileged contexts. Commands that would end the server's own session (`session.end`, `session.new`, `browser.close`) are refused.
 
 ### Browser relaunch (module `launch`)
 

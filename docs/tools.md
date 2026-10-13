@@ -31,7 +31,7 @@ the Mozilla-internal build; the public package drops both.
 | `debugging`               | 6     | -    | -     | yes       | yes     | yes |
 | `prefs` (privileged)      | 2     | -    | -     | -         | yes     | yes |
 | `privileged` (privileged) | 4     | -    | -     | -         | yes     | yes |
-| `bidi`                    | 1     | -    | -     | -         | yes     | yes |
+| `bidi` (moz build)        | 1     | -    | -     | -         | yes     | yes |
 
 ## Contents
 
@@ -671,6 +671,8 @@ Parameters:
 ## bidi
 
 Send raw WebDriver BiDi commands.
+
+Requires the Mozilla-internal build.
 
 ### `send_bidi_command`
 

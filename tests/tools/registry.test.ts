@@ -63,11 +63,11 @@ describe('Tool registry', () => {
       expect(privileged).toEqual(['prefs', 'privileged']);
     });
 
-    it('marks launch as a moz-only module', () => {
+    it('marks bidi and launch as moz-only modules', () => {
       const mozOnly = MODULES.filter((m) => m.mozOnly)
         .map((m) => m.name)
         .sort();
-      expect(mozOnly).toEqual(['launch']);
+      expect(mozOnly).toEqual(['bidi', 'launch']);
     });
   });
 
@@ -192,6 +192,32 @@ describe('Tool registry', () => {
       });
       expect(moduleNames).toEqual(['pages']);
       expect(warnings.some((w) => w.includes('launch'))).toBe(true);
+    });
+
+    it('omits send_bidi_command when explicitly selected outside the Mozilla build', () => {
+      for (const options of [{ allowPrivileged: false }, {}]) {
+        const { moduleNames, toolDefinitions, handlers } = buildToolset({
+          tools: ['bidi'],
+          ...options,
+        });
+
+        expect(moduleNames).not.toContain('bidi');
+        expect(toolDefinitions.map((definition) => definition.name)).not.toContain(
+          'send_bidi_command'
+        );
+        expect(handlers.has('send_bidi_command')).toBe(false);
+      }
+    });
+
+    it('exposes send_bidi_command when selected in the Mozilla build', () => {
+      const { moduleNames, toolDefinitions, handlers } = buildToolset({
+        tools: ['bidi'],
+        allowPrivileged: true,
+      });
+
+      expect(moduleNames).toContain('bidi');
+      expect(toolDefinitions.map((definition) => definition.name)).toContain('send_bidi_command');
+      expect(handlers.has('send_bidi_command')).toBe(true);
     });
 
     it('does not expose restart_firefox in the default preset', () => {

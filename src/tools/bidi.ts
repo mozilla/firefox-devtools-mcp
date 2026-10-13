@@ -83,5 +83,6 @@ export const handleSendBidiCommand = defineToolHandler(async function handleSend
 export const module = defineModule({
   name: 'bidi',
   description: 'Send raw WebDriver BiDi commands.',
+  mozOnly: true,
   tools: [[sendBidiCommandTool, handleSendBidiCommand]],
 });

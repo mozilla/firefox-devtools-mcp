@@ -161,6 +161,8 @@ Presets (each is a superset of the previous):
 - `mozilla` — `developer` plus `launch`, `prefs`, `privileged`, `bidi`
 - `all` — every module
 
+`launch` and `bidi` require the Mozilla-internal build. The public package omits them even when they are named in `--tools`.
+
 Note that `basic`, the default, includes `script` and therefore the `evaluate_script` tool.
 See [SECURITY.md](SECURITY.md#tool-modules-and-presets) for what that means for the attack
 surface, and use `--tool-preset slim` or an explicit `--tools` list to drop it.
@@ -248,7 +250,7 @@ descriptions and parameters (generated from the source).
 - Console: list/clear (list supports optional `saveTo`)
 - Screenshot: page/by uid (with optional `saveTo` for CLI environments)
 - Script: evaluate_script (optional `sandbox` for an isolated realm; optional `saveTo` for bulky results)
-- BiDi: send_bidi_command (raw WebDriver BiDi command, optional `saveTo`; `mozilla` preset or `--tools bidi`)
+- BiDi: send_bidi_command (raw WebDriver BiDi command, optional `saveTo`; requires the Mozilla-internal build, selected with the `mozilla` preset or `--tools bidi`)
 - Privileged Context: list/select privileged ("chrome") contexts, evaluate_privileged_script (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 - WebExtension: install_extension, uninstall_extension, list_extensions (list requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`)
 - Firefox Management: get_firefox_info, get_firefox_output, close_firefox_session
