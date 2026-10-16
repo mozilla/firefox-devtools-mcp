@@ -2,9 +2,11 @@
  * Unit tests for utilities tools
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   acceptDialogTool,
+  handleAcceptDialog,
+  handleDismissDialog,
   dismissDialogTool,
   navigateHistoryTool,
   setViewportSizeTool,
@@ -57,6 +59,57 @@ describe('Utilities Tools', () => {
       expect(properties?.height).toBeDefined();
       expect(required).toContain('width');
       expect(required).toContain('height');
+    });
+  });
+
+  describe('Dialog handlers', () => {
+    const acceptDialog = vi.fn();
+    const dismissDialog = vi.fn();
+
+    function errorText(result: { content: Array<{ type: string; text?: string }> }): string {
+      return result.content[0]?.text ?? '';
+    }
+
+    beforeEach(() => {
+      acceptDialog.mockReset();
+      dismissDialog.mockReset();
+      vi.doMock('../../src/index.js', () => ({
+        getFirefox: vi.fn().mockResolvedValue({ acceptDialog, dismissDialog }),
+      }));
+    });
+
+    it('accept_dialog reports no active dialog for NoSuchAlertError with an empty message', async () => {
+      const error = new Error('');
+      error.name = 'NoSuchAlertError';
+      acceptDialog.mockRejectedValue(error);
+
+      const result = await handleAcceptDialog({});
+
+      expect(result.isError).toBe(true);
+      expect(errorText(result)).toBe('Error: No active dialog');
+    });
+
+    it('dismiss_dialog reports no active dialog for NoSuchAlertError with an empty message', async () => {
+      const error = new Error('');
+      error.name = 'NoSuchAlertError';
+      dismissDialog.mockRejectedValue(error);
+
+      const result = await handleDismissDialog({});
+
+      expect(result.isError).toBe(true);
+      expect(errorText(result)).toBe('Error: No active dialog');
+    });
+
+    it('does not treat other errors as a missing dialog', async () => {
+      acceptDialog.mockRejectedValue(new Error('Failed to accept dialog: no such alert'));
+      dismissDialog.mockRejectedValue(new Error('Failed to dismiss dialog: boom'));
+
+      expect(errorText(await handleAcceptDialog({}))).toBe(
+        'Error: Failed to accept dialog: no such alert'
+      );
+      expect(errorText(await handleDismissDialog({}))).toBe(
+        'Error: Failed to dismiss dialog: boom'
+      );
     });
   });
 });

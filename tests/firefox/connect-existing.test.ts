@@ -136,6 +136,7 @@ describe('FirefoxCore connect() BiDi endpoint check', () => {
 
   // Mocks for the launch path (used by the launch-mode test only)
   const mockEnableBidi = vi.fn();
+  const mockSetAlertBehavior = vi.fn();
   const mockOptionsAddArguments = vi.fn();
 
   // Fake socket for the Marionette port probe: emits `event` on the next tick.
@@ -183,6 +184,7 @@ describe('FirefoxCore connect() BiDi endpoint check', () => {
       default: {
         Options: class {
           enableBidi = mockEnableBidi;
+          setAlertBehavior = mockSetAlertBehavior;
           addArguments = mockOptionsAddArguments;
           windowSize = vi.fn();
           setBinary = vi.fn();
@@ -372,5 +374,35 @@ describe('FirefoxCore connect() BiDi endpoint check', () => {
 
     expect(mockCreateSession).not.toHaveBeenCalled();
     expect(core.getCurrentContextId()).toBe('mock-context-id');
+  });
+
+  describe('unhandled prompt behavior', () => {
+    it('should keep prompts open in launch mode', async () => {
+      const { FirefoxCore } = await import('@/firefox/core.js');
+
+      await new FirefoxCore({ headless: true }).connect();
+
+      expect(mockSetAlertBehavior).toHaveBeenCalledWith('ignore');
+    });
+
+    it('should keep prompts open in connect-existing mode', async () => {
+      mockCreateSession.mockReturnValue(
+        makeDriver({ browserVersion: '142.0', webSocketUrl: 'ws://127.0.0.1:9222/session/abc' })
+      );
+      const { FirefoxCore } = await import('@/firefox/core.js');
+
+      await new FirefoxCore({ connectExisting: true, marionettePort: 2828 }).connect();
+
+      expect(mockCapabilitiesSet).toHaveBeenCalledWith('unhandledPromptBehavior', 'ignore');
+    });
+
+    it('should keep prompts open in Android mode', async () => {
+      mockCreateSession.mockReturnValue(makeDriver({ browserVersion: '142.0' }));
+      const { FirefoxCore } = await import('@/firefox/core.js');
+
+      await new FirefoxCore({ androidDevice: 'auto', androidWipeAppData: true }).connect();
+
+      expect(mockCapabilitiesSet).toHaveBeenCalledWith('unhandledPromptBehavior', 'ignore');
+    });
   });
 });

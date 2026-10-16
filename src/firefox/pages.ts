@@ -36,6 +36,18 @@ export function isReadinessState(value: unknown): value is BrowsingContext.Readi
   return READINESS_STATES.includes(value as BrowsingContext.ReadinessState);
 }
 
+/**
+ * Keep NoSuchAlertError as is so callers can tell it apart: Marionette sends it with an empty message.
+ */
+function dialogError(action: 'accept' | 'dismiss', error: unknown): Error {
+  if (error instanceof Error && error.name === 'NoSuchAlertError') {
+    return error;
+  }
+  return new Error(
+    `Failed to ${action} dialog: ${error instanceof Error ? error.message : String(error)}`
+  );
+}
+
 export class PageManagement {
   constructor(
     private driver: WebDriver,
@@ -108,9 +120,7 @@ export class PageManagement {
       }
       await alert.accept();
     } catch (error) {
-      throw new Error(
-        `Failed to accept dialog: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw dialogError('accept', error);
     }
   }
 
@@ -122,9 +132,7 @@ export class PageManagement {
       const alert = await this.driver.switchTo().alert();
       await alert.dismiss();
     } catch (error) {
-      throw new Error(
-        `Failed to dismiss dialog: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw dialogError('dismiss', error);
     }
   }
 
