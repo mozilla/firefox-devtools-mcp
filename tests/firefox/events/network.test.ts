@@ -2,7 +2,9 @@
  * Unit tests for NetworkEvents header parsing
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { NetworkEvents } from '../../../src/firefox/events/network.js';
+import type { BiDiFacade } from '../../../src/firefox/bidi.js';
 
 // Test the header parsing logic that handles BiDi format
 // BiDi returns headers as: { name: "header-name", value: { type: "string", value: "actual-value" } }
@@ -379,5 +381,34 @@ describe('NetworkEvents Header Parsing', () => {
       expect(result['']).toBeUndefined();
       expect(result['  ']).toBe('whitespace-name');
     });
+  });
+});
+
+describe('NetworkEvents data collector', () => {
+  function createBidi(restrictedUserContext: string | null) {
+    return {
+      subscribe: vi.fn().mockResolvedValue('subscription'),
+      on: vi.fn(),
+      sendCommand: vi.fn().mockResolvedValue({ collector: 'collector' }),
+      getRestrictedUserContext: () => restrictedUserContext,
+    };
+  }
+
+  it('registers a global data collector in an unrestricted session', async () => {
+    const bidi = createBidi(null);
+    await new NetworkEvents(bidi as unknown as BiDiFacade).subscribe();
+    expect(bidi.sendCommand).toHaveBeenCalledWith(
+      'network.addDataCollector',
+      expect.not.objectContaining({ userContexts: expect.anything() })
+    );
+  });
+
+  it('registers the data collector for the user context of a restricted session', async () => {
+    const bidi = createBidi('user-context');
+    await new NetworkEvents(bidi as unknown as BiDiFacade).subscribe();
+    expect(bidi.sendCommand).toHaveBeenCalledWith(
+      'network.addDataCollector',
+      expect.objectContaining({ userContexts: ['user-context'] })
+    );
   });
 });

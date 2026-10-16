@@ -172,9 +172,13 @@ export class NetworkEvents {
     }
 
     try {
+      // A session restricted to a container only accepts a data collector for
+      // its user context.
+      const userContext = this.bidi.getRestrictedUserContext();
       const result = await this.bidi.sendCommand('network.addDataCollector', {
         dataTypes: [DataType.Request, DataType.Response],
         maxEncodedDataSize: MAX_ENCODED_DATA_SIZE,
+        ...(userContext ? { userContexts: [userContext] } : {}),
       });
       this.collectorId = result?.collector ?? null;
       if (this.collectorId) {

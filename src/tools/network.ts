@@ -635,6 +635,6 @@ export const module = defineModule({
   tools: [
     [listNetworkRequestsTool, handleListNetworkRequests],
     [getNetworkRequestTool, handleGetNetworkRequest],
-    [setNetworkCacheTool, handleSetNetworkCache],
+    [setNetworkCacheTool, handleSetNetworkCache, { unavailableInRestrictedSession: true }],
   ],
 });

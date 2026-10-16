@@ -248,6 +248,7 @@ export const module = defineModule({
   name: 'privileged',
   description: 'Access privileged ("chrome") contexts and list extensions.',
   privileged: true,
+  unavailableInRestrictedSession: true,
   tools: [
     [listPrivilegedContextsTool, handleListPrivilegedContexts],
     [selectPrivilegedContextTool, handleSelectPrivilegedContext],
