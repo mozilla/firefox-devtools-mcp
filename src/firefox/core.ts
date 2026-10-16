@@ -166,6 +166,7 @@ export class FirefoxCore {
   private logFilePath: string | undefined;
   private originalEnv: Record<string, string | undefined> = {};
   private profileWarning: string | null = null;
+  private restrictedUserContext: string | null = null;
 
   constructor(private options: FirefoxLaunchOptions) {}
 
@@ -425,6 +426,13 @@ export class FirefoxCore {
     this.firefoxVersion = (driverCapabilities.get('browserVersion') as string) ?? null;
     logDebug(`Browser version: ${this.firefoxVersion}`);
 
+    // Firefox restricts sessions started at runtime to a single user context,
+    // and then reports it with this capability.
+    this.restrictedUserContext = (driverCapabilities.get('moz:userContext') as string) ?? null;
+    if (this.restrictedUserContext) {
+      log(`Session restricted to user context ${this.restrictedUserContext}`);
+    }
+
     // In connect-existing mode, geckodriver can attach to a Firefox that was
     // started with --marionette but without --remote-debugging-port. Marionette
     // works, but the session has no BiDi endpoint, so most tools would later
@@ -532,6 +540,13 @@ export class FirefoxCore {
   }
 
   /**
+   * User context the session is restricted to, or null for an unrestricted session.
+   */
+  getRestrictedUserContext(): string | null {
+    return this.restrictedUserContext;
+  }
+
+  /**
    * Get log file path
    */
   getLogFilePath(): string | undefined {
@@ -579,6 +594,7 @@ export class FirefoxCore {
     this.currentContextId = null;
     this.logFilePath = undefined;
     this.profileWarning = null;
+    this.restrictedUserContext = null;
 
     // Selenium's quit() skips closing the BiDi WebSocket when onQuit_ is set.
     // We must close it first: geckodriver may not release the Marionette session
