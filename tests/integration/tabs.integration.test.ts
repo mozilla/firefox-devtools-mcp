@@ -60,6 +60,13 @@ describe('Tab Management Integration Tests', () => {
     expect(firefox.getSelectedTabIdx()).toBe(newTabIndex);
   }, 15000);
 
+  it('should run commands in the new tab', async () => {
+    const fixturePath = fixtureUrl('form.html');
+    await firefox.createNewPage(fixturePath);
+
+    expect(await firefox.evaluate('window.location.href')).toBe(fixturePath);
+  }, 15000);
+
   it('should switch between tabs', async () => {
     await firefox.refreshTabs();
 

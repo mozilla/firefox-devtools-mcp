@@ -251,7 +251,7 @@ describe('PageManagement', () => {
       // createNewPage needs real driver methods for switchTo/getWindowHandle
       const switchToMock = vi
         .fn()
-        .mockReturnValue({ newWindow: vi.fn().mockResolvedValue(undefined) });
+        .mockReturnValue({ window: vi.fn().mockResolvedValue(undefined) });
       const driver = {
         switchTo: switchToMock,
         getWindowHandle: vi.fn().mockResolvedValue('handle-2'),
@@ -288,7 +288,7 @@ describe('PageManagement', () => {
     it('forwards an explicit wait override to navigate', async () => {
       const switchToMock = vi
         .fn()
-        .mockReturnValue({ newWindow: vi.fn().mockResolvedValue(undefined) });
+        .mockReturnValue({ window: vi.fn().mockResolvedValue(undefined) });
       const driver = {
         switchTo: switchToMock,
         getWindowHandle: vi.fn().mockResolvedValue('handle-2'),
@@ -325,9 +325,8 @@ describe('PageManagement', () => {
       let current = currentId;
       const window = vi.fn().mockResolvedValue(undefined);
       const driver = {
-        switchTo: vi.fn().mockReturnValue({ window, newWindow: vi.fn() }),
+        switchTo: vi.fn().mockReturnValue({ window }),
         close: vi.fn().mockResolvedValue(undefined),
-        getWindowHandle: vi.fn().mockResolvedValue('tab-new'),
       } as any;
       const setCurrentContextId = vi.fn((id: string) => {
         current = id;
@@ -335,6 +334,9 @@ describe('PageManagement', () => {
       const sendBiDiCommand = vi.fn(async (method: string, params: any) => {
         if (method === 'browsingContext.getTree') {
           return { contexts: tree };
+        }
+        if (method === 'browsingContext.create') {
+          return { context: 'tab-new' };
         }
         if (method === 'browsingContext.navigate') {
           return {};

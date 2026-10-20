@@ -4,7 +4,7 @@
 
 import { WebDriver } from 'selenium-webdriver';
 import type { BrowsingContext } from 'webdriver-bidi-protocol';
-import { ReadinessState, type BiDiFacade } from './bidi.js';
+import { CreateType, ReadinessState, type BiDiFacade } from './bidi.js';
 import { log, logDebug } from '../utils/logger.js';
 
 const COMMON_URL_SCHEMES = ['http:', 'https:', 'data:', 'blob:', 'file:'];
@@ -222,8 +222,12 @@ export class PageManagement {
    * Create new page (tab)
    */
   async createNewPage(url: string, waitOverride?: BrowsingContext.ReadinessState): Promise<number> {
-    await this.driver.switchTo().newWindow('tab');
-    this.setCurrentContextId(await this.driver.getWindowHandle());
+    const { context } = await this.sendBiDiCommand('browsingContext.create', {
+      type: CreateType.Tab,
+    });
+    // Dialog handling and tab switching still go through the classic driver.
+    await this.driver.switchTo().window(context);
+    this.setCurrentContextId(context);
     await this.navigate(url, waitOverride);
     await this.refreshTabs();
     return this.cachedSelectedIdx;

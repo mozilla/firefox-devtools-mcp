@@ -87,6 +87,11 @@ export const ReadinessState = {
   BrowsingContext.ReadinessState
 >;
 
+export const CreateType = {
+  Tab: 'tab' as BrowsingContext.CreateType,
+  Window: 'window' as BrowsingContext.CreateType,
+} as const satisfies Record<keyof typeof BrowsingContext.CreateType, BrowsingContext.CreateType>;
+
 export const DataType = {
   Request: 'request' as Network.DataType,
   Response: 'response' as Network.DataType,
