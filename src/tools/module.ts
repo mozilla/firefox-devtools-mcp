@@ -38,7 +38,15 @@ export interface ToolDefinition {
 
 export type ToolHandler = (input: unknown) => Promise<McpToolResponse>;
 
-export interface ToolEntry {
+export interface ToolOptions {
+  /**
+   * The tool needs BiDi commands which a session restricted to a container rejects.
+   * Set by hand: keep in sync with the commands Firefox allows in such sessions.
+   */
+  unavailableInRestrictedSession?: boolean;
+}
+
+export interface ToolEntry extends ToolOptions {
   definition: ToolDefinition;
   handler: ToolHandler;
 }
@@ -62,8 +70,10 @@ export interface ModuleConfig {
   description: string;
   privileged?: boolean;
   mozOnly?: boolean;
-  /** Each entry pairs a tool definition with its handler. */
-  tools: Array<[ToolDefinition, ToolHandler]>;
+  /** Applies unavailableInRestrictedSession to every tool of the module. */
+  unavailableInRestrictedSession?: boolean;
+  /** Each entry pairs a tool definition with its handler, and optional tool options. */
+  tools: Array<[ToolDefinition, ToolHandler] | [ToolDefinition, ToolHandler, ToolOptions]>;
 }
 
 export function defineToolHandler<TArgs extends unknown[]>(
@@ -84,6 +94,12 @@ export function defineModule(config: ModuleConfig): ToolModule {
     description: config.description,
     ...(config.privileged ? { privileged: true } : {}),
     ...(config.mozOnly ? { mozOnly: true } : {}),
-    tools: config.tools.map(([definition, handler]) => ({ definition, handler })),
+    tools: config.tools.map(([definition, handler, options]) => ({
+      definition,
+      handler,
+      ...(config.unavailableInRestrictedSession || options?.unavailableInRestrictedSession
+        ? { unavailableInRestrictedSession: true }
+        : {}),
+    })),
   };
 }

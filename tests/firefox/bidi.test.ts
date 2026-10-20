@@ -184,3 +184,83 @@ describe('BidiFacade sendCommand WebSocket readiness', () => {
     expect(mockWs.on).not.toHaveBeenCalled();
   });
 });
+
+describe('BidiFacade restricted sessions', () => {
+  // Driver whose socket answers every command with `respond(command)`.
+  const makeDriver = (respond: (command: any) => Record<string, unknown>) => {
+    const listeners: ((data: string) => void)[] = [];
+    const ws = {
+      readyState: 1,
+      send: vi.fn((data: string) => {
+        const command = JSON.parse(data);
+        setImmediate(() => {
+          const payload = JSON.stringify({ id: command.id, ...respond(command) });
+          listeners.forEach((listener) => listener(payload));
+        });
+      }),
+      on: vi.fn((event: string, listener: (data: string) => void) => {
+        if (event === 'message') {
+          listeners.push(listener);
+        }
+      }),
+      off: vi.fn(),
+    };
+    const driver = { getBidi: vi.fn().mockResolvedValue({ socket: ws }) };
+    const sentCommands = () => ws.send.mock.calls.map(([data]) => JSON.parse(data));
+    return { driver: driver as any, sentCommands };
+  };
+
+  it('subscribes globally in an unrestricted session', async () => {
+    const { driver, sentCommands } = makeDriver(() => ({ result: { subscription: 'sub-1' } }));
+    const bidi = new BiDiFacade(driver);
+
+    await expect(bidi.subscribe('log.entryAdded')).resolves.toBe('sub-1');
+    expect(sentCommands()[0]).toMatchObject({
+      method: 'session.subscribe',
+      params: { events: ['log.entryAdded'] },
+    });
+    expect(sentCommands()[0].params).not.toHaveProperty('userContexts');
+  });
+
+  it('subscribes to the user context in a restricted session', async () => {
+    const { driver, sentCommands } = makeDriver(() => ({ result: { subscription: 'sub-1' } }));
+    const bidi = new BiDiFacade(driver, 'container-id');
+
+    await expect(
+      bidi.subscribe(['browsingContext.load', 'browsingContext.domContentLoaded'])
+    ).resolves.toBe('sub-1');
+    expect(sentCommands()[0].params).toEqual({
+      events: ['browsingContext.load', 'browsingContext.domContentLoaded'],
+      userContexts: ['container-id'],
+    });
+  });
+
+  it('unsubscribes by subscription id', async () => {
+    const { driver, sentCommands } = makeDriver(() => ({ result: {} }));
+    const bidi = new BiDiFacade(driver, 'container-id');
+
+    await bidi.unsubscribe('sub-1');
+    expect(sentCommands()[0]).toMatchObject({
+      method: 'session.unsubscribe',
+      params: { subscriptions: ['sub-1'] },
+    });
+  });
+
+  it('reports unsupported commands clearly in a restricted session', async () => {
+    const { driver } = makeDriver(() => ({ error: 'unsupported operation', message: '' }));
+    const bidi = new BiDiFacade(driver, 'container-id');
+
+    await expect(bidi.sendCommand('browsingContext.print', { context: 'tab' })).rejects.toThrow(
+      'Not available when connected to an existing Firefox: browsingContext.print'
+    );
+  });
+
+  it('keeps the raw error for unsupported commands in an unrestricted session', async () => {
+    const { driver } = makeDriver(() => ({ error: 'unsupported operation', message: '' }));
+    const bidi = new BiDiFacade(driver);
+
+    await expect(bidi.sendCommand('browsingContext.print', { context: 'tab' })).rejects.toThrow(
+      'BiDi error: "unsupported operation"'
+    );
+  });
+});
