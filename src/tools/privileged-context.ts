@@ -8,10 +8,6 @@ import { validateFunction } from '../utils/js-validation.js';
 import { remoteValueToNative } from '../utils/remote-value.js';
 import { saveOutput } from '../utils/save-output.js';
 import { defineModule, defineToolHandler, type ToolDefinition } from './module.js';
-// list_extensions lives with the other extension tools in webextension.ts, but
-// it needs parent access (AddonManager), so it is registered here under the
-// privileged module rather than the unprivileged webextension module.
-import { listExtensionsTool, handleListExtensions } from './webextension.js';
 import type { McpToolResponse } from '../types/common.js';
 
 export const listPrivilegedContextsTool = {
@@ -167,7 +163,7 @@ export const handleSelectPrivilegedContext = defineToolHandler(
       );
     }
 
-    // Update tracked context so helper tools (set_firefox_prefs, list_extensions)
+    // Update tracked context so helper tools (set_firefox_prefs)
     // restore to this context instead of the old content context.
     firefox.setCurrentContextId(contextId);
 
@@ -246,12 +242,11 @@ export const handleEvaluatePrivilegedScript = defineToolHandler(
 
 export const module = defineModule({
   name: 'privileged',
-  description: 'Access privileged ("chrome") contexts and list extensions.',
+  description: 'Access privileged ("chrome") browsing contexts.',
   privileged: true,
   tools: [
     [listPrivilegedContextsTool, handleListPrivilegedContexts],
     [selectPrivilegedContextTool, handleSelectPrivilegedContext],
     [evaluatePrivilegedScriptTool, handleEvaluatePrivilegedScript],
-    [listExtensionsTool, handleListExtensions],
   ],
 });

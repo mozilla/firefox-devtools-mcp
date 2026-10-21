@@ -35,6 +35,28 @@ export type FirefoxCommands = Commands & {
   'webExtension.install': {
     params: { 'moz:permanent'?: boolean };
   };
+  'webExtension.moz:listExtensions': {
+    params: EmptyParams;
+    returnType: {
+      extensions: Array<{
+        id: string;
+        name: string;
+        version: string;
+        manifestVersion: number;
+        isActive: boolean;
+        isSystem: boolean;
+        hidden: boolean;
+        temporarilyInstalled: boolean;
+        sourceURL?: string | null;
+        policy: {
+          uuid: string;
+          baseURL: string;
+          extensionURL: string;
+          backgroundScripts: string[];
+        } | null;
+      }>;
+    };
+  };
   // Firefox-specific commands
   'moz:debugging.setDebuggerEnabled': {
     params: { enabled: boolean };

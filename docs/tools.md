@@ -24,13 +24,13 @@ the Mozilla-internal build; the public package drops both.
 | `utilities`               | 4     | -    | yes   | yes       | yes     | yes |
 | `management`              | 3     | -    | yes   | yes       | yes     | yes |
 | `launch` (moz build)      | 1     | -    | -     | -         | yes     | yes |
-| `webextension`            | 2     | -    | yes   | yes       | yes     | yes |
+| `webextension`            | 3     | -    | yes   | yes       | yes     | yes |
 | `profiler`                | 3     | -    | -     | yes       | yes     | yes |
 | `screencast`              | 2     | -    | yes   | yes       | yes     | yes |
 | `script`                  | 1     | -    | yes   | yes       | yes     | yes |
 | `debugging`               | 6     | -    | -     | yes       | yes     | yes |
 | `prefs` (privileged)      | 2     | -    | -     | -         | yes     | yes |
-| `privileged` (privileged) | 4     | -    | -     | -         | yes     | yes |
+| `privileged` (privileged) | 3     | -    | -     | -         | yes     | yes |
 | `bidi` (moz build)        | 1     | -    | -     | -         | yes     | yes |
 
 ## Tools that accept `saveTo`
@@ -67,13 +67,13 @@ accepted paths.
 - [utilities](#utilities): Handle dialogs, history navigation, and viewport sizing.
 - [management](#management): Inspect Firefox options and logs, and close the browser.
 - [launch](#launch): Restart Firefox under a different launch configuration.
-- [webextension](#webextension): Install and uninstall web extensions.
+- [webextension](#webextension): Install, uninstall, and list web extensions.
 - [profiler](#profiler): Start, stop, and query the performance profiler.
 - [screencast](#screencast): Record screencasts of the page viewport (Firefox 154+).
 - [script](#script): Evaluate arbitrary JavaScript in the page context.
 - [debugging](#debugging): Inspect scripts and set logpoints (Firefox 153+).
 - [prefs](#prefs): Get and set Firefox preferences.
-- [privileged](#privileged): Access privileged ("chrome") contexts and list extensions.
+- [privileged](#privileged): Access privileged ("chrome") browsing contexts.
 - [bidi](#bidi): Send raw WebDriver BiDi commands.
 
 ## pages
@@ -485,7 +485,7 @@ Parameters:
 
 ## webextension
 
-Install and uninstall web extensions.
+Install, uninstall, and list web extensions.
 
 ### `install_extension`
 
@@ -505,6 +505,19 @@ Uninstall a Firefox extension using WebDriver BiDi webExtension.uninstall comman
 Parameters:
 
 - `id` (string, required) - Extension ID (e.g., "addon@example.com")
+
+### `list_extensions`
+
+_Read-only._
+
+List installed Firefox extensions using the WebDriver BiDi webExtension.moz:listExtensions command.
+
+Parameters:
+
+- `ids` (array of string, optional) - Optional: Filter by exact extension IDs (e.g., ["addon@example.com"])
+- `name` (string, optional) - Optional: Filter by partial name match (case-insensitive, e.g., "shopify")
+- `isActive` (boolean, optional) - Optional: Filter by enabled (true) or disabled (false) status
+- `isSystem` (boolean, optional) - Optional: Filter by system/built-in (true) or user-installed (false) extensions
 
 ## profiler
 
@@ -662,7 +675,7 @@ Parameters:
 
 ## privileged
 
-Access privileged ("chrome") contexts and list extensions.
+Access privileged ("chrome") browsing contexts.
 
 Privileged module: requires the Mozilla-internal build.
 
@@ -692,19 +705,6 @@ Parameters:
 - `context` (string, required) - Privileged browsing context ID from list_privileged_contexts
 - `saveTo` (boolean | string, optional) - Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
 - `preview` (number, optional) - Number of characters of the saved result to return inline as a preview when saveTo is used. Omit for no preview.
-
-### `list_extensions`
-
-_Read-only._
-
-List installed Firefox extensions with UUIDs and background scripts. Requires MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 env var.
-
-Parameters:
-
-- `ids` (array of string, optional) - Optional: Filter by exact extension IDs (e.g., ["addon@example.com"])
-- `name` (string, optional) - Optional: Filter by partial name match (case-insensitive, e.g., "shopify")
-- `isActive` (boolean, optional) - Optional: Filter by enabled (true) or disabled (false) status
-- `isSystem` (boolean, optional) - Optional: Filter by system/built-in (true) or user-installed (false) extensions
 
 ## bidi
 
