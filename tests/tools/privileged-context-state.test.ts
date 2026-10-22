@@ -2,7 +2,7 @@
  * Tests for privileged context state consistency
  *
  * Verifies that select_privileged_context updates currentContextId,
- * and that helper tools (set_firefox_prefs, list_extensions) don't
+ * and that helper tools (set_firefox_prefs) don't
  * silently break a user's privileged context selection.
  */
 
