@@ -2,8 +2,9 @@
  * Page/Tab/Window management
  */
 
+import { randomUUID } from 'node:crypto';
 import { WebDriver } from 'selenium-webdriver';
-import type { BrowsingContext } from 'webdriver-bidi-protocol';
+import type { BrowsingContext, Script } from 'webdriver-bidi-protocol';
 import { ReadinessState, type BiDiFacade } from './bidi.js';
 import { log, logDebug } from '../utils/logger.js';
 
@@ -11,6 +12,14 @@ const COMMON_URL_SCHEMES = ['http:', 'https:', 'data:', 'blob:', 'file:'];
 const PAGES_SANDBOX = 'page-management';
 // script.evaluate cannot answer while the content process is busy, so a hung tab must not block the whole tab list
 const TITLE_TIMEOUT_MS = 1000;
+// Set in the sandbox before a history traversal, to detect when another document is active
+const HISTORY_MARKER = '__mcpHistoryMarker';
+// Set by a popstate listener in the sandbox, to detect same-document traversals
+const HISTORY_POPSTATE = '__mcpHistoryPopstate';
+// A hung page must not block navigating away from it
+const HISTORY_EVALUATE_TIMEOUT_MS = 1000;
+const HISTORY_WAIT_TIMEOUT_MS = 10000;
+const HISTORY_POLL_INTERVAL_MS = 50;
 
 /**
  * Check if a URL uses a common scheme that supports load events.
@@ -79,14 +88,14 @@ export class PageManagement {
    * Navigate back in history
    */
   async navigateBack(): Promise<void> {
-    await this.driver.navigate().back();
+    await this.#traverseHistory(-1);
   }
 
   /**
    * Navigate forward in history
    */
   async navigateForward(): Promise<void> {
-    await this.driver.navigate().forward();
+    await this.#traverseHistory(1);
   }
 
   /**
@@ -244,6 +253,112 @@ export class PageManagement {
         this.setCurrentContextId(next);
         this.cachedSelectedIdx = 0;
       }
+    }
+  }
+
+  async #traverseHistory(delta: number): Promise<void> {
+    const contextId = this.getCurrentContextId();
+    if (!contextId) {
+      throw new Error(`Cannot navigate: no browsing context ID`);
+    }
+
+    const target = { context: contextId, sandbox: PAGES_SANDBOX };
+    const token = randomUUID();
+    const tokenString = JSON.stringify(token);
+
+    // Tag the current document with a unique token, and set the same token in a
+    // popstate listener. After the traversal, a missing marker means another
+    // document is active.
+    const markerSet = await this.#evaluateWithTimeout(
+      target,
+      `window.${HISTORY_MARKER} = ${tokenString};
+      window.addEventListener('popstate', () => { window.${HISTORY_POPSTATE} = ${tokenString}; }, { once: true });
+      true`
+    );
+
+    try {
+      await this.sendBiDiCommand('browsingContext.traverseHistory', {
+        context: contextId,
+        delta,
+      });
+    } catch (error) {
+      // Firefox gives up after 1s when the target page is slow to respond, but
+      // the traversal still goes on. Keep waiting for it below.
+      if (!(error instanceof Error) || !error.message.includes('History was not updated')) {
+        throw error;
+      }
+      logDebug(`Ignoring traverseHistory timeout in ${contextId}: ${error.message}`);
+    }
+
+    if (markerSet !== true) {
+      return;
+    }
+
+    // Note: WebDriverBiDi.traverseHistory does not match WebDriver Classic's
+    // wait logic for the Back/Forward commands, and does not expose enough
+    // events to emulate it either. See w3c/webdriver-bidi#1019 and
+    // w3c/webdriver-bidi#1092.
+    const status = `(() => {
+      // The marker is still there: the traversal stays in the same document
+      // (pushState or fragment entries), and is done when popstate fired.
+      if (window.${HISTORY_MARKER} === ${tokenString}) {
+        return window.${HISTORY_POPSTATE} === ${tokenString} ? 'done' : 'pending';
+      }
+
+      // Another document is active. Error pages never reach "complete": like
+      // Classic, they end the wait with an error.
+      if (/^about:[^?]*error\\?/.test(document.documentURI)) {
+        return 'error';
+      }
+
+      // about:blocked (Safe Browsing) never reaches "complete" either: like
+      // Classic, it ends the wait normally.
+      if (document.documentURI.startsWith('about:blocked?')) {
+        return 'done';
+      }
+
+      return document.readyState === 'complete' ? 'done' : 'pending';
+    })()`;
+    const deadline = Date.now() + HISTORY_WAIT_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      const result = await this.#evaluateWithTimeout(target, status);
+      if (result === 'error') {
+        const uri = await this.#evaluateWithTimeout(target, 'document.documentURI');
+        throw new Error(`Reached error page: ${String(uri)}`);
+      }
+      if (result === 'done') {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, HISTORY_POLL_INTERVAL_MS));
+    }
+
+    // Bug 2081596: Tell the agent in the tool response that the traversal could
+    // not be confirmed, so it can check the page state itself.
+    logDebug(`Timed out waiting for history traversal in ${contextId}`);
+  }
+
+  /**
+   * Evaluate an expression and return its primitive value, or null when the
+   * evaluation fails or does not answer within HISTORY_EVALUATE_TIMEOUT_MS.
+   * Bug 2084899: Replace with a timeout option on sendCommand.
+   */
+  async #evaluateWithTimeout(target: Script.ContextTarget, expression: string): Promise<unknown> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const result = await Promise.race([
+        this.sendBiDiCommand('script.evaluate', { expression, awaitPromise: false, target }),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Timed out')), HISTORY_EVALUATE_TIMEOUT_MS);
+        }),
+      ]);
+      if (result.type === 'success' && 'value' in result.result) {
+        return result.result.value;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
     }
   }
 }
