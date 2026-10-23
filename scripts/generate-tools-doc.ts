@@ -4,7 +4,7 @@
  * The doc is fully derived from the ToolDefinition objects (names, descriptions,
  * input schemas) and the preset table, so it cannot drift from the registry.
  * Run `npm run docs:tools` after changing tool definitions; `--check` exits
- * non-zero when the checked-in file is stale (used by tests/tools/doc.test.ts).
+ * non-zero when the checked-in file is stale (used by tests/unit/tools/doc.test.ts).
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';

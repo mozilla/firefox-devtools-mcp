@@ -7,7 +7,7 @@
  * presets it belongs to) is all that is needed to expose it.
  *
  * `registry.ts` holds the logic that reads this catalog. A test
- * (tests/tools/registry.test.ts) fails if a tool file declares a module that is
+ * (tests/unit/tools/registry.test.ts) fails if a tool file declares a module that is
  * not listed here, so a forgotten registration is caught rather than silently
  * dropping the tools.
  */

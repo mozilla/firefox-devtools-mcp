@@ -153,42 +153,6 @@ tasks:
     cmds:
       - node scripts/setup-mcp-config.js
 
-  script:test-dialog:
-    desc: Test dialog handling (alert, confirm, prompt)
-    deps: [build]
-    cmds:
-      - node scripts/test-dialog.js
-
-  script:test-lifecycle:
-    desc: Test lifecycle hooks (beforeNavigate, afterNavigate, etc.)
-    deps: [build]
-    cmds:
-      - node scripts/test-lifecycle-hooks.js
-
-  script:test-input:
-    desc: Test input tools (click, type, keyboard, etc.)
-    deps: [build]
-    cmds:
-      - node scripts/test-input-tools.js
-
-  script:test-screenshot:
-    desc: Test screenshot functionality
-    deps: [build]
-    cmds:
-      - node scripts/test-screenshot.js
-
-  script:test-bidi:
-    desc: Test BiDi and DevTools integration
-    deps: [build]
-    cmds:
-      - node scripts/test-bidi-devtools.js
-
-  script:test-console:
-    desc: Test console message capturing (log, warn, error, etc.)
-    deps: [build]
-    cmds:
-      - node scripts/test-console.js
-
   demo:
     desc: Start demo server for testing MCP tools (http://localhost:3456)
     cmds:
