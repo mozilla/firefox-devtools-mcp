@@ -236,11 +236,23 @@ npx @mozilla/firefox-devtools-mcp --connect-existing --marionette-port 2828
 
 Both flags are required because the MCP uses both WebDriver Classic (`--marionette`) and WebDriver BiDi (`--remote-debugging-port`). If Firefox is only started with `--marionette`, the MCP server fails to connect and asks you to restart Firefox with both flags.
 
+If Firefox is already running with the same profile, the command above only opens a new window in that instance: the flags are ignored, so neither Marionette nor the Remote Agent starts.
+
+To keep your everyday Firefox running without Marionette, give the MCP server its own profile. Firefox runs one process per profile, so both instances run side by side, and the agent only reaches what you sign in to in that profile:
+
+```bash
+# Once: create a dedicated profile
+firefox -CreateProfile firefox-mcp
+
+# Start it with Marionette and the Remote Agent, next to your everyday Firefox
+firefox -P firefox-mcp --marionette --remote-debugging-port
+```
+
 > **Warning:** Do not leave Marionette enabled during normal browsing. It sets
 > `navigator.webdriver = true` and changes other browser fingerprint signals,
 > which can trigger bot detection on sites protected by Cloudflare, Akamai, etc.
 > Only enable Marionette when you need MCP automation, then restart Firefox
-> normally afterward.
+> normally afterward, or run it in a dedicated profile as shown above.
 
 ## Tool overview
 
