@@ -563,6 +563,10 @@ export class FirefoxClient {
   // ============================================================================
 
   async close(): Promise<void> {
+    // Firefox outlives the session only in connect-existing mode
+    if (this.pages && this.core.getOptions().connectExisting) {
+      await this.pages.resetViewports();
+    }
     try {
       await this.core.close();
     } catch (error) {

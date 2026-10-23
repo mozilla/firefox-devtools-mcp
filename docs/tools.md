@@ -427,7 +427,7 @@ Parameters:
 
 ### `set_viewport_size`
 
-Set viewport dimensions in pixels.
+Set viewport dimensions in pixels. Applies to the selected tab only.
 
 Parameters:
 

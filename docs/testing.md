@@ -36,7 +36,6 @@ All tests are self-contained (no ordering dependencies) and use active polling
 
 - **Self-contained**: each test navigates to its own page, no inter-test dependencies
 - **Active polling**: async events (console, network) use `waitFor` instead of fixed sleeps
-- **Relative assertions**: viewport tests assert relative change, not exact pixel values (platform-dependent)
 - **Isolated Firefox instances**: each `describe` block gets its own headless Firefox
 
 ## Known issues

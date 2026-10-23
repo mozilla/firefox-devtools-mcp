@@ -11,6 +11,8 @@ const COMMON_URL_SCHEMES = ['http:', 'https:', 'data:', 'blob:', 'file:'];
 const PAGES_SANDBOX = 'page-management';
 // script.evaluate cannot answer while the content process is busy, so a hung tab must not block the whole tab list
 const TITLE_TIMEOUT_MS = 1000;
+// Bug 1901211: setViewport never resolves when the page is zoomed
+const VIEWPORT_TIMEOUT_MS = 5000;
 
 /**
  * Check if a URL uses a common scheme that supports load events.
@@ -37,6 +39,8 @@ export function isReadinessState(value: unknown): value is BrowsingContext.Readi
 }
 
 export class PageManagement {
+  private resizedContexts = new Set<string>();
+
   constructor(
     private driver: WebDriver,
     private getCurrentContextId: () => string | null,
@@ -93,7 +97,61 @@ export class PageManagement {
    * Set viewport size
    */
   async setViewportSize(width: number, height: number): Promise<void> {
-    await this.driver.manage().window().setRect({ width, height });
+    const contextId = this.getCurrentContextId();
+    if (!contextId) {
+      throw new Error(`Cannot set viewport: no browsing context ID`);
+    }
+
+    this.resizedContexts.add(contextId);
+    await this.setViewport(contextId, { width, height });
+  }
+
+  /**
+   * Remove the viewport overrides set by setViewportSize. Firefox keeps them
+   * after the session ends, so a Firefox that outlives the session would stay
+   * at the fixed size.
+   */
+  async resetViewports(): Promise<void> {
+    const contexts = [...this.resizedContexts];
+    this.resizedContexts.clear();
+    await Promise.all(
+      contexts.map(async (contextId) => {
+        try {
+          await this.setViewport(contextId, null);
+        } catch (error) {
+          // Closed tabs lose their override anyway
+          logDebug(
+            `Failed to reset viewport of ${contextId}: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      })
+    );
+  }
+
+  private async setViewport(
+    contextId: string,
+    viewport: BrowsingContext.SetViewportParameters['viewport']
+  ): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        this.sendBiDiCommand('browsingContext.setViewport', { context: contextId, viewport }),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `Firefox did not confirm the new viewport size within ${VIEWPORT_TIMEOUT_MS}ms. ` +
+                    'The viewport was probably resized, but Firefox cannot confirm it when the page is zoomed.'
+                )
+              ),
+            VIEWPORT_TIMEOUT_MS
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /**

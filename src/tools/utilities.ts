@@ -59,7 +59,7 @@ export const navigateHistoryTool = {
 // Tool definitions - Viewport
 export const setViewportSizeTool = {
   name: 'set_viewport_size',
-  description: 'Set viewport dimensions in pixels.',
+  description: 'Set viewport dimensions in pixels. Applies to the selected tab only.',
   annotations: {
     readOnlyHint: false,
   },

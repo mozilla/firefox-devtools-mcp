@@ -257,26 +257,14 @@ describe('E2E Scenario: Viewport Resize', () => {
     await closeFirefox(firefox);
   });
 
-  it('should resize viewport and verify dimensions change', async () => {
-    // setViewportSize calls window().setRect() which sets the outer window size.
-    // innerWidth/innerHeight may differ due to browser chrome/toolbar offset,
-    // so we assert relative change rather than exact pixel values.
-
+  it('should resize viewport to the exact dimensions', async () => {
     await firefox.setViewportSize(800, 600);
-    await waitForPageLoad(200);
-
-    const smallWidth = (await firefox.evaluate('window.innerWidth')) as number;
-    const smallHeight = (await firefox.evaluate('window.innerHeight')) as number;
+    expect(await firefox.evaluate('window.innerWidth')).toBe(800);
+    expect(await firefox.evaluate('window.innerHeight')).toBe(600);
 
     await firefox.setViewportSize(1200, 900);
-    await waitForPageLoad(200);
-
-    const largeWidth = (await firefox.evaluate('window.innerWidth')) as number;
-    const largeHeight = (await firefox.evaluate('window.innerHeight')) as number;
-
-    // Viewport should have grown in both dimensions
-    expect(largeWidth).toBeGreaterThan(smallWidth);
-    expect(largeHeight).toBeGreaterThan(smallHeight);
+    expect(await firefox.evaluate('window.innerWidth')).toBe(1200);
+    expect(await firefox.evaluate('window.innerHeight')).toBe(900);
   }, 15000);
 });
 
