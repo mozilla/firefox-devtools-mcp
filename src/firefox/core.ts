@@ -220,6 +220,9 @@ const BINARY_NOT_FOUND_HINT =
   'Unable to detect Firefox binary automatically, please provide the full path via ' +
   '--firefox-path';
 
+/** Leave prompts open until accept_dialog or dismiss_dialog handles them. */
+const UNHANDLED_PROMPT_BEHAVIOR = 'ignore';
+
 export class FirefoxCore {
   private currentContextId: string | null = null;
   private detectedBinaryPath: string | undefined;
@@ -284,6 +287,7 @@ export class FirefoxCore {
 
       const caps = new Capabilities();
       caps.set('webSocketUrl', true);
+      caps.set('unhandledPromptBehavior', UNHANDLED_PROMPT_BEHAVIOR);
       caps.set('moz:firefoxOptions', mozOptions);
       if (this.options.acceptInsecureCerts) {
         caps.set('acceptInsecureCerts', true);
@@ -362,6 +366,7 @@ export class FirefoxCore {
       // session in a locked state that blocks reconnection.
       const caps = new Capabilities();
       caps.set('webSocketUrl', true);
+      caps.set('unhandledPromptBehavior', UNHANDLED_PROMPT_BEHAVIOR);
 
       // createSession() returns synchronously; the session is established async under the hood.
       // Passing geckodriverPath to ServiceBuilder prevents getBinaryPaths() from running,
@@ -407,6 +412,7 @@ export class FirefoxCore {
       // Standard path: launch a new Firefox via selenium-webdriver
       const firefoxOptions = new firefox.Options();
       firefoxOptions.enableBidi();
+      firefoxOptions.setAlertBehavior(UNHANDLED_PROMPT_BEHAVIOR);
 
       if (this.options.headless) {
         firefoxOptions.addArguments('-headless');

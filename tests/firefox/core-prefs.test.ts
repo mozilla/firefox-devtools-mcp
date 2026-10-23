@@ -27,6 +27,7 @@ describe('FirefoxCore prefs via firefoxOptions', () => {
       default: {
         Options: class {
           enableBidi = vi.fn();
+          setAlertBehavior = vi.fn();
           addArguments = vi.fn();
           setBinary = vi.fn();
           setAcceptInsecureCerts = vi.fn();

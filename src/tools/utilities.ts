@@ -92,10 +92,8 @@ export const handleAcceptDialog = defineToolHandler(async function handleAcceptD
     await firefox.acceptDialog(promptText);
     return successResponse(promptText ? `Accepted: "${promptText}"` : 'Accepted');
   } catch (error) {
-    const errorMsg = (error as Error).message;
-
     // Concise error for no active dialog
-    if (errorMsg.includes('no such alert') || errorMsg.includes('No dialog')) {
+    if ((error as Error).name === 'NoSuchAlertError') {
       throw new Error('No active dialog');
     }
 
@@ -113,10 +111,8 @@ export const handleDismissDialog = defineToolHandler(async function handleDismis
     await firefox.dismissDialog();
     return successResponse('Dismissed');
   } catch (error) {
-    const errorMsg = (error as Error).message;
-
     // Concise error for no active dialog
-    if (errorMsg.includes('no such alert') || errorMsg.includes('No dialog')) {
+    if ((error as Error).name === 'NoSuchAlertError') {
       throw new Error('No active dialog');
     }
 

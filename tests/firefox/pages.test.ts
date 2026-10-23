@@ -464,4 +464,54 @@ describe('PageManagement', () => {
       expect(driver.close).not.toHaveBeenCalled();
     });
   });
+
+  describe('dialogs', () => {
+    function createDialogMocks(alert: Record<string, unknown>) {
+      const driver = {
+        switchTo: vi.fn(() => ({ alert: vi.fn().mockResolvedValue(alert) })),
+      } as any;
+      const pages = new PageManagement(driver, vi.fn(), vi.fn(), vi.fn());
+      return { pages, driver };
+    }
+
+    function noSuchAlertError(): Error {
+      const error = new Error('');
+      error.name = 'NoSuchAlertError';
+      return error;
+    }
+
+    it('types the prompt text before accepting', async () => {
+      const alert = { sendKeys: vi.fn(), accept: vi.fn(), dismiss: vi.fn() };
+      const { pages } = createDialogMocks(alert);
+
+      await pages.acceptDialog('hello');
+
+      expect(alert.sendKeys).toHaveBeenCalledWith('hello');
+      expect(alert.accept).toHaveBeenCalledOnce();
+    });
+
+    it('keeps NoSuchAlertError unchanged when there is no dialog', async () => {
+      const error = noSuchAlertError();
+      const alert = {
+        sendKeys: vi.fn(),
+        accept: vi.fn().mockRejectedValue(error),
+        dismiss: vi.fn().mockRejectedValue(error),
+      };
+      const { pages } = createDialogMocks(alert);
+
+      await expect(pages.acceptDialog()).rejects.toBe(error);
+      await expect(pages.dismissDialog()).rejects.toBe(error);
+    });
+
+    it('wraps other errors with the action that failed', async () => {
+      const alert = {
+        accept: vi.fn().mockRejectedValue(new Error('boom')),
+        dismiss: vi.fn().mockRejectedValue(new Error('bang')),
+      };
+      const { pages } = createDialogMocks(alert);
+
+      await expect(pages.acceptDialog()).rejects.toThrow('Failed to accept dialog: boom');
+      await expect(pages.dismissDialog()).rejects.toThrow('Failed to dismiss dialog: bang');
+    });
+  });
 });
