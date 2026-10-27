@@ -195,6 +195,7 @@ export const handleProfilerStop = defineToolHandler(
 export const module = defineModule({
   name: 'profiler',
   description: 'Start, stop, and query the performance profiler.',
+  unavailableInRestrictedSession: true,
   tools: [
     [profilerIsActiveTool, handleProfilerIsActive],
     [profilerStartTool, handleProfilerStart],

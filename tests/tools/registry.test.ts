@@ -258,6 +258,32 @@ describe('Tool registry', () => {
       expect(handlers.size).toBe(toolDefinitions.length);
     });
 
+    it('lists the tools to hide in a session restricted to a container', () => {
+      const { unavailableInRestrictedSession } = buildToolset({
+        tools: ['pages', 'network', 'webextension', 'print', 'profiler', 'debugging', 'prefs'],
+        allowPrivileged: true,
+      });
+      expect([...unavailableInRestrictedSession].sort()).toEqual(
+        [
+          'enable_debugger',
+          'get_firefox_prefs',
+          'get_logpoint_results',
+          'get_script_source',
+          'install_extension',
+          'list_scripts',
+          'print_page',
+          'profiler_is_active',
+          'profiler_start',
+          'profiler_stop',
+          'remove_logpoint',
+          'set_firefox_prefs',
+          'set_logpoint',
+          'set_network_cache',
+          'uninstall_extension',
+        ].sort()
+      );
+    });
+
     it('builds no tools when the selection resolves to nothing', () => {
       const { toolDefinitions, handlers } = buildToolset({ tools: ['bogus'] });
       expect(toolDefinitions).toEqual([]);

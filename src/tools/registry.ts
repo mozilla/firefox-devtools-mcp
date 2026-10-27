@@ -24,6 +24,8 @@ export interface Toolset {
   warnings: string[];
   toolDefinitions: ToolDefinition[];
   handlers: Map<string, ToolHandler>;
+  /** Tools to hide when the session is restricted to a container. */
+  unavailableInRestrictedSession: Set<string>;
   instructions: string;
 }
 
@@ -42,9 +44,16 @@ const mozBuildModuleNames = new Set(
  */
 export function buildToolset(options: ToolsetOptions): Toolset {
   const { moduleNames, warnings } = selectModules(options);
-  const { toolDefinitions, handlers } = collectTools(moduleNames);
+  const { toolDefinitions, handlers, unavailableInRestrictedSession } = collectTools(moduleNames);
   const instructions = buildInstructions(moduleNames, new Set(handlers.keys()));
-  return { moduleNames, warnings, toolDefinitions, handlers, instructions };
+  return {
+    moduleNames,
+    warnings,
+    toolDefinitions,
+    handlers,
+    unavailableInRestrictedSession,
+    instructions,
+  };
 }
 
 /**
@@ -140,21 +149,26 @@ function selectModules(options: ToolsetOptions): { moduleNames: string[]; warnin
 function collectTools(moduleNames: string[]): {
   toolDefinitions: ToolDefinition[];
   handlers: Map<string, ToolHandler>;
+  unavailableInRestrictedSession: Set<string>;
 } {
   const byName = new Map(MODULES.map((m) => [m.name, m]));
   const toolDefinitions: ToolDefinition[] = [];
   const handlers = new Map<string, ToolHandler>();
+  const unavailableInRestrictedSession = new Set<string>();
 
   for (const name of moduleNames) {
     const module = byName.get(name);
     if (!module) {
       continue;
     }
-    for (const { definition, handler } of module.tools) {
-      toolDefinitions.push(definition);
-      handlers.set(definition.name, handler);
+    for (const entry of module.tools) {
+      toolDefinitions.push(entry.definition);
+      handlers.set(entry.definition.name, entry.handler);
+      if (entry.unavailableInRestrictedSession) {
+        unavailableInRestrictedSession.add(entry.definition.name);
+      }
     }
   }
 
-  return { toolDefinitions, handlers };
+  return { toolDefinitions, handlers, unavailableInRestrictedSession };
 }

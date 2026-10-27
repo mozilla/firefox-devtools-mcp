@@ -8,6 +8,7 @@ import type {
   EmptyResult,
   Network,
   Script,
+  Session,
 } from 'webdriver-bidi-protocol';
 import { logDebug } from '../utils/logger.js';
 import { remoteValueToNative } from '../utils/remote-value.js';
@@ -96,17 +97,49 @@ export class BiDiFacade extends EventEmitter<FirefoxEventMap> {
   private listening = false;
   private nextCommandId = 1;
 
-  constructor(private readonly driver: WebDriver) {
+  /**
+   * @param userContext - User context the session is restricted to, or null
+   *   for an unrestricted session.
+   */
+  constructor(
+    private readonly driver: WebDriver,
+    private readonly userContext: string | null = null
+  ) {
     super();
   }
 
-  async subscribe(events: FirefoxEventName | FirefoxEventName[]) {
+  /**
+   * User context the session is restricted to, or null for an unrestricted session.
+   */
+  getRestrictedUserContext(): string | null {
+    return this.userContext;
+  }
+
+  /**
+   * Subscribe to events, and return the subscription id.
+   * A restricted session only accepts subscriptions to its user context.
+   */
+  async subscribe(
+    events: FirefoxEventName | [FirefoxEventName, ...FirefoxEventName[]]
+  ): Promise<Session.Subscription> {
     const bidi = await this.driver.getBidi();
     if (!this.listening) {
       this.listenForEvents(bidi.socket);
       this.listening = true;
     }
-    await bidi.subscribe(events);
+    const result = await this.sendCommand('session.subscribe', {
+      events: typeof events === 'string' ? [events] : events,
+      ...(this.userContext ? { userContexts: [this.userContext] } : {}),
+    });
+    return result.subscription;
+  }
+
+  /**
+   * Unsubscribe by id: unsubscribing by event names fails for subscriptions
+   * to a user context.
+   */
+  async unsubscribe(subscription: Session.Subscription): Promise<void> {
+    await this.sendCommand('session.unsubscribe', { subscriptions: [subscription] });
   }
 
   async sendCommand<T extends keyof FirefoxCommands>(
@@ -128,7 +161,14 @@ export class BiDiFacade extends EventEmitter<FirefoxEventMap> {
           const payload = JSON.parse(data.toString());
           if (payload.id === id) {
             ws.off('message', messageHandler);
-            if (payload.error) {
+            if (payload.error === 'unsupported operation' && this.userContext) {
+              reject(
+                new Error(
+                  `Not available when connected to an existing Firefox: ${method} is not ` +
+                    'supported in a session restricted to a container.'
+                )
+              );
+            } else if (payload.error) {
               const details = payload.message ? `: ${payload.message}` : '';
               reject(new Error(`BiDi error: ${JSON.stringify(payload.error)}${details}`));
             } else {

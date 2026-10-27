@@ -77,6 +77,10 @@ describe('getFirefox() reconnect behavior', () => {
           return null;
         }
 
+        getRestrictedUserContext(): null {
+          return null;
+        }
+
         getOptions(): Record<string, unknown> {
           return this.resolvedOptions;
         }
@@ -170,14 +174,21 @@ describe('FirefoxCore connect() BiDi endpoint check', () => {
   };
 
   // Builds a mock WebDriver whose getCapabilities() resolves to a
-  // Capabilities-like object backed by the given values.
-  const makeDriver = (capabilityValues: Record<string, unknown>) => ({
+  // Capabilities-like object backed by the given values, and whose BiDi
+  // connection answers every command with bidiResponse.
+  const makeDriver = (
+    capabilityValues: Record<string, unknown>,
+    bidiResponse: Record<string, unknown> = { result: {} }
+  ) => ({
     getCapabilities: vi.fn().mockResolvedValue({
       get: vi.fn((name: string) => capabilityValues[name]),
     }),
     getSession: vi.fn().mockResolvedValue({}),
     getWindowHandle: vi.fn().mockResolvedValue('mock-context-id'),
     get: vi.fn().mockResolvedValue(undefined),
+    getBidi: vi.fn().mockResolvedValue({
+      send: vi.fn().mockResolvedValue(bidiResponse),
+    }),
   });
 
   beforeEach(() => {
@@ -276,6 +287,57 @@ describe('FirefoxCore connect() BiDi endpoint check', () => {
     expect(mockCapabilitiesSet).toHaveBeenCalledWith('webSocketUrl', true);
     expect(core.getFirefoxVersion()).toBe('142.0');
     expect(core.getCurrentContextId()).toBe('mock-context-id');
+  });
+
+  it('should report the user context of a restricted session', async () => {
+    const driver = makeDriver(
+      {
+        browserVersion: '142.0',
+        webSocketUrl: 'ws://127.0.0.1:9222/session/abc',
+        'moz:userContext': 'container-id',
+      },
+      { type: 'error', error: 'unsupported operation' }
+    );
+    mockCreateSession.mockReturnValue(driver);
+
+    const { FirefoxCore } = await import('@/firefox/core.js');
+    const core = new FirefoxCore({ connectExisting: true, marionettePort: 2828 });
+
+    expect(core.getRestrictedUserContext()).toBeNull();
+    await core.connect();
+    expect(core.getRestrictedUserContext()).toBe('container-id');
+  });
+
+  it('should not report a user context that does not restrict the session', async () => {
+    const driver = makeDriver(
+      {
+        browserVersion: '142.0',
+        webSocketUrl: 'ws://127.0.0.1:9222/session/abc',
+        'moz:userContext': 'container-id',
+      },
+      { type: 'success', result: { userContexts: [{ userContext: 'default' }] } }
+    );
+    mockCreateSession.mockReturnValue(driver);
+
+    const { FirefoxCore } = await import('@/firefox/core.js');
+    const core = new FirefoxCore({ connectExisting: true, marionettePort: 2828 });
+
+    await core.connect();
+    expect(core.getRestrictedUserContext()).toBeNull();
+  });
+
+  it('should not report a user context for an unrestricted session', async () => {
+    const driver = makeDriver({
+      browserVersion: '142.0',
+      webSocketUrl: 'ws://127.0.0.1:9222/session/abc',
+    });
+    mockCreateSession.mockReturnValue(driver);
+
+    const { FirefoxCore } = await import('@/firefox/core.js');
+    const core = new FirefoxCore({ connectExisting: true, marionettePort: 2828 });
+
+    await core.connect();
+    expect(core.getRestrictedUserContext()).toBeNull();
   });
 
   it('should reuse the first resolved companion port instead of looking up a newer instance', async () => {

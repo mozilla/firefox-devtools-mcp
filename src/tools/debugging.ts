@@ -207,6 +207,7 @@ export const handleGetLogpointResults = defineToolHandler(
 export const module = defineModule({
   name: 'debugging',
   description: 'Inspect scripts and set logpoints (Firefox 153+).',
+  unavailableInRestrictedSession: true,
   tools: [
     [enableDebuggerTool, handleEnableDebugger],
     [listScriptsTool, handleListScripts],

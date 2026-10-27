@@ -351,6 +351,7 @@ export const handleListExtensions = defineToolHandler(
 export const module = defineModule({
   name: 'webextension',
   description: 'Install and uninstall web extensions.',
+  unavailableInRestrictedSession: true,
   tools: [
     [installExtensionTool, handleInstallExtension],
     [uninstallExtensionTool, handleUninstallExtension],

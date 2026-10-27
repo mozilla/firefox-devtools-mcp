@@ -194,6 +194,7 @@ export const module = defineModule({
   name: 'prefs',
   description: 'Get and set Firefox preferences.',
   privileged: true,
+  unavailableInRestrictedSession: true,
   tools: [
     [getFirefoxPrefsTool, handleGetFirefoxPrefs],
     [setFirefoxPrefsTool, handleSetFirefoxPrefs],
