@@ -24,8 +24,11 @@ Workflows
 
 - Publish (.github/workflows/publish.yml)
   - On GitHub Release published, or via manual dispatch: builds and publishes to npm with provenance.
-  - Two jobs: `publish` pushes both npm packages, then `publish-mcp-registry` syncs `server.json`
+  - Two jobs: `publish` pushes the npm packages, then `publish-mcp-registry` syncs `server.json`
     to the `package.json` version and publishes to the official MCP Registry.
+  - `publish` pushes three packages from the same build: `@mozilla/firefox-mcp`, the compat
+    package `@mozilla/firefox-devtools-mcp` (the name used before the rename, still published so
+    that existing setups keep updating) and the moz package.
   - Manual dispatch takes `npm-publish` (default false) and `mcp-publish` (default true), so a
     failed registry publish can be re-run on its own without npm rejecting an already published
     version. `release.yml` passes both explicitly when it triggers the workflow.
@@ -63,8 +66,9 @@ MCP Registry
 - `mcp-publisher` is pinned to a release and its sigstore bundle is checked with `cosign
   verify-blob` before it runs, since it executes in a job holding `id-token: write`. Bumping the
   pinned `VERSION` in the workflow is a deliberate step.
-- `scripts/generate-moz-package.mjs` and `scripts/build-mcpb.mjs` both strip `mcpName` from the
-  `package.json` they ship, since neither artifact is the package registered under that name.
+- `scripts/generate-moz-package.mjs`, `scripts/publish-compat-package.mjs` and
+  `scripts/build-mcpb.mjs` all strip `mcpName` from the `package.json` they ship, since none of
+  these artifacts is the package registered under that name.
 
 Client plugin manifests
 - `plugins/*/.claude-plugin/` (Claude), `gemini-extension.json` (Gemini CLI) and the root

@@ -46,6 +46,9 @@ jobs:
       - name: Publish main package
         run: npm publish --access public --provenance
 
+      - name: Publish compat package
+        run: npm run publish:compat -- --access public --provenance
+
       - name: Publish moz package
         run: npm run publish:moz -- --access public --provenance
 

@@ -19,6 +19,7 @@
     "build:all": "npm run build && npm run build:moz",
     "build:mcpb": "node scripts/build-mcpb.mjs",
     "publish:moz": "node scripts/publish-moz-package.mjs",
+    "publish:compat": "node scripts/publish-compat-package.mjs",
     "start": "node dist/index.js",
     "setup": "node scripts/setup-mcp-config.js",
     "docs:tools": "tsx scripts/generate-tools-doc.ts",
