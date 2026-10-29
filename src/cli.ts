@@ -229,7 +229,7 @@ export function parseArguments(version: string, argv = process.argv, includePriv
   const { enablePrivilegedContext: _, ...rest } = cliOptions;
   const options = includePrivileged ? cliOptions : rest;
   const yargsInstance = yargs(hideBin(argv))
-    .scriptName('npx firefox-devtools-mcp@latest')
+    .scriptName('npx @mozilla/firefox-mcp@latest')
     .options(options)
     .example([
       [

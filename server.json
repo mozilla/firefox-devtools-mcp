@@ -1,19 +1,19 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.mozilla/firefox-devtools-mcp",
-  "title": "Firefox DevTools MCP",
+  "name": "io.github.mozilla/firefox-mcp",
+  "title": "Firefox MCP",
   "description": "Control and debug Firefox: navigate, fill forms, inspect network and console, profile.",
   "version": "0.10.7",
-  "websiteUrl": "https://github.com/mozilla/firefox-devtools-mcp",
+  "websiteUrl": "https://github.com/mozilla/firefox-mcp",
   "repository": {
-    "url": "https://github.com/mozilla/firefox-devtools-mcp",
+    "url": "https://github.com/mozilla/firefox-mcp",
     "source": "github"
   },
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
-      "identifier": "@mozilla/firefox-devtools-mcp",
+      "identifier": "@mozilla/firefox-mcp",
       "version": "0.10.7",
       "transport": {
         "type": "stdio"

@@ -57,7 +57,7 @@ MCP Registry
   `packages[].version` in step with `package.json`, and the publish job syncs them again in its
   own checkout so a release cannot register a mismatched version.
 - The registry proves package ownership through the `mcpName` field in `package.json`, which must
-  keep matching the `name` in `server.json` (`io.github.mozilla/firefox-devtools-mcp`).
+  keep matching the `name` in `server.json` (`io.github.mozilla/firefox-mcp`).
 - The `io.github.mozilla/*` namespace comes from owning the `mozilla` GitHub organization, so no
   DNS verification is involved.
 - `mcp-publisher` is pinned to a release and its sigstore bundle is checked with `cosign
