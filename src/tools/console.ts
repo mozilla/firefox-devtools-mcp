@@ -53,7 +53,7 @@ export const listConsoleMessagesTool = {
       saveTo: {
         type: ['boolean', 'string'],
         description:
-          'Save matching messages to a file in full (untruncated) instead of returning them inline. Saves all matching messages by default; pass an explicit limit to cap how many are saved. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.',
+          'Save matching messages to a file in full (untruncated) instead of returning them inline. Saves all matching messages by default; pass an explicit limit to cap how many are saved. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.',
       },
       preview: {
         type: 'number',

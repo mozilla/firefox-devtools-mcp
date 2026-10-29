@@ -126,7 +126,7 @@ describe('Screenshot Tools', () => {
       expect(result.isError).toBeUndefined();
       const text = (result.content[0] as { type: 'text'; text: string }).text;
       expect(text).toContain('Screenshot saved to:');
-      expect(text).toContain(join(MOCK_HOME, '.firefox-devtools-mcp', 'output'));
+      expect(text).toContain(join(MOCK_HOME, '.firefox-mcp', 'output'));
       expect(text).toContain('screenshot-');
     });
 

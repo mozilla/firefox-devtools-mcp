@@ -51,7 +51,7 @@ export const evaluateScriptTool = {
       saveTo: {
         type: ['boolean', 'string'],
         description:
-          'Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.',
+          'Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.',
       },
       preview: {
         type: 'number',

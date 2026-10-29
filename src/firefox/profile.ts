@@ -6,13 +6,17 @@
  * used directly when passed as the profile path.
  */
 
-import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, copyFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { log } from '../utils/logger.js';
 
-export const MCP_PROFILE_DIR_NAME = 'firefox_devtools_mcp_profile';
+export const MCP_PROFILE_DIR_NAME = 'firefox_mcp_profile';
 
-export const MCP_PROFILE_MARKER = '.firefox-devtools-mcp';
+export const MCP_PROFILE_MARKER = '.firefox-mcp';
+
+// Names used before the rename to firefox-mcp.
+const LEGACY_MCP_PROFILE_DIR_NAME = 'firefox_devtools_mcp_profile';
+const LEGACY_MCP_PROFILE_MARKER = '.firefox-devtools-mcp';
 
 /**
  * Files that are characteristic of an existing Firefox profile directory.
@@ -28,7 +32,31 @@ export function isFirefoxProfile(dir: string): boolean {
 }
 
 export function isMcpProfile(dir: string): boolean {
-  return existsSync(join(dir, MCP_PROFILE_MARKER));
+  return (
+    existsSync(join(dir, MCP_PROFILE_MARKER)) || existsSync(join(dir, LEGACY_MCP_PROFILE_MARKER))
+  );
+}
+
+/**
+ * Returns the MCP profile folder inside `parentPath`, after renaming a legacy
+ * one. When the rename fails, the legacy folder stays in use.
+ */
+function mcpProfileDir(parentPath: string): string {
+  const path = join(parentPath, MCP_PROFILE_DIR_NAME);
+  const legacyPath = join(parentPath, LEGACY_MCP_PROFILE_DIR_NAME);
+  if (existsSync(path) || !existsSync(legacyPath)) {
+    return path;
+  }
+  try {
+    renameSync(legacyPath, path);
+    log(`Moved MCP profile ${legacyPath} to ${path}`);
+    return path;
+  } catch (error) {
+    log(
+      `Could not move MCP profile ${legacyPath} to ${path}: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return legacyPath;
+  }
 }
 
 export interface ResolvedProfile {
@@ -42,7 +70,8 @@ export interface ResolvedProfile {
  *
  * Given `parentPath`, the function:
  * 1. Returns `parentPath` unchanged when it is a marked MCP profile.
- * 2. Otherwise appends `firefox_devtools_mcp_profile` to form the profile path.
+ * 2. Otherwise appends `firefox_mcp_profile` to form the profile path, after
+ *    renaming a legacy `firefox_devtools_mcp_profile` folder.
  * 3. Warns when `parentPath` itself looks like a real Firefox profile.
  * 4. Creates the subfolder on first use.
  * 5. On first creation, copies `prefs.js` from the parent into the new profile
@@ -56,7 +85,7 @@ export function resolveProfilePath(parentPath: string): ResolvedProfile {
     return { path: parentPath, warning: null };
   }
 
-  const mcpProfilePath = join(parentPath, MCP_PROFILE_DIR_NAME);
+  const mcpProfilePath = mcpProfileDir(parentPath);
 
   let warning: string | null = null;
   if (isFirefoxProfile(parentPath)) {
@@ -84,8 +113,8 @@ export function resolveProfilePath(parentPath: string): ResolvedProfile {
     }
   }
 
-  if (!isMcpProfile(mcpProfilePath)) {
-    const markerPath = join(mcpProfilePath, MCP_PROFILE_MARKER);
+  const markerPath = join(mcpProfilePath, MCP_PROFILE_MARKER);
+  if (!existsSync(markerPath)) {
     try {
       writeFileSync(markerPath, '');
     } catch (error) {

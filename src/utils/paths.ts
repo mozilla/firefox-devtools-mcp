@@ -7,12 +7,54 @@
  */
 
 import { createHash } from 'node:crypto';
+import { existsSync, renameSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { log } from './logger.js';
 
-/** Root of the server's own data. Not writable through `saveTo` as a whole. */
-export function homeRoot(): string {
+function currentRoot(): string {
+  return join(homedir(), '.firefox-mcp');
+}
+
+/**
+ * Data root used before the rename to firefox-mcp. Firefox Nightly still writes
+ * Marionette port files to its `instances` folder.
+ */
+export function legacyHomeRoot(): string {
   return join(homedir(), '.firefox-devtools-mcp');
+}
+
+/**
+ * Root of the server's own data. Not writable through `saveTo` as a whole.
+ * Stays on the legacy root while `migrateHomeRoot` has not moved it.
+ */
+export function homeRoot(): string {
+  const root = currentRoot();
+  if (!existsSync(root) && existsSync(legacyHomeRoot())) {
+    return legacyHomeRoot();
+  }
+  return root;
+}
+
+/**
+ * Moves the legacy data root to its current name. When the move fails, for
+ * example on Windows while Firefox holds a file open, the legacy root stays in
+ * use and the move is tried again on the next start.
+ */
+export function migrateHomeRoot(): void {
+  const root = currentRoot();
+  const legacyRoot = legacyHomeRoot();
+  if (existsSync(root) || !existsSync(legacyRoot)) {
+    return;
+  }
+  try {
+    renameSync(legacyRoot, root);
+    log(`Moved ${legacyRoot} to ${root}`);
+  } catch (error) {
+    log(
+      `Could not move ${legacyRoot} to ${root}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 }
 
 /** Destination for generated `saveTo` files. */
@@ -28,6 +70,12 @@ export function logsDir(): string {
 /** `<pid>.port` files used to look up the Marionette port. */
 export function instancesDir(): string {
   return join(homeRoot(), 'instances');
+}
+
+/** Every folder that may hold `<pid>.port` files, including the legacy one Firefox writes to. */
+export function instancesDirs(): string[] {
+  const legacyDir = join(legacyHomeRoot(), 'instances');
+  return instancesDir() === legacyDir ? [legacyDir] : [instancesDir(), legacyDir];
 }
 
 /**

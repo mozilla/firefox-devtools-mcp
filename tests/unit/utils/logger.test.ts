@@ -30,16 +30,12 @@ describe('Logger Utilities', () => {
   describe('log', () => {
     it('should log messages with prefix', () => {
       log('Test message');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-devtools-mcp] Test message');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-mcp] Test message');
     });
 
     it('should log messages with additional arguments', () => {
       log('Test message', 'arg1', 123);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[firefox-devtools-mcp] Test message',
-        'arg1',
-        123
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-mcp] Test message', 'arg1', 123);
     });
   });
 
@@ -49,7 +45,7 @@ describe('Logger Utilities', () => {
       logError('Something failed', error);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[firefox-devtools-mcp] ERROR: Something failed',
+        '[firefox-mcp] ERROR: Something failed',
         'Test error'
       );
     });
@@ -67,17 +63,16 @@ describe('Logger Utilities', () => {
     it('should log non-Error objects', () => {
       logError('Something failed', { code: 500 });
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[firefox-devtools-mcp] ERROR: Something failed',
-        { code: 500 }
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-mcp] ERROR: Something failed', {
+        code: 500,
+      });
     });
 
     it('should log without error object', () => {
       logError('Something failed');
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[firefox-devtools-mcp] ERROR: Something failed',
+        '[firefox-mcp] ERROR: Something failed',
         undefined
       );
     });
@@ -93,21 +88,28 @@ describe('Logger Utilities', () => {
       process.env.DEBUG = '*';
       logDebug('Debug message');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-devtools-mcp] DEBUG: Debug message');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-mcp] DEBUG: Debug message');
+    });
+
+    it('should log when DEBUG includes firefox-mcp', () => {
+      process.env.DEBUG = 'firefox-mcp';
+      logDebug('Debug message');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-mcp] DEBUG: Debug message');
     });
 
     it('should log when DEBUG includes firefox-devtools', () => {
       process.env.DEBUG = 'firefox-devtools';
       logDebug('Debug message');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-devtools-mcp] DEBUG: Debug message');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-mcp] DEBUG: Debug message');
     });
 
     it('should log when DEBUG includes firefox-devtools with other modules', () => {
       process.env.DEBUG = 'app,firefox-devtools,other';
       logDebug('Debug message');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-devtools-mcp] DEBUG: Debug message');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('[firefox-mcp] DEBUG: Debug message');
     });
 
     it('should not log when DEBUG does not include firefox-devtools', () => {
@@ -122,7 +124,7 @@ describe('Logger Utilities', () => {
       logDebug('Debug message', 'arg1', 123);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[firefox-devtools-mcp] DEBUG: Debug message',
+        '[firefox-mcp] DEBUG: Debug message',
         'arg1',
         123
       );
@@ -147,7 +149,7 @@ describe('Logger Utilities', () => {
       log('hello', 'world');
       await flushLogs();
       const content = readFileSync(tmpFile, 'utf8');
-      expect(content).toMatch(/^\d{4}-\d{2}-\d{2}T.*\[firefox-devtools-mcp\] hello world\n$/);
+      expect(content).toMatch(/^\d{4}-\d{2}-\d{2}T.*\[firefox-mcp\] hello world\n$/);
     });
 
     it('should write error with stack to file', async () => {
@@ -156,7 +158,7 @@ describe('Logger Utilities', () => {
       logError('failed', err);
       await flushLogs();
       const content = readFileSync(tmpFile, 'utf8');
-      expect(content).toContain('[firefox-devtools-mcp] ERROR: failed boom');
+      expect(content).toContain('[firefox-mcp] ERROR: failed boom');
       expect(content).toContain('Error: boom\n    at test');
     });
 
@@ -172,7 +174,7 @@ describe('Logger Utilities', () => {
       log('circular', obj);
       await flushLogs();
       const content = readFileSync(tmpFile, 'utf8');
-      expect(content).toContain('[firefox-devtools-mcp] circular');
+      expect(content).toContain('[firefox-mcp] circular');
     });
 
     it('should write debug log to file when DEBUG is set', async () => {
@@ -180,7 +182,7 @@ describe('Logger Utilities', () => {
       logDebug('dbg msg');
       await flushLogs();
       const content = readFileSync(tmpFile, 'utf8');
-      expect(content).toContain('[firefox-devtools-mcp] DEBUG: dbg msg');
+      expect(content).toContain('[firefox-mcp] DEBUG: dbg msg');
     });
 
     it('should not write to console when file logger is active', () => {

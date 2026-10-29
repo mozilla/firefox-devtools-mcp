@@ -93,7 +93,7 @@ export const cliOptions = {
   autoProfile: {
     type: 'boolean',
     description:
-      'Automatically use a persistent profile stored in ~/.firefox-devtools-mcp/. ' +
+      'Automatically use a persistent profile stored in ~/.firefox-mcp/. ' +
       'When --firefox-path is set, the profile is scoped to that binary so different ' +
       'Firefox builds stay isolated.',
     default: (process.env.AUTO_PROFILE ?? 'false') === 'true',
@@ -142,7 +142,7 @@ export const cliOptions = {
   outputFile: {
     type: 'string',
     description:
-      'Path to file where Firefox output (stdout/stderr) will be written. If not specified, output is written to ~/.firefox-devtools-mcp/output/',
+      'Path to file where Firefox output (stdout/stderr) will be written. If not specified, output is written to ~/.firefox-mcp/output/',
   },
   pref: {
     type: 'array',
@@ -213,7 +213,7 @@ export const cliOptions = {
   unrestrictedSavePaths: {
     type: 'boolean',
     description:
-      'Allow tools that save files (e.g. screenshots, snapshots, network/console output) to write to arbitrary locations. By default, relative save paths resolve against the current working directory and absolute save paths are restricted to ~/.firefox-devtools-mcp; this flag lifts both restrictions. Use with caution.',
+      'Allow tools that save files (e.g. screenshots, snapshots, network/console output) to write to arbitrary locations. By default, relative save paths resolve against the current working directory and absolute save paths are restricted to ~/.firefox-mcp; this flag lifts both restrictions. Use with caution.',
     default: (process.env.UNRESTRICTED_SAVE_PATHS ?? 'false') === 'true',
   },
   disableNetworkBodyCollection: {

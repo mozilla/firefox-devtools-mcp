@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FirefoxCore } from '@/firefox/core.js';
@@ -93,6 +93,37 @@ describe('Connect Existing Viewport Tests', () => {
     firefoxProcess?.kill('SIGKILL');
     removeDir(profile);
   });
+
+  it('should find the port in the legacy instances folder', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'connect-existing-home-'));
+    const instances = join(home, '.firefox-devtools-mcp', 'instances');
+    mkdirSync(instances, { recursive: true });
+    // Migrated data root, while Firefox still writes to the legacy one.
+    mkdirSync(join(home, '.firefox-mcp'));
+    writeFileSync(join(instances, `${firefoxProcess!.pid}.port`), String(marionettePort));
+    const saved = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+    process.env.HOME = process.env.USERPROFILE = home;
+    try {
+      const firefox = await createTestFirefox({
+        connectExisting: true,
+        lookupMarionettePort: true,
+      });
+      try {
+        expect(await firefox.evaluate('location.href')).toContain('simple.html');
+      } finally {
+        await closeFirefox(firefox);
+      }
+    } finally {
+      for (const [name, value] of Object.entries(saved)) {
+        if (value === undefined) {
+          delete process.env[name];
+        } else {
+          process.env[name] = value;
+        }
+      }
+      removeDir(home);
+    }
+  }, 60000);
 
   it('should reset the viewport when the session closes', async () => {
     const first = await createTestFirefox({ connectExisting: true, marionettePort });

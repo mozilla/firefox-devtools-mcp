@@ -57,20 +57,24 @@ function write(message: string, args: unknown[], body?: string): void {
 }
 
 export function log(message: string, ...args: unknown[]): void {
-  write(`[firefox-devtools-mcp] ${message}`, args);
+  write(`[firefox-mcp] ${message}`, args);
 }
 
 export function logDebug(message: string, ...args: unknown[]): void {
-  if (process.env.DEBUG === '*' || process.env.DEBUG?.includes('firefox-devtools')) {
-    write(`[firefox-devtools-mcp] DEBUG: ${message}`, args);
+  if (
+    process.env.DEBUG === '*' ||
+    process.env.DEBUG?.includes('firefox-mcp') ||
+    process.env.DEBUG?.includes('firefox-devtools')
+  ) {
+    write(`[firefox-mcp] DEBUG: ${message}`, args);
   }
 }
 
 export function logError(message: string, error?: unknown): void {
   if (error instanceof Error) {
-    write(`[firefox-devtools-mcp] ERROR: ${message}`, [error.message], error.stack);
+    write(`[firefox-mcp] ERROR: ${message}`, [error.message], error.stack);
   } else {
-    write(`[firefox-devtools-mcp] ERROR: ${message}`, [error]);
+    write(`[firefox-mcp] ERROR: ${message}`, [error]);
   }
 }
 
@@ -80,7 +84,7 @@ export function setupLogFile(filePath: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   logStream = fs.createWriteStream(filePath, { flags: 'a' });
   logStream.on('error', (error) => {
-    console.error(`[firefox-devtools-mcp] Error writing to log file: ${error.message}`);
+    console.error(`[firefox-mcp] Error writing to log file: ${error.message}`);
     logStream = null;
   });
 }

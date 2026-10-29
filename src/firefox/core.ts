@@ -20,7 +20,7 @@ import type { FirefoxLaunchOptions } from './types.js';
 import { log, logDebug } from '../utils/logger.js';
 import { findFirefoxBinaryWindows } from './windows-binary.js';
 import { resolveProfilePath } from './profile.js';
-import { instancesDir, logsDir } from '../utils/paths.js';
+import { instancesDirs, logsDir } from '../utils/paths.js';
 
 // ---------------------------------------------------------------------------
 // Geckodriver binary finder
@@ -74,19 +74,21 @@ async function findGeckodriverInNpmPackage(): Promise<string | null> {
 }
 
 function lookupMarionettePort(): number | void {
-  const dir = instancesDir();
-  if (!existsSync(dir)) {
-    logDebug(`Failed to lookup Marionette port: ${dir} doesn't exist.`);
+  const dirs = instancesDirs().filter((dir) => existsSync(dir));
+  if (dirs.length === 0) {
+    logDebug(`Failed to lookup Marionette port: ${instancesDirs().join(' and ')} don't exist.`);
     return;
   }
-  const files = readdirSync(dir);
-  const portFiles = files.filter((f) => /^\d+\.port$/.test(f));
-  const mostRecent = portFiles
-    .map((f) => ({
-      name: f,
-      path: join(dir, f),
-      mtime: statSync(join(dir, f)).mtimeMs,
-    }))
+  const mostRecent = dirs
+    .flatMap((dir) =>
+      readdirSync(dir)
+        .filter((f) => /^\d+\.port$/.test(f))
+        .map((f) => ({
+          name: f,
+          path: join(dir, f),
+          mtime: statSync(join(dir, f)).mtimeMs,
+        }))
+    )
     .sort((a, b) => b.mtime - a.mtime)[0];
   if (mostRecent) {
     const pid = Number(mostRecent.name.substring(0, mostRecent.name.length - 5));
@@ -102,7 +104,7 @@ function lookupMarionettePort(): number | void {
       logDebug(`Failed to lookup Marionette port: "${content}" is not a number.`);
     }
   } else {
-    logDebug(`Failed to lookup Marionette port: No port file found in ${dir}.`);
+    logDebug(`Failed to lookup Marionette port: No port file found in ${dirs.join(' and ')}.`);
   }
 }
 

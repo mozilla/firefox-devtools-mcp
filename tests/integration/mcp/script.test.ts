@@ -150,7 +150,7 @@ describe('evaluate_script (MCP)', () => {
 
   describe('saveTo', () => {
     function outputDir(): string {
-      return join(mcp().home, '.firefox-devtools-mcp', 'output');
+      return join(mcp().home, '.firefox-mcp', 'output');
     }
 
     it('writes the result to the given file without a preview', async () => {

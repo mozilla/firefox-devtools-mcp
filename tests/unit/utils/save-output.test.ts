@@ -16,7 +16,7 @@ import { basename, join, relative, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const MOCK_HOME = join(tmpdir(), 'save-output-test-home');
-const HOME_ROOT = join(MOCK_HOME, '.firefox-devtools-mcp');
+const HOME_ROOT = join(MOCK_HOME, '.firefox-mcp');
 const OUTPUT_ROOT = join(HOME_ROOT, 'output');
 
 vi.mock('node:os', async (importOriginal) => {
@@ -138,7 +138,7 @@ describe('saveOutput', () => {
       // the port files decide which Firefox we attach to, and the captured
       // output is returned by get_firefox_output.
       const targets = [
-        join(HOME_ROOT, 'profile', 'firefox_devtools_mcp_profile', 'user.js'),
+        join(HOME_ROOT, 'profile', 'firefox_mcp_profile', 'user.js'),
         join(HOME_ROOT, 'instances', '1234.port'),
         join(HOME_ROOT, 'logs', 'firefox-forged.log'),
       ];
@@ -163,7 +163,7 @@ describe('saveOutput', () => {
       // The working directory stays writable, so a profile inside it is only
       // protected by knowing where it is.
       mockArgs.profilePath = relative(process.cwd(), join(cwdDir, 'ff-profile'));
-      const target = join(mockArgs.profilePath, 'firefox_devtools_mcp_profile', 'user.js');
+      const target = join(mockArgs.profilePath, 'firefox_mcp_profile', 'user.js');
 
       await expect(saveOutput('data', target, 'get-page-text', 'txt')).rejects.toThrow(
         'reads back'
@@ -174,7 +174,7 @@ describe('saveOutput', () => {
     it('should reject a relative path into a marked profile passed directly', async () => {
       const profile = join(cwdDir, 'marked-profile');
       mkdirSync(profile, { recursive: true });
-      writeFileSync(join(profile, '.firefox-devtools-mcp'), '');
+      writeFileSync(join(profile, '.firefox-mcp'), '');
       mockArgs.profilePath = profile;
       const target = relative(process.cwd(), join(profile, 'user.js'));
 
@@ -220,7 +220,7 @@ describe('saveOutput', () => {
     });
 
     it('should not be fooled by a symlink out of the allowed root', async () => {
-      const profile = join(HOME_ROOT, 'profile', 'firefox_devtools_mcp_profile');
+      const profile = join(HOME_ROOT, 'profile', 'firefox_mcp_profile');
       mkdirSync(profile, { recursive: true });
       mkdirSync(cwdDir, { recursive: true });
       const link = join(cwdDir, 'link-to-profile');
@@ -263,7 +263,7 @@ describe('saveOutput', () => {
 
 describe('isWithinRoot', () => {
   const originalPlatform = process.platform;
-  const root = join('C:', 'Users', 'me', '.firefox-devtools-mcp');
+  const root = join('C:', 'Users', 'me', '.firefox-mcp');
 
   const setPlatform = (platform: NodeJS.Platform) =>
     Object.defineProperty(process, 'platform', { value: platform, configurable: true });

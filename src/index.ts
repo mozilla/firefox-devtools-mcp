@@ -13,7 +13,7 @@ import {
 import { SERVER_NAME, SERVER_VERSION } from './config/constants.js';
 import { log, logError, logDebug, setupLogFile, flushLogs } from './utils/logger.js';
 import { parsePrefs } from './cli.js';
-import { defaultProfileDir } from './utils/paths.js';
+import { defaultProfileDir, migrateHomeRoot } from './utils/paths.js';
 import type { parseArguments } from './cli.js';
 import { FirefoxDevTools } from './firefox/index.js';
 import type { FirefoxLaunchOptions } from './firefox/types.js';
@@ -192,6 +192,8 @@ export async function run(
   if (args.logFile) {
     setupLogFile(args.logFile);
   }
+
+  migrateHomeRoot();
 
   // Resolve which tool modules to expose from --tools / --tool-preset (applying
   // deprecated flags and the privileged capability gate) and build their tools.
