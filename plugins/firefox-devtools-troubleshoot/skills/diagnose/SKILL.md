@@ -1,9 +1,9 @@
 ---
 name: firefox-devtools-diagnose
-description: Diagnose Firefox DevTools MCP setup issues. Activate when the firefox-devtools-mcp plugin fails to connect, its tools are not available, or the user reports Firefox DevTools not working in Cowork.
+description: Diagnose Firefox MCP setup issues. Activate when the firefox-devtools-mcp plugin fails to connect, its tools are not available, or the user reports Firefox MCP not working in Cowork.
 ---
 
-When Firefox DevTools MCP tools are unavailable or the user reports issues with the firefox-devtools-mcp plugin, run this diagnostic sequence automatically. Do not ask the user to do these checks manually.
+When Firefox MCP tools are unavailable or the user reports issues with the firefox-devtools-mcp plugin, run this diagnostic sequence automatically. Do not ask the user to do these checks manually.
 
 ## Diagnostic Steps
 
@@ -29,7 +29,7 @@ Since an absent tool list can't be attributed to a single cause from your side, 
 - Open **Customize > Plugins** in Claude Cowork and confirm `firefox-devtools-mcp` appears in the list.
 - Confirm they are currently in the **Cowork** tab, not the **Chat** tab — plugins only work in Cowork.
 
-- If the plugin is missing: direct them to the installation steps at https://github.com/mozilla/firefox-devtools-mcp.
+- If the plugin is missing: direct them to the installation steps at https://github.com/mozilla/firefox-mcp.
 - If the plugin is present but they were in Chat: ask them to switch to Cowork and retry.
 - If the plugin is present and they are already in Cowork: continue to the next step.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Builds the firefox-devtools-mcp .mcpb bundle (Claude Desktop extension).
+ * Builds the firefox-mcp .mcpb bundle (Claude Desktop extension).
  * Assembles a staging directory with dist/, production node_modules and
  * manifest.json, then runs `mcpb pack` on it.
  */

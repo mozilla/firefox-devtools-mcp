@@ -1,5 +1,5 @@
 /**
- * Profile path resolution for Firefox DevTools MCP
+ * Profile path resolution for Firefox MCP
  *
  * Unmarked user supplied paths use a dedicated subfolder to avoid reusing a
  * real browser profile in an automated session. Marked MCP profiles can be

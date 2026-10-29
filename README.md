@@ -1,8 +1,8 @@
-# Firefox DevTools MCP
+# Firefox MCP
 
-[![npm version](https://badge.fury.io/js/@mozilla%2Ffirefox-devtools-mcp.svg)](https://www.npmjs.com/package/@mozilla/firefox-devtools-mcp)
-[![CI](https://github.com/mozilla/firefox-devtools-mcp/workflows/CI/badge.svg)](https://github.com/mozilla/firefox-devtools-mcp/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/mozilla/firefox-devtools-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/mozilla/firefox-devtools-mcp)
+[![npm version](https://badge.fury.io/js/@mozilla%2Ffirefox-mcp.svg)](https://www.npmjs.com/package/@mozilla/firefox-mcp)
+[![CI](https://github.com/mozilla/firefox-mcp/workflows/CI/badge.svg)](https://github.com/mozilla/firefox-mcp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/mozilla/firefox-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/mozilla/firefox-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
 
 <a href="https://glama.ai/mcp/servers/@mozilla/firefox-devtools-mcp"><img src="https://glama.ai/mcp/servers/@mozilla/firefox-devtools-mcp/badge" height="223" alt="Glama"></a>
@@ -14,7 +14,9 @@ Model Context Protocol server that lets AI agents use Firefox. It has two main u
 
 It controls Firefox through WebDriver BiDi (via Selenium WebDriver) and works with Claude Code, Claude Desktop, Cursor, Cline and other MCP clients.
 
-Repository: https://github.com/mozilla/firefox-devtools-mcp
+Repository: https://github.com/mozilla/firefox-mcp
+
+Also published as `@mozilla/firefox-devtools-mcp` for existing setups.
 
 > **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx @mozilla/firefox-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
 

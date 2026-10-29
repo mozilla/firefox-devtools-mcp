@@ -3,7 +3,7 @@ name: web-performance
 description: Find and fix why a website is slow by capturing and analyzing a Firefox performance profile, or by analyzing a profile the user already has (a saved file or a profiler.firefox.com share link). Use for slow page loads, janky scrolling or animation, slow interactions or a slow STR, long tasks, layout thrashing, or heavy JavaScript.
 ---
 
-Work from a real profile, find the cause in the user's code, report it honestly, and if asked, fix it and prove the fix worked. The firefox-devtools MCP drives Firefox and records a profile when there is none yet; `profiler-cli` queries the profile, whether you captured it or the user brought it. Report in web-platform terms (LCP, main-thread blocking, reflow, render-blocking resources), not Gecko internals - unless the target is Firefox itself rather than a page, in which case platform frames are the subject and the fix lands in mozilla-central.
+Work from a real profile, find the cause in the user's code, report it honestly, and if asked, fix it and prove the fix worked. The Firefox MCP drives Firefox and records a profile when there is none yet; `profiler-cli` queries the profile, whether you captured it or the user brought it. Report in web-platform terms (LCP, main-thread blocking, reflow, render-blocking resources), not Gecko internals - unless the target is Firefox itself rather than a page, in which case platform frames are the subject and the fix lands in mozilla-central.
 
 ## Step 0: Prerequisites
 

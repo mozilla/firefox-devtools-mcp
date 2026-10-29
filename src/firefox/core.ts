@@ -316,7 +316,7 @@ export class FirefoxCore {
         throw new Error(
           `Another WebDriver session is already active in Firefox on 127.0.0.1:${port}, ` +
             'and Marionette allows only one at a time. If it belongs to another ' +
-            'firefox-devtools-mcp server started with --connect-existing, that server releases ' +
+            'firefox-mcp server started with --connect-existing, that server releases ' +
             'Firefox when it calls close_firefox_session or after it has been idle; try again then.'
         );
       }

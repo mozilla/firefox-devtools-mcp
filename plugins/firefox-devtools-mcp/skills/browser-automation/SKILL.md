@@ -3,7 +3,7 @@ name: browser-automation
 description: This skill should be used when the user asks about browser automation, testing web pages, extracting content, filling forms, taking screenshots, or monitoring console/network activity. Activates for E2E testing, form automation, browsing tasks, or debugging web applications.
 ---
 
-When the user asks about browser automation, use Firefox DevTools MCP to control a real Firefox browser.
+When the user asks about browser automation, use Firefox MCP to control a real Firefox browser.
 
 ## Before Starting
 

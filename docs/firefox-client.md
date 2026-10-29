@@ -42,7 +42,7 @@ In WebDriver BiDi mode, Firefox applies [RecommendedPreferences](https://searchf
 **Example:** `browser.ml.enable` is disabled by RecommendedPreferences, which prevents testing ML/AI features like Smart Window. Override it:
 
 ```bash
-npx firefox-devtools-mcp --pref "browser.ml.enable=true"
+npx @mozilla/firefox-mcp --pref "browser.ml.enable=true"
 ```
 
 Runtime (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`):

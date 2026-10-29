@@ -91,7 +91,7 @@ const HTML_PAGE = `
 </head>
 <body>
   <div class="container">
-    <h1>🦊 Firefox DevTools MCP</h1>
+    <h1>🦊 Firefox MCP</h1>
     <p><strong>Demo Page for Testing MCP Tools</strong></p>
     <p>Use this page with the MCP Inspector to test various tools!</p>
 
@@ -204,7 +204,7 @@ const HTML_PAGE = `
 
     function logObject() {
       console.log('Object:', {
-        name: 'Firefox DevTools MCP',
+        name: 'Firefox MCP',
         version: '0.1.0',
         features: ['console', 'dialog', 'input', 'screenshot'],
         config: { headless: false, timeout: 5000 }
@@ -263,7 +263,7 @@ const HTML_PAGE = `
     }
 
     // Initial log
-    console.log('🦊 Firefox DevTools MCP Demo Page Loaded!');
+    console.log('🦊 Firefox MCP Demo Page Loaded!');
     console.info('Server running on http://localhost:3456');
     console.info('Use MCP Inspector to test tools: list_console_messages, list_pages, etc.');
   </script>
@@ -286,7 +286,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log('');
-  console.log('🦊 Firefox DevTools MCP - Demo Server');
+  console.log('🦊 Firefox MCP - Demo Server');
   console.log('=====================================');
   console.log('');
   console.log(`🌐 Server running at: http://localhost:${PORT}`);

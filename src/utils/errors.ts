@@ -1,5 +1,5 @@
 /**
- * Custom error classes for Firefox DevTools MCP
+ * Custom error classes for Firefox MCP
  */
 
 /**

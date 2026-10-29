@@ -1,4 +1,4 @@
-# Firefox DevTools Plugin for Claude Code
+# Firefox MCP Plugin for Claude Code
 
 Control Firefox for automated browsing, web testing, and debugging. Navigate pages, fill forms, click elements, take screenshots, and monitor console/network activity.
 
@@ -12,7 +12,7 @@ Control Firefox for automated browsing, web testing, and debugging. Navigate pag
 ## Installation
 
 ```bash
-/plugin marketplace add mozilla/firefox-devtools-mcp
+/plugin marketplace add mozilla/firefox-mcp
 /plugin install firefox-devtools-mcp@firefox-devtools-plugins
 ```
 
@@ -84,5 +84,5 @@ The plugin enables the following by default:
 
 ## Links
 
-- [Repository](https://github.com/mozilla/firefox-devtools-mcp)
-- [npm](https://www.npmjs.com/package/@mozilla/firefox-devtools-mcp)
+- [Repository](https://github.com/mozilla/firefox-mcp)
+- [npm](https://www.npmjs.com/package/@mozilla/firefox-mcp)

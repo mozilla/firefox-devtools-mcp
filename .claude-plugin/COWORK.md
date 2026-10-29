@@ -31,7 +31,7 @@ At any point, make sure the **Cowork** tab is selected and not the **Chat** tab.
 
 ![screenshot of Claude Desktop with the Add marketplace option highlighted](cowork-customize-add-marketplace.png)
 
-6. Paste the URL of this repository (`https://github.com/mozilla/firefox-devtools-mcp`) in the popup, validate.
+6. Paste the URL of this repository (`https://github.com/mozilla/firefox-mcp`) in the popup, validate.
 
 ![screenshot of Claude Desktop with the repository URL pasted in the popup](cowork-customize-add-marketplace-url.png)
 

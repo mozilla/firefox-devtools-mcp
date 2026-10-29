@@ -1,5 +1,5 @@
 /**
- * CLI argument parsing for Firefox DevTools MCP server
+ * CLI argument parsing for Firefox MCP server
  */
 
 import type { Options as YargsOptions } from 'yargs';
@@ -101,7 +101,7 @@ export const cliOptions = {
   firefoxArg: {
     type: 'array',
     description:
-      'Additional arguments for Firefox. Only applies when Firefox is launched by firefox-devtools-mcp.',
+      'Additional arguments for Firefox. Only applies when Firefox is launched by firefox-mcp.',
   },
   startUrl: {
     type: 'string',

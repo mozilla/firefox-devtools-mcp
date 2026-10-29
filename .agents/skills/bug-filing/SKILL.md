@@ -1,6 +1,6 @@
 ---
 name: bug-filing
-description: File a Bugzilla bug for firefox-devtools-mcp, or draft a bug summary and description. Use when the user asks to file a bug, wants a bug summary/description for a change, or needs to report a defect/enhancement/task in this repo. Drafts the summary and description, and opens a prefilled enter_bug.cgi form in the browser for the user to submit.
+description: File a Bugzilla bug for firefox-mcp, or draft a bug summary and description. Use when the user asks to file a bug, wants a bug summary/description for a change, or needs to report a defect/enhancement/task in this repo. Drafts the summary and description, and opens a prefilled enter_bug.cgi form in the browser for the user to submit.
 allowed-tools:
   - Bash(python3 .agents/skills/bug-filing/file-bug.py:*)
   - Bash(python3 .claude/skills/bug-filing/file-bug.py:*)
