@@ -5,7 +5,7 @@
 import { mkdir, realpath, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
-import { homeRoot, outputDir } from './paths.js';
+import { homeRoot, legacyHomeRoot, outputDir } from './paths.js';
 import { isFirefoxProfile } from '../firefox/profile.js';
 
 export interface SavedOutput {
@@ -96,10 +96,13 @@ export async function assertAllowedPath(
     throw refusal('resolves outside the allowed location');
   }
 
-  // The whole data directory, save for the output subtree inside it.
-  const home = await realpathThroughMissing(homeRoot());
-  if (isWithinRoot(home, candidate) && !isWithinRoot(output, candidate)) {
-    throw refusal(`resolves inside ${homeRoot()}, which this server reads back`);
+  // The whole data directory, save for the output subtree inside it. The legacy
+  // one too, as it still holds the instance port files Firefox writes.
+  for (const dataRoot of [homeRoot(), legacyHomeRoot()]) {
+    const home = await realpathThroughMissing(dataRoot);
+    if (isWithinRoot(home, candidate) && !isWithinRoot(output, candidate)) {
+      throw refusal(`resolves inside ${dataRoot}, which this server reads back`);
+    }
   }
 
   // Locations the operator pointed elsewhere; by path, as they may not exist yet.
@@ -122,10 +125,10 @@ export async function assertAllowedPath(
 
 /**
  * Write content to saveTo: a file path (relative to the current working
- * directory, or absolute within ~/.firefox-devtools-mcp/output; parent
+ * directory, or absolute within ~/.firefox-mcp/output; parent
  * directories are created as needed), or an existing directory (a generated file
  * named after baseName is placed inside). When saveTo is empty, the generated
- * file goes to ~/.firefox-devtools-mcp/output/. Paths escaping the allowed roots
+ * file goes to ~/.firefox-mcp/output/. Paths escaping the allowed roots
  * are rejected unless the server runs with --unrestricted-save-paths.
  */
 export async function saveOutput(

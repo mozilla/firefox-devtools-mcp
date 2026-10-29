@@ -165,7 +165,7 @@ export const getPageTextTool = {
       saveTo: {
         type: ['boolean', 'string'],
         description:
-          'Save the full untruncated text to a file instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.',
+          'Save the full untruncated text to a file instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.',
       },
       preview: {
         type: 'number',

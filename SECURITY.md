@@ -55,7 +55,7 @@ The following flags expand the agent's capabilities and increase the attack surf
 
 ### `--unrestricted-save-paths`
 
-Tools that save output to disk through their `saveTo` parameter (see the [list](docs/tools.md#tools-that-accept-saveto)) are restricted by default: relative paths resolve against the current working directory, and absolute paths must stay within `~/.firefox-devtools-mcp/output`. Whatever the path style, writes are also refused when they would land in a Firefox profile, in the profile this server starts Firefox with, or in the instance port files and captured output it reads back. This flag removes every restriction, letting the agent write to any path the server process can reach, those included.
+Tools that save output to disk through their `saveTo` parameter (see the [list](docs/tools.md#tools-that-accept-saveto)) are restricted by default: relative paths resolve against the current working directory, and absolute paths must stay within `~/.firefox-mcp/output`. Whatever the path style, writes are also refused when they would land in a Firefox profile, in the profile this server starts Firefox with, or in the instance port files and captured output it reads back. This flag removes every restriction, letting the agent write to any path the server process can reach, those included.
 
 Combined with prompt injection, this turns a page's content into arbitrary file writes with your user's privileges — for example overwriting a shell profile or a configuration file the agent is not otherwise meant to touch.
 

@@ -87,7 +87,7 @@ export const listNetworkRequestsTool = {
       saveTo: {
         type: ['boolean', 'string'],
         description:
-          'Save matching requests to a file as JSON instead of returning them inline. Saves full untruncated headers by default; pass detail=summary or min for a lean form, or an explicit limit to cap how many are saved (default: all matching). Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.',
+          'Save matching requests to a file as JSON instead of returning them inline. Saves full untruncated headers by default; pass detail=summary or min for a lean form, or an explicit limit to cap how many are saved (default: all matching). Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.',
       },
       preview: {
         type: 'number',
@@ -124,7 +124,7 @@ export const getNetworkRequestTool = {
       saveTo: {
         type: ['boolean', 'string'],
         description:
-          'Save the request details with full untruncated headers and bodies to a file as JSON instead of returning them inline (binary bodies are stored base64-encoded). Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.',
+          'Save the request details with full untruncated headers and bodies to a file as JSON instead of returning them inline (binary bodies are stored base64-encoded). Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.',
       },
       preview: {
         type: 'number',

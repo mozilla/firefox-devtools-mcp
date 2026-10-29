@@ -23,7 +23,7 @@ export const printPageTool = {
       saveTo: {
         type: ['boolean', 'string'],
         description:
-          'Where to save the PDF. Pass a file path, an existing directory (generated file inside), or true or omit it (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.',
+          'Where to save the PDF. Pass a file path, an existing directory (generated file inside), or true or omit it (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.',
       },
     },
   },

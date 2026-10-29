@@ -133,7 +133,7 @@ Get the visible text of the page (document.body.innerText). Caps at maxLength (d
 Parameters:
 
 - `maxLength` (number, optional) - Max characters to return inline (default: 20000). Ignored when saveTo is used.
-- `saveTo` (boolean | string, optional) - Save the full untruncated text to a file instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save the full untruncated text to a file instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 - `preview` (number, optional) - Number of characters of the saved text to return inline as a preview when saveTo is used. Omit for no preview.
 
 ## snapshot
@@ -154,7 +154,7 @@ Parameters:
 - `maxDepth` (number, optional) - Max tree depth
 - `includeAll` (boolean, optional) - Include all visible elements without relevance filtering. Useful for Vue/Livewire apps (default: false)
 - `selector` (string, optional) - CSS selector to scope snapshot to specific element (e.g., "#app")
-- `saveTo` (boolean | string, optional) - Save the complete snapshot text to a file (ignores maxLines) instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save the complete snapshot text to a file (ignores maxLines) instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 - `preview` (number, optional) - Number of characters of the saved output to return inline as a preview when saveTo is used. Omit for no preview.
 
 ### `resolve_uid_to_selector`
@@ -272,7 +272,7 @@ Parameters:
 - `sortBy` (`timestamp` | `duration` | `status`, optional) - Sort field (default: timestamp)
 - `detail` (`summary` | `min` | `full`, optional) - Detail level (default: summary)
 - `format` (`text` | `json`, optional) - Output format (default: text)
-- `saveTo` (boolean | string, optional) - Save matching requests to a file as JSON instead of returning them inline. Saves full untruncated headers by default; pass detail=summary or min for a lean form, or an explicit limit to cap how many are saved (default: all matching). Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save matching requests to a file as JSON instead of returning them inline. Saves full untruncated headers by default; pass detail=summary or min for a lean form, or an explicit limit to cap how many are saved (default: all matching). Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 - `preview` (number, optional) - Number of characters of the saved output to return inline as a preview when saveTo is used. Omit for no preview.
 
 ### `get_network_request`
@@ -286,7 +286,7 @@ Parameters:
 - `id` (string, optional) - Request ID from list_network_requests
 - `url` (string, optional) - URL fallback (may match multiple)
 - `format` (`text` | `json`, optional) - Output format (default: text)
-- `saveTo` (boolean | string, optional) - Save the request details with full untruncated headers and bodies to a file as JSON instead of returning them inline (binary bodies are stored base64-encoded). Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save the request details with full untruncated headers and bodies to a file as JSON instead of returning them inline (binary bodies are stored base64-encoded). Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 - `preview` (number, optional) - Number of characters of the saved output to return inline as a preview when saveTo is used. Omit for no preview.
 
 ### `set_network_cache`
@@ -316,7 +316,7 @@ Parameters:
 - `textContains` (string, optional) - Text filter (case-insensitive)
 - `source` (string, optional) - Filter by source
 - `format` (`text` | `json`, optional) - Output format (default: text)
-- `saveTo` (boolean | string, optional) - Save matching messages to a file in full (untruncated) instead of returning them inline. Saves all matching messages by default; pass an explicit limit to cap how many are saved. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save matching messages to a file in full (untruncated) instead of returning them inline. Saves all matching messages by default; pass an explicit limit to cap how many are saved. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 - `preview` (number, optional) - Number of characters of the saved output to return inline as a preview when saveTo is used. Omit for no preview.
 
 ### `clear_console_messages`
@@ -338,7 +338,7 @@ Capture viewport screenshot as base64 PNG. Set fullPage for the whole scrollable
 Parameters:
 
 - `fullPage` (boolean, optional) - Capture the whole scrollable document (default: false)
-- `saveTo` (boolean | string, optional) - Save the screenshot to a file instead of returning it as image data in the response. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save the screenshot to a file instead of returning it as image data in the response. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 
 ### `screenshot_by_uid`
 
@@ -349,7 +349,7 @@ Capture element screenshot by UID as base64 PNG.
 Parameters:
 
 - `uid` (string, required) - Element UID from snapshot
-- `saveTo` (boolean | string, optional) - Save the screenshot to a file instead of returning it as image data in the response. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save the screenshot to a file instead of returning it as image data in the response. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 
 ## print
 
@@ -365,7 +365,7 @@ Parameters:
 
 - `landscape` (boolean, optional) - Use landscape orientation (default: false)
 - `background` (boolean, optional) - Print background colors and images (default: false)
-- `saveTo` (boolean | string, optional) - Where to save the PDF. Pass a file path, an existing directory (generated file inside), or true or omit it (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Where to save the PDF. Pass a file path, an existing directory (generated file inside), or true or omit it (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 
 ## downloads
 
@@ -397,7 +397,7 @@ Control how downloads are handled: allow (save to a destination folder), deny (c
 Parameters:
 
 - `behavior` (`allowed` | `denied` | `default`, required) - 'allowed' saves downloads to `downloadFolder`, 'denied' cancels them, 'default' resets to the browser default
-- `downloadFolder` (string, optional) - Path to the folder where downloads should be stored, created if missing. Only used for behavior='allowed', where it defaults to ~/.firefox-devtools-mcp/output/downloads. Relative paths resolve against the current working directory.
+- `downloadFolder` (string, optional) - Path to the folder where downloads should be stored, created if missing. Only used for behavior='allowed', where it defaults to ~/.firefox-mcp/output/downloads. Relative paths resolve against the current working directory.
 
 ## utilities
 
@@ -589,7 +589,7 @@ Parameters:
 - `args` (array of object, optional) - UIDs to pass as function arguments
 - `timeout` (number, optional) - Timeout in ms (default: 5000)
 - `sandbox` (string, optional) - Evaluate in an isolated sandbox realm with this name instead of the page realm. The sandbox shares the page DOM and keeps the native built-ins even where the page overrode them. Page-defined globals and expandos are invisible from the sandbox, and vice-versa. The same name reuses the same sandbox across calls; omit to evaluate in the page realm.
-- `saveTo` (boolean | string, optional) - Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 - `preview` (number, optional) - Number of characters of the saved result to return inline as a preview when saveTo is used. Omit for no preview.
 
 ## debugging
@@ -702,7 +702,7 @@ Parameters:
 
 - `function` (string, required) - JS function string, e.g. () => Services.prefs.getBoolPref("foo")
 - `context` (string, required) - Privileged browsing context ID from list_privileged_contexts
-- `saveTo` (boolean | string, optional) - Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 - `preview` (number, optional) - Number of characters of the saved result to return inline as a preview when saveTo is used. Omit for no preview.
 
 ## bidi
@@ -719,5 +719,5 @@ Parameters:
 
 - `method` (string, required) - BiDi command name, e.g. browsingContext.getTree
 - `params` (object, optional) - Command parameters (default: {})
-- `saveTo` (boolean | string, optional) - Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.
+- `saveTo` (boolean | string, optional) - Save the result to a file as JSON instead of returning it inline. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.
 - `preview` (number, optional) - Number of characters of the saved result to return inline as a preview when saveTo is used. Omit for no preview.

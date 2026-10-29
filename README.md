@@ -130,7 +130,7 @@ You can pass flags or environment variables (names on the right):
 - `--firefox-path` — absolute path to Firefox binary
 - `--headless` — run without UI (`FIREFOX_HEADLESS=true`)
 - `--viewport 1280x720` — initial window size
-- `--profile-path` — use a specific Firefox profile. Firefox runs in a `firefox_devtools_mcp_profile` subfolder of that path, marked with a `.firefox-devtools-mcp` file; pointing `--profile-path` at a marked profile reuses it directly
+- `--profile-path` — use a specific Firefox profile. Firefox runs in a `firefox_mcp_profile` subfolder of that path, marked with a `.firefox-mcp` file; pointing `--profile-path` at a marked profile reuses it directly
 - `--firefox-arg` — extra Firefox arguments (repeatable)
 - `--start-url` — open this URL on start (`START_URL`)
 - `--accept-insecure-certs` — ignore TLS errors (`ACCEPT_INSECURE_CERTS=true`)
@@ -266,9 +266,9 @@ tools accept an optional `saveTo` parameter that writes the result to a file ins
 returning it inline. See [docs/tools.md](docs/tools.md#tools-that-accept-saveto) for the list.
 `saveTo` takes one of three forms:
 
-- a file path (relative to the current working directory, or absolute within `~/.firefox-devtools-mcp/output`; parent directories are created). Paths reaching a Firefox profile, or the files this server reads back, are refused
+- a file path (relative to the current working directory, or absolute within `~/.firefox-mcp/output`; parent directories are created). Paths reaching a Firefox profile, or the files this server reads back, are refused
 - an existing directory (a timestamped file is generated inside it)
-- `true` (a timestamped file is generated under `~/.firefox-devtools-mcp/output/`)
+- `true` (a timestamped file is generated under `~/.firefox-mcp/output/`)
 
 The response returns the path and byte size. The saved file always holds the full,
 untruncated data: the inline size safeguards (console message caps, network header
@@ -285,7 +285,7 @@ evaluate_script({ function: "() => performance.getEntries()", saveTo: true, prev
 ```
 
 By default, save paths are restricted: relative paths resolve against the current working
-directory, and absolute paths are only allowed within `~/.firefox-devtools-mcp`. Paths that
+directory, and absolute paths are only allowed within `~/.firefox-mcp`. Paths that
 escape these locations are rejected. Start the server with `--unrestricted-save-paths` to
 write to arbitrary locations, including absolute paths outside that directory.
 

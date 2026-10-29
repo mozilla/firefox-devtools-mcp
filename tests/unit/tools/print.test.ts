@@ -59,7 +59,7 @@ describe('Print Tool', () => {
       const result = await handlePrintPage({});
 
       expect(result.isError).toBeUndefined();
-      const outputPath = join(MOCK_HOME, '.firefox-devtools-mcp', 'output');
+      const outputPath = join(MOCK_HOME, '.firefox-mcp', 'output');
       const files = readdirSync(outputPath);
       expect(files).toHaveLength(1);
       expect(files[0]).toMatch(/^page-.*\.pdf$/);

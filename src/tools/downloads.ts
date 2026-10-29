@@ -69,7 +69,7 @@ export const setDownloadBehaviorTool = {
       downloadFolder: {
         type: 'string',
         description:
-          "Path to the folder where downloads should be stored, created if missing. Only used for behavior='allowed', where it defaults to ~/.firefox-devtools-mcp/output/downloads. Relative paths resolve against the current working directory.",
+          "Path to the folder where downloads should be stored, created if missing. Only used for behavior='allowed', where it defaults to ~/.firefox-mcp/output/downloads. Relative paths resolve against the current working directory.",
       },
     },
     required: ['behavior'],

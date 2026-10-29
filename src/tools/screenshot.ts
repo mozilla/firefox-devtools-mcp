@@ -11,7 +11,7 @@ import type { McpToolResponse } from '../types/common.js';
 const SAVE_TO_SCHEMA = {
   type: ['boolean', 'string'],
   description:
-    'Save the screenshot to a file instead of returning it as image data in the response. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-devtools-mcp/output/). Relative paths resolve against the current working directory.',
+    'Save the screenshot to a file instead of returning it as image data in the response. Pass a file path, an existing directory (generated file inside), or true (generated file under ~/.firefox-mcp/output/). Relative paths resolve against the current working directory.',
 } as const;
 
 // Tool definitions

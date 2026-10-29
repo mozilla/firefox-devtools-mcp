@@ -4,7 +4,7 @@
  *
  * The relative root is process.cwd(), chosen by whoever launches the server
  * rather than by the operator. A server started at / or at $HOME has
- * ~/.firefox-devtools-mcp inside its relative root, so confining absolute paths
+ * ~/.firefox-mcp inside its relative root, so confining absolute paths
  * to the output directory does not put the profile out of reach: a relative path
  * gets there without a single "..".
  */
@@ -17,7 +17,7 @@ import { join, relative } from 'node:path';
 // A home directory inside the working directory, as seen by a server launched
 // with its cwd above the user's home.
 const MOCK_HOME = join(process.cwd(), `save-output-cwd-home-${process.pid}`);
-const HOME_ROOT = join(MOCK_HOME, '.firefox-devtools-mcp');
+const HOME_ROOT = join(MOCK_HOME, '.firefox-mcp');
 
 vi.mock('node:os', async (importOriginal) => {
   const os = await importOriginal<typeof import('node:os')>();
@@ -49,7 +49,7 @@ describe('saveOutput with the data directory inside the working directory', () =
   const relativeToCwd = (...segments: string[]) => relative(process.cwd(), join(...segments));
 
   it('reaches the --auto-profile profile through a relative path', async () => {
-    const userJs = join(HOME_ROOT, 'profile', 'firefox_devtools_mcp_profile', 'user.js');
+    const userJs = join(HOME_ROOT, 'profile', 'firefox_mcp_profile', 'user.js');
 
     await expect(saveOutput('data', relativeToCwd(userJs), 'get-page-text', 'txt')).rejects.toThrow(
       'reads back'
@@ -69,6 +69,16 @@ describe('saveOutput with the data directory inside the working directory', () =
     }
   });
 
+  it('reaches the legacy data root, where Firefox writes its port files', async () => {
+    mkdirSync(HOME_ROOT, { recursive: true });
+    const portFile = join(MOCK_HOME, '.firefox-devtools-mcp', 'instances', '1234.port');
+
+    await expect(
+      saveOutput('data', relativeToCwd(portFile), 'get-page-text', 'txt')
+    ).rejects.toThrow('reads back');
+    expect(existsSync(portFile)).toBe(false);
+  });
+
   it('refuses the profile of a Firefox binary this session does not use', async () => {
     // Running Release must not give write access to the Nightly profile: the
     // preferences planted there would apply to whoever runs Nightly next.
@@ -76,7 +86,7 @@ describe('saveOutput with the data directory inside the working directory', () =
     const otherProfile = defaultProfileDir(
       '/Applications/Firefox Nightly.app/Contents/MacOS/firefox'
     );
-    const userJs = join(otherProfile, 'firefox_devtools_mcp_profile', 'user.js');
+    const userJs = join(otherProfile, 'firefox_mcp_profile', 'user.js');
 
     await expect(saveOutput('data', relativeToCwd(userJs), 'get-page-text', 'txt')).rejects.toThrow(
       'reads back'
