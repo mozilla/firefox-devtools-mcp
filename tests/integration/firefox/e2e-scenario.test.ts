@@ -361,7 +361,7 @@ describe('E2E Scenario: Form Submission', () => {
 
     await firefox.fillByUid(nameInput!.uid, 'Tomas Grasl');
     await firefox.fillByUid(emailInput!.uid, 'tomas@example.com');
-    await firefox.fillByUid(bioInput!.uid, 'Firefox DevTools MCP contributor');
+    await firefox.fillByUid(bioInput!.uid, 'Firefox MCP contributor');
 
     await firefox.clickByUid(submitBtn!.uid);
     await waitForPageLoad(300);

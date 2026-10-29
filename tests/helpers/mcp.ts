@@ -61,7 +61,7 @@ export async function startMcpServer(serverArgs: string[] = []): Promise<McpTest
     },
     stderr: 'ignore',
   });
-  const client = new Client({ name: 'firefox-devtools-mcp-tests', version: '0.0.0' });
+  const client = new Client({ name: 'firefox-mcp-tests', version: '0.0.0' });
   await client.connect(transport);
 
   return {

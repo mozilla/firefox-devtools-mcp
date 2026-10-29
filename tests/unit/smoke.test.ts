@@ -1,5 +1,5 @@
 /**
- * Smoke tests for firefox-devtools-mcp
+ * Smoke tests for firefox-mcp
  *
  * These tests verify basic functionality without requiring a Firefox instance.
  * More comprehensive integration tests should be added as the project matures.
