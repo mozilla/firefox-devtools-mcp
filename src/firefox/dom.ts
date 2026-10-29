@@ -282,21 +282,31 @@ export class DomInteractions {
     value: string
   ): Promise<void> {
     const el = await this.resolveUid(context, uid);
-    await this.bidi.callFunction(
+    // Select the old content after focusing and delete it with a key press,
+    // instead of assigning the value directly: a page that writes its own value
+    // back on focus (such as a controlled React input that re-renders) would
+    // otherwise restore it, and the typed text would be appended to it.
+    const hasContent = await this.bidi.callFunction<boolean>(
       context,
       `
       (el) => {
-        if (el.nodeName === 'INPUT' || el.nodeName === 'TEXTAREA') {
-          el.value = '';
-        } else if (el.isContentEditable) {
-         el.textContent = '';
-        }
         el.focus();
+        if (el.nodeName === 'INPUT' || el.nodeName === 'TEXTAREA') {
+          el.select();
+          return el.value !== '';
+        }
+        if (el.isContentEditable) {
+          window.getSelection().selectAllChildren(el);
+          return el.textContent !== '';
+        }
+        return false;
       }
       `,
       [el]
     );
-    await this.sendKeyActions(context, textKeyActions(value));
+    const actions = hasContent ? comboKeyActions({ modifiers: [], key: Key.BACK_SPACE }) : [];
+    actions.push(...textKeyActions(value));
+    await this.sendKeyActions(context, actions);
   }
 
   /**
