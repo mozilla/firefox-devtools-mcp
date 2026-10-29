@@ -18,7 +18,7 @@ const manifest = JSON.parse(readFileSync(resolve(root, 'manifest.mcpb.json'), 'u
 console.log('Building server...');
 execSync('npm run build', { cwd: root, stdio: 'inherit' });
 
-const stagingDir = mkdtempSync(resolve(tmpdir(), 'firefox-devtools-mcpb-'));
+const stagingDir = mkdtempSync(resolve(tmpdir(), 'firefox-mcpb-'));
 
 try {
   cpSync(resolve(root, 'dist'), resolve(stagingDir, 'dist'), { recursive: true });
