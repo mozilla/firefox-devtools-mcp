@@ -42,7 +42,7 @@ export const listDownloadsTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const clearDownloadsTool = {
   name: 'clear_downloads',
@@ -51,7 +51,7 @@ export const clearDownloadsTool = {
     type: 'object',
     properties: {},
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const setDownloadBehaviorTool = {
   name: 'set_download_behavior',
@@ -74,56 +74,46 @@ export const setDownloadBehaviorTool = {
     },
     required: ['behavior'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 // Tool handlers
-export const handleListDownloads = defineToolHandler(async function handleListDownloads(
-  args: unknown
-): Promise<McpToolResponse> {
-  const {
-    status,
-    urlContains,
-    limit = 50,
-    format = 'text',
-  } = (args ?? {}) as {
-    status?: string;
-    urlContains?: string;
-    limit?: number;
-    format?: string;
-  };
+export const handleListDownloads = defineToolHandler<typeof listDownloadsTool>(
+  async function handleListDownloads(args): Promise<McpToolResponse> {
+    const { status, urlContains, limit = 50, format = 'text' } = args;
 
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-  let downloads = firefox.getDownloads();
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+    let downloads = firefox.getDownloads();
 
-  if (status) {
-    downloads = downloads.filter((d) => d.status === status);
+    if (status) {
+      downloads = downloads.filter((d) => d.status === status);
+    }
+    if (urlContains) {
+      const needle = urlContains.toLowerCase();
+      downloads = downloads.filter((d) => (d.url || '').toLowerCase().includes(needle));
+    }
+
+    downloads = downloads
+      .sort((a, b) => (b.startTimestamp || 0) - (a.startTimestamp || 0))
+      .slice(0, limit);
+
+    if (format === 'json') {
+      return jsonResponse(downloads);
+    }
+
+    if (downloads.length === 0) {
+      return successResponse('No downloads tracked.');
+    }
+
+    const lines = downloads.map((d) => {
+      const where = d.filepath ? ` -> ${d.filepath}` : '';
+      return `[${d.status}] ${d.suggestedFilename || d.url}${where}`;
+    });
+    return successResponse(lines.join('\n'));
   }
-  if (urlContains) {
-    const needle = urlContains.toLowerCase();
-    downloads = downloads.filter((d) => (d.url || '').toLowerCase().includes(needle));
-  }
+);
 
-  downloads = downloads
-    .sort((a, b) => (b.startTimestamp || 0) - (a.startTimestamp || 0))
-    .slice(0, limit);
-
-  if (format === 'json') {
-    return jsonResponse(downloads);
-  }
-
-  if (downloads.length === 0) {
-    return successResponse('No downloads tracked.');
-  }
-
-  const lines = downloads.map((d) => {
-    const where = d.filepath ? ` -> ${d.filepath}` : '';
-    return `[${d.status}] ${d.suggestedFilename || d.url}${where}`;
-  });
-  return successResponse(lines.join('\n'));
-});
-
-export const handleClearDownloads = defineToolHandler(
+export const handleClearDownloads = defineToolHandler<typeof clearDownloadsTool>(
   async function handleClearDownloads(): Promise<McpToolResponse> {
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
@@ -132,37 +122,34 @@ export const handleClearDownloads = defineToolHandler(
   }
 );
 
-export const handleSetDownloadBehavior = defineToolHandler(async function handleSetDownloadBehavior(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { behavior, downloadFolder } = (args ?? {}) as {
-    behavior?: 'allowed' | 'denied' | 'default';
-    downloadFolder?: string;
-  };
+export const handleSetDownloadBehavior = defineToolHandler<typeof setDownloadBehaviorTool>(
+  async function handleSetDownloadBehavior(args): Promise<McpToolResponse> {
+    const { behavior, downloadFolder } = args;
 
-  if (!behavior) {
-    return errorResponse('behavior is required');
-  }
-
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  if (behavior === 'allowed') {
-    // Firefox resolves relative paths against its own process cwd, which is unrelated to the
-    // server's when attaching to an already running browser, so only ever send an absolute path.
-    let folder = join(outputDir(), 'downloads');
-    if (downloadFolder) {
-      folder = resolve(downloadFolder);
-      await assertAllowedPath(downloadFolder, folder, 'downloadFolder');
+    if (!behavior) {
+      return errorResponse('behavior is required');
     }
-    await mkdir(folder, { recursive: true });
-    await firefox.setDownloadBehavior('allowed', folder);
-    return successResponse(`Download behavior set to 'allowed' (folder='${folder}').`);
-  }
 
-  await firefox.setDownloadBehavior(behavior);
-  return successResponse(`Download behavior set to '${behavior}'.`);
-});
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+
+    if (behavior === 'allowed') {
+      // Firefox resolves relative paths against its own process cwd, which is unrelated to the
+      // server's when attaching to an already running browser, so only ever send an absolute path.
+      let folder = join(outputDir(), 'downloads');
+      if (downloadFolder) {
+        folder = resolve(downloadFolder);
+        await assertAllowedPath(downloadFolder, folder, 'downloadFolder');
+      }
+      await mkdir(folder, { recursive: true });
+      await firefox.setDownloadBehavior('allowed', folder);
+      return successResponse(`Download behavior set to 'allowed' (folder='${folder}').`);
+    }
+
+    await firefox.setDownloadBehavior(behavior);
+    return successResponse(`Download behavior set to '${behavior}'.`);
+  }
+);
 
 export const module = defineModule({
   name: 'downloads',

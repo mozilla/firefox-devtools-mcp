@@ -21,7 +21,7 @@ export const listPrivilegedContextsTool = {
     type: 'object',
     properties: {},
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const selectPrivilegedContextTool = {
   name: 'select_privileged_context',
@@ -40,7 +40,7 @@ export const selectPrivilegedContextTool = {
     },
     required: ['contextId'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const evaluatePrivilegedScriptTool = {
   name: 'evaluate_privileged_script',
@@ -73,7 +73,7 @@ export const evaluatePrivilegedScriptTool = {
     },
     required: ['function', 'context'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 function formatContextList(contexts: any[]): string {
   if (contexts.length === 0) {
@@ -115,8 +115,8 @@ async function assertPrivilegedContext(firefox: any, contextId: string): Promise
   }
 }
 
-export const handleListPrivilegedContexts = defineToolHandler(
-  async (_args: unknown): Promise<McpToolResponse> => {
+export const handleListPrivilegedContexts = defineToolHandler<typeof listPrivilegedContextsTool>(
+  async (_args): Promise<McpToolResponse> => {
     try {
       const { getFirefox } = await import('../index.js');
       const firefox = await getFirefox();
@@ -137,9 +137,9 @@ export const handleListPrivilegedContexts = defineToolHandler(
   }
 );
 
-export const handleSelectPrivilegedContext = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { contextId } = args as { contextId: string };
+export const handleSelectPrivilegedContext = defineToolHandler<typeof selectPrivilegedContextTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { contextId } = args;
 
     if (!contextId || typeof contextId !== 'string') {
       throw new Error('contextId parameter is required and must be a string');
@@ -173,72 +173,62 @@ export const handleSelectPrivilegedContext = defineToolHandler(
   }
 );
 
-export const handleEvaluatePrivilegedScript = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const {
-      function: fnString,
-      context,
-      saveTo,
-      preview,
-    } = args as {
-      function: string;
-      context: string;
-      saveTo?: boolean | string;
-      preview?: number;
-    };
+export const handleEvaluatePrivilegedScript = defineToolHandler<
+  typeof evaluatePrivilegedScriptTool
+>(async (args): Promise<McpToolResponse> => {
+  const { function: fnString, context, saveTo, preview } = args;
 
-    validateFunction(fnString);
+  validateFunction(fnString);
 
-    if (!context || typeof context !== 'string') {
-      throw new Error('context parameter is required and must be a string');
-    }
-
-    const { getFirefox } = await import('../index.js');
-    const firefox = await getFirefox();
-
-    await assertPrivilegedContext(firefox, context);
-
-    const result = await firefox.sendBiDiCommand('script.callFunction', {
-      functionDeclaration: fnString,
-      awaitPromise: true,
-      arguments: [],
-      target: { context },
-    });
-
-    if (result.type === 'success') {
-      // JSON.stringify returns undefined for an undefined script result
-      const json = JSON.stringify(remoteValueToNative(result.result), null, 2) ?? 'undefined';
-
-      if (saveTo) {
-        const saved = await saveOutput(
-          json,
-          saveTo === true ? undefined : saveTo,
-          'evaluate-privileged'
-        );
-        let output = `Script ran in chrome context. Result saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`;
-        const excerpt = previewExcerpt(json, preview);
-        if (excerpt) {
-          output += '\nPreview:\n```json\n' + excerpt + '\n```';
-        }
-        return successResponse(output);
-      }
-
-      return successResponse(
-        'Script ran in chrome context and returned:\n```json\n' + json + '\n```'
-      );
-    } else {
-      const exceptionDetails = result.exceptionDetails;
-      return errorResponse(
-        new Error(
-          `Script execution failed: ${exceptionDetails.text}\n\n` +
-            '```json\n' +
-            JSON.stringify(remoteValueToNative(exceptionDetails.exception), null, 2) +
-            '\n```'
-        )
-      );
-    }
+  if (!context || typeof context !== 'string') {
+    throw new Error('context parameter is required and must be a string');
   }
-);
+
+  const { getFirefox } = await import('../index.js');
+  const firefox = await getFirefox();
+
+  await assertPrivilegedContext(firefox, context);
+
+  const result = await firefox.sendBiDiCommand('script.callFunction', {
+    functionDeclaration: fnString,
+    awaitPromise: true,
+    arguments: [],
+    target: { context },
+  });
+
+  if (result.type === 'success') {
+    // JSON.stringify returns undefined for an undefined script result
+    const json = JSON.stringify(remoteValueToNative(result.result), null, 2) ?? 'undefined';
+
+    if (saveTo) {
+      const saved = await saveOutput(
+        json,
+        saveTo === true ? undefined : saveTo,
+        'evaluate-privileged'
+      );
+      let output = `Script ran in chrome context. Result saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`;
+      const excerpt = previewExcerpt(json, preview);
+      if (excerpt) {
+        output += '\nPreview:\n```json\n' + excerpt + '\n```';
+      }
+      return successResponse(output);
+    }
+
+    return successResponse(
+      'Script ran in chrome context and returned:\n```json\n' + json + '\n```'
+    );
+  } else {
+    const exceptionDetails = result.exceptionDetails;
+    return errorResponse(
+      new Error(
+        `Script execution failed: ${exceptionDetails.text}\n\n` +
+          '```json\n' +
+          JSON.stringify(remoteValueToNative(exceptionDetails.exception), null, 2) +
+          '\n```'
+      )
+    );
+  }
+});
 
 export const module = defineModule({
   name: 'privileged',

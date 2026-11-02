@@ -36,49 +36,44 @@ export const sendBidiCommandTool = {
     },
     required: ['method'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleSendBidiCommand = defineToolHandler(async function handleSendBidiCommand(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { method, params, saveTo, preview } = args as {
-    method: string;
-    params?: Record<string, unknown>;
-    saveTo?: boolean | string;
-    preview?: number;
-  };
+export const handleSendBidiCommand = defineToolHandler<typeof sendBidiCommandTool>(
+  async function handleSendBidiCommand(args): Promise<McpToolResponse> {
+    const { method, params, saveTo, preview } = args;
 
-  if (!method || typeof method !== 'string') {
-    throw new Error('method required');
-  }
-  if (SESSION_ENDING_METHODS.has(method)) {
-    throw new Error(
-      `${method} would end the session this server depends on. Use close_firefox_session instead.`
-    );
-  }
-
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  const send = firefox.sendBiDiCommand as (
-    method: string,
-    params: Record<string, unknown>
-  ) => Promise<unknown>;
-  const result = await send(method, params ?? {});
-  const json = JSON.stringify(result, null, 2) ?? 'null';
-
-  if (saveTo) {
-    const saved = await saveOutput(json, saveTo === true ? undefined : saveTo, 'bidi-command');
-    let output = `Result saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`;
-    const excerpt = previewExcerpt(json, preview);
-    if (excerpt) {
-      output += '\nPreview:\n```json\n' + excerpt + '\n```';
+    if (!method || typeof method !== 'string') {
+      throw new Error('method required');
     }
-    return successResponse(output);
-  }
+    if (SESSION_ENDING_METHODS.has(method)) {
+      throw new Error(
+        `${method} would end the session this server depends on. Use close_firefox_session instead.`
+      );
+    }
 
-  return successResponse('```json\n' + json + '\n```');
-});
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+
+    const send = firefox.sendBiDiCommand as (
+      method: string,
+      params: Record<string, unknown>
+    ) => Promise<unknown>;
+    const result = await send(method, params ?? {});
+    const json = JSON.stringify(result, null, 2) ?? 'null';
+
+    if (saveTo) {
+      const saved = await saveOutput(json, saveTo === true ? undefined : saveTo, 'bidi-command');
+      let output = `Result saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`;
+      const excerpt = previewExcerpt(json, preview);
+      if (excerpt) {
+        output += '\nPreview:\n```json\n' + excerpt + '\n```';
+      }
+      return successResponse(output);
+    }
+
+    return successResponse('```json\n' + json + '\n```');
+  }
+);
 
 export const module = defineModule({
   name: 'bidi',

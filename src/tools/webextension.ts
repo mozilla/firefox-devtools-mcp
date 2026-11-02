@@ -60,16 +60,11 @@ export const installExtensionTool = {
     },
     required: ['type'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleInstallExtension = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { type, path, value, permanent } = args as {
-      type: 'archivePath' | 'base64' | 'path';
-      path?: string;
-      value?: string;
-      permanent?: boolean;
-    };
+export const handleInstallExtension = defineToolHandler<typeof installExtensionTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { type, path, value, permanent } = args;
 
     if (!type) {
       throw new Error('type parameter is required');
@@ -130,11 +125,11 @@ export const uninstallExtensionTool = {
     },
     required: ['id'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleUninstallExtension = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { id } = args as { id: string };
+export const handleUninstallExtension = defineToolHandler<typeof uninstallExtensionTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { id } = args;
 
     if (!id || typeof id !== 'string') {
       throw new Error('id parameter is required and must be a string');
@@ -178,7 +173,7 @@ export const listExtensionsTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 interface ExtensionInfo {
   id: string;
@@ -225,20 +220,15 @@ function formatExtensionList(extensions: ExtensionInfo[], filterId?: string): st
   return lines.join('\n');
 }
 
-export const handleListExtensions = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
+export const handleListExtensions = defineToolHandler<typeof listExtensionsTool>(
+  async (args): Promise<McpToolResponse> => {
     // Check whether Firefox version is supported
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
     checkListExtensionsSupported(firefox);
 
     // Handle listing extensions
-    const { ids, name, isActive } =
-      (args as {
-        ids?: string[];
-        name?: string;
-        isActive?: boolean;
-      }) || {};
+    const { ids, name, isActive } = args;
 
     const matched = await firefox.listExtensions({ ids, name, isActive });
 

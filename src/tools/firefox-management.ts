@@ -35,18 +35,10 @@ export const getFirefoxLogsTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleGetFirefoxLogs = defineToolHandler(async (input: unknown) => {
-  const {
-    lines = 100,
-    grep,
-    since,
-  } = input as {
-    lines?: number;
-    grep?: string;
-    since?: number;
-  };
+export const handleGetFirefoxLogs = defineToolHandler<typeof getFirefoxLogsTool>(async (input) => {
+  const { lines = 100, grep, since } = input;
 
   const { getFirefox } = await import('../index.js');
   const firefox = await getFirefox();
@@ -117,9 +109,9 @@ export const getFirefoxInfoTool = {
     type: 'object',
     properties: {},
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleGetFirefoxInfo = defineToolHandler(async (_input: unknown) => {
+export const handleGetFirefoxInfo = defineToolHandler<typeof getFirefoxInfoTool>(async (_input) => {
   const { getFirefox } = await import('../index.js');
   const firefox = await getFirefox();
   const options = firefox.getOptions();
@@ -203,26 +195,28 @@ export const closeFirefoxSessionTool = {
     type: 'object',
     properties: {},
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleCloseFirefoxSession = defineToolHandler(async (_args: unknown) => {
-  const { getFirefoxIfRunning, resetFirefox } = await import('../index.js');
+export const handleCloseFirefoxSession = defineToolHandler<typeof closeFirefoxSessionTool>(
+  async (_args) => {
+    const { getFirefoxIfRunning, resetFirefox } = await import('../index.js');
 
-  const currentFirefox = getFirefoxIfRunning();
-  if (!currentFirefox) {
-    return successResponse('No Firefox session is currently active.');
+    const currentFirefox = getFirefoxIfRunning();
+    if (!currentFirefox) {
+      return successResponse('No Firefox session is currently active.');
+    }
+
+    // Read options before calling resetFirefox().
+    const { connectExisting } = currentFirefox.getOptions();
+    await resetFirefox();
+
+    return successResponse(
+      connectExisting
+        ? 'Disconnected from Firefox. The browser is still running.'
+        : 'Closed the Firefox instance started by this server, a new session will start if you use browser tools again.'
+    );
   }
-
-  // Read options before calling resetFirefox().
-  const { connectExisting } = currentFirefox.getOptions();
-  await resetFirefox();
-
-  return successResponse(
-    connectExisting
-      ? 'Disconnected from Firefox. The browser is still running.'
-      : 'Closed the Firefox instance started by this server, a new session will start if you use browser tools again.'
-  );
-});
+);
 
 export const module = defineModule({
   name: 'management',

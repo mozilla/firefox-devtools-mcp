@@ -29,7 +29,7 @@ export const clickByUidTool = {
     },
     required: ['uid'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const hoverByUidTool = {
   name: 'hover_by_uid',
@@ -47,7 +47,7 @@ export const hoverByUidTool = {
     },
     required: ['uid'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const fillByUidTool = {
   name: 'fill_by_uid',
@@ -69,7 +69,7 @@ export const fillByUidTool = {
     },
     required: ['uid', 'value'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const dragByUidToUidTool = {
   name: 'drag_by_uid_to_uid',
@@ -91,7 +91,7 @@ export const dragByUidToUidTool = {
     },
     required: ['fromUid', 'toUid'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const fillFormByUidTool = {
   name: 'fill_form_by_uid',
@@ -123,7 +123,7 @@ export const fillFormByUidTool = {
     },
     required: ['elements'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const uploadFileByUidTool = {
   name: 'upload_file_by_uid',
@@ -145,7 +145,7 @@ export const uploadFileByUidTool = {
     },
     required: ['uid', 'filePath'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const pressKeyTool = {
   name: 'press_key',
@@ -170,7 +170,7 @@ export const pressKeyTool = {
     },
     required: ['key'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const typeTextTool = {
   name: 'type_text',
@@ -199,236 +199,235 @@ export const typeTextTool = {
     },
     required: ['text'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 // Handlers
-export const handleClickByUid = defineToolHandler(async function handleClickByUid(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { uid, dblClick } = args as { uid: string; dblClick?: boolean };
+export const handleClickByUid = defineToolHandler<typeof clickByUidTool>(
+  async function handleClickByUid(args): Promise<McpToolResponse> {
+    const { uid, dblClick } = args;
 
-  if (!uid || typeof uid !== 'string') {
-    throw new Error('uid parameter is required and must be a string');
-  }
-
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  try {
-    await firefox.clickByUid(uid, dblClick);
-    return successResponse(`${dblClick ? 'dblclick' : 'click'} ${uid}`);
-  } catch (error) {
-    throw handleUidError(error as Error, uid);
-  }
-});
-
-export const handleHoverByUid = defineToolHandler(async function handleHoverByUid(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { uid } = args as { uid: string };
-
-  if (!uid || typeof uid !== 'string') {
-    throw new Error('uid parameter is required and must be a string');
-  }
-
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  try {
-    await firefox.hoverByUid(uid);
-    return successResponse(`hover ${uid}`);
-  } catch (error) {
-    throw handleUidError(error as Error, uid);
-  }
-});
-
-export const handleFillByUid = defineToolHandler(async function handleFillByUid(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { uid, value } = args as { uid: string; value: string };
-
-  if (!uid || typeof uid !== 'string') {
-    throw new Error('uid parameter is required and must be a string');
-  }
-
-  if (value === undefined || typeof value !== 'string') {
-    throw new Error('value parameter is required and must be a string');
-  }
-
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  try {
-    await firefox.fillByUid(uid, value);
-    return successResponse(`fill ${uid}`);
-  } catch (error) {
-    throw handleUidError(error as Error, uid);
-  }
-});
-
-export const handleDragByUidToUid = defineToolHandler(async function handleDragByUidToUid(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { fromUid, toUid } = args as { fromUid: string; toUid: string };
-
-  if (!fromUid || typeof fromUid !== 'string') {
-    throw new Error('fromUid parameter is required and must be a string');
-  }
-
-  if (!toUid || typeof toUid !== 'string') {
-    throw new Error('toUid parameter is required and must be a string');
-  }
-
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  try {
-    await firefox.dragByUidToUid(fromUid, toUid);
-    return successResponse(`drag ${fromUid}→${toUid}`);
-  } catch (error) {
-    // Check both UIDs for staleness
-    const errorMsg = (error as Error).message;
-    if (errorMsg.includes('stale') || errorMsg.includes('Snapshot') || errorMsg.includes('UID')) {
-      throw new Error(`UIDs stale/invalid. Call take_snapshot first.`);
+    if (!uid || typeof uid !== 'string') {
+      throw new Error('uid parameter is required and must be a string');
     }
-    throw error;
-  }
-});
 
-export const handleFillFormByUid = defineToolHandler(async function handleFillFormByUid(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { elements } = args as { elements: Array<{ uid: string; value: string }> };
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
 
-  if (!elements || !Array.isArray(elements) || elements.length === 0) {
-    throw new Error('elements parameter is required and must be a non-empty array');
-  }
-
-  // Validate all elements
-  for (const el of elements) {
-    if (!el.uid || typeof el.uid !== 'string') {
-      throw new Error(`Invalid element: uid is required and must be a string`);
-    }
-    if (el.value === undefined || typeof el.value !== 'string') {
-      throw new Error(`Invalid element for uid "${el.uid}": value must be a string`);
-    }
-  }
-
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  try {
-    await firefox.fillFormByUid(elements);
-    return successResponse(`filled ${elements.length} fields`);
-  } catch (error) {
-    const errorMsg = (error as Error).message;
-    if (errorMsg.includes('stale') || errorMsg.includes('Snapshot') || errorMsg.includes('UID')) {
-      throw new Error(`UIDs stale/invalid. Call take_snapshot first.`);
-    }
-    throw error;
-  }
-});
-
-export const handleUploadFileByUid = defineToolHandler(async function handleUploadFileByUid(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { uid, filePath } = args as { uid: string; filePath: string };
-
-  if (!uid || typeof uid !== 'string') {
-    throw new Error('uid parameter is required and must be a string');
-  }
-
-  if (!filePath || typeof filePath !== 'string') {
-    throw new Error('filePath parameter is required and must be a string');
-  }
-
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  try {
-    await firefox.uploadFileByUid(uid, filePath);
-    return successResponse(`upload ${uid}`);
-  } catch (error) {
-    const errorMsg = (error as Error).message;
-
-    // Check for UID staleness
-    if (errorMsg.includes('stale') || errorMsg.includes('Snapshot') || errorMsg.includes('UID')) {
+    try {
+      await firefox.clickByUid(uid, dblClick);
+      return successResponse(`${dblClick ? 'dblclick' : 'click'} ${uid}`);
+    } catch (error) {
       throw handleUidError(error as Error, uid);
     }
+  }
+);
 
-    // Check for file input specific errors
-    if (errorMsg.includes('not a file input') || errorMsg.includes('type="file"')) {
-      throw new Error(`${uid} is not a file input`);
+export const handleHoverByUid = defineToolHandler<typeof hoverByUidTool>(
+  async function handleHoverByUid(args): Promise<McpToolResponse> {
+    const { uid } = args;
+
+    if (!uid || typeof uid !== 'string') {
+      throw new Error('uid parameter is required and must be a string');
     }
 
-    if (errorMsg.includes('hidden') || errorMsg.includes('not visible')) {
-      throw new Error(`${uid} is hidden/not interactable`);
-    }
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
 
-    throw error;
-  }
-});
-
-export const handlePressKey = defineToolHandler(async function handlePressKey(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { key, uid } = (args as { key: string; uid?: string }) || {};
-
-  if (!key || typeof key !== 'string') {
-    throw new Error('key parameter is required and must be a string');
-  }
-
-  if (uid !== undefined && (!uid || typeof uid !== 'string')) {
-    throw new Error('uid parameter must be a non-empty string');
-  }
-
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  try {
-    await firefox.pressKey(key, uid);
-    return successResponse(uid ? `press_key ${key} on ${uid}` : `press_key ${key}`);
-  } catch (error) {
-    if (uid) {
+    try {
+      await firefox.hoverByUid(uid);
+      return successResponse(`hover ${uid}`);
+    } catch (error) {
       throw handleUidError(error as Error, uid);
     }
-    throw error;
   }
-});
+);
 
-export const handleTypeText = defineToolHandler(async function handleTypeText(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { text, uid, submitKey } =
-    (args as { text: string; uid?: string; submitKey?: string }) || {};
+export const handleFillByUid = defineToolHandler<typeof fillByUidTool>(
+  async function handleFillByUid(args): Promise<McpToolResponse> {
+    const { uid, value } = args;
 
-  if (!text || typeof text !== 'string') {
-    throw new Error('text parameter is required and must be a non-empty string');
-  }
+    if (!uid || typeof uid !== 'string') {
+      throw new Error('uid parameter is required and must be a string');
+    }
 
-  if (uid !== undefined && (!uid || typeof uid !== 'string')) {
-    throw new Error('uid parameter must be a non-empty string');
-  }
+    if (value === undefined || typeof value !== 'string') {
+      throw new Error('value parameter is required and must be a string');
+    }
 
-  if (submitKey !== undefined && (!submitKey || typeof submitKey !== 'string')) {
-    throw new Error('submitKey parameter must be a non-empty string');
-  }
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
 
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
-
-  try {
-    await firefox.typeText(text, { uid, submitKey });
-    const target = uid ? ` on ${uid}` : '';
-    const suffix = submitKey ? `, then ${submitKey}` : '';
-    return successResponse(`type_text ${text.length} chars${target}${suffix}`);
-  } catch (error) {
-    if (uid) {
+    try {
+      await firefox.fillByUid(uid, value);
+      return successResponse(`fill ${uid}`);
+    } catch (error) {
       throw handleUidError(error as Error, uid);
     }
-    throw error;
   }
-});
+);
+
+export const handleDragByUidToUid = defineToolHandler<typeof dragByUidToUidTool>(
+  async function handleDragByUidToUid(args): Promise<McpToolResponse> {
+    const { fromUid, toUid } = args;
+
+    if (!fromUid || typeof fromUid !== 'string') {
+      throw new Error('fromUid parameter is required and must be a string');
+    }
+
+    if (!toUid || typeof toUid !== 'string') {
+      throw new Error('toUid parameter is required and must be a string');
+    }
+
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+
+    try {
+      await firefox.dragByUidToUid(fromUid, toUid);
+      return successResponse(`drag ${fromUid}→${toUid}`);
+    } catch (error) {
+      // Check both UIDs for staleness
+      const errorMsg = (error as Error).message;
+      if (errorMsg.includes('stale') || errorMsg.includes('Snapshot') || errorMsg.includes('UID')) {
+        throw new Error(`UIDs stale/invalid. Call take_snapshot first.`);
+      }
+      throw error;
+    }
+  }
+);
+
+export const handleFillFormByUid = defineToolHandler<typeof fillFormByUidTool>(
+  async function handleFillFormByUid(args): Promise<McpToolResponse> {
+    const { elements } = args;
+
+    if (!elements || !Array.isArray(elements) || elements.length === 0) {
+      throw new Error('elements parameter is required and must be a non-empty array');
+    }
+
+    // Validate all elements
+    for (const el of elements) {
+      if (!el.uid || typeof el.uid !== 'string') {
+        throw new Error(`Invalid element: uid is required and must be a string`);
+      }
+      if (el.value === undefined || typeof el.value !== 'string') {
+        throw new Error(`Invalid element for uid "${el.uid}": value must be a string`);
+      }
+    }
+
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+
+    try {
+      await firefox.fillFormByUid(elements);
+      return successResponse(`filled ${elements.length} fields`);
+    } catch (error) {
+      const errorMsg = (error as Error).message;
+      if (errorMsg.includes('stale') || errorMsg.includes('Snapshot') || errorMsg.includes('UID')) {
+        throw new Error(`UIDs stale/invalid. Call take_snapshot first.`);
+      }
+      throw error;
+    }
+  }
+);
+
+export const handleUploadFileByUid = defineToolHandler<typeof uploadFileByUidTool>(
+  async function handleUploadFileByUid(args): Promise<McpToolResponse> {
+    const { uid, filePath } = args;
+
+    if (!uid || typeof uid !== 'string') {
+      throw new Error('uid parameter is required and must be a string');
+    }
+
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('filePath parameter is required and must be a string');
+    }
+
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+
+    try {
+      await firefox.uploadFileByUid(uid, filePath);
+      return successResponse(`upload ${uid}`);
+    } catch (error) {
+      const errorMsg = (error as Error).message;
+
+      // Check for UID staleness
+      if (errorMsg.includes('stale') || errorMsg.includes('Snapshot') || errorMsg.includes('UID')) {
+        throw handleUidError(error as Error, uid);
+      }
+
+      // Check for file input specific errors
+      if (errorMsg.includes('not a file input') || errorMsg.includes('type="file"')) {
+        throw new Error(`${uid} is not a file input`);
+      }
+
+      if (errorMsg.includes('hidden') || errorMsg.includes('not visible')) {
+        throw new Error(`${uid} is hidden/not interactable`);
+      }
+
+      throw error;
+    }
+  }
+);
+
+export const handlePressKey = defineToolHandler<typeof pressKeyTool>(
+  async function handlePressKey(args): Promise<McpToolResponse> {
+    const { key, uid } = args;
+
+    if (!key || typeof key !== 'string') {
+      throw new Error('key parameter is required and must be a string');
+    }
+
+    if (uid !== undefined && (!uid || typeof uid !== 'string')) {
+      throw new Error('uid parameter must be a non-empty string');
+    }
+
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+
+    try {
+      await firefox.pressKey(key, uid);
+      return successResponse(uid ? `press_key ${key} on ${uid}` : `press_key ${key}`);
+    } catch (error) {
+      if (uid) {
+        throw handleUidError(error as Error, uid);
+      }
+      throw error;
+    }
+  }
+);
+
+export const handleTypeText = defineToolHandler<typeof typeTextTool>(
+  async function handleTypeText(args): Promise<McpToolResponse> {
+    const { text, uid, submitKey } = args;
+
+    if (!text || typeof text !== 'string') {
+      throw new Error('text parameter is required and must be a non-empty string');
+    }
+
+    if (uid !== undefined && (!uid || typeof uid !== 'string')) {
+      throw new Error('uid parameter must be a non-empty string');
+    }
+
+    if (submitKey !== undefined && (!submitKey || typeof submitKey !== 'string')) {
+      throw new Error('submitKey parameter must be a non-empty string');
+    }
+
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+
+    try {
+      await firefox.typeText(text, { uid, submitKey });
+      const target = uid ? ` on ${uid}` : '';
+      const suffix = submitKey ? `, then ${submitKey}` : '';
+      return successResponse(`type_text ${text.length} chars${target}${suffix}`);
+    } catch (error) {
+      if (uid) {
+        throw handleUidError(error as Error, uid);
+      }
+      throw error;
+    }
+  }
+);
 
 export const module = defineModule({
   name: 'input',

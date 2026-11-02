@@ -62,7 +62,7 @@ export const listConsoleMessagesTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const clearConsoleMessagesTool = {
   name: 'clear_console_messages',
@@ -74,7 +74,7 @@ export const clearConsoleMessagesTool = {
     type: 'object',
     properties: {},
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 const DEFAULT_LIMIT = 50;
 
@@ -90,27 +90,9 @@ function formatMessageLine(msg: {
   return `${time}${msg.level.toUpperCase()}${source}: ${msg.text}`;
 }
 
-export const handleListConsoleMessages = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const {
-      level,
-      limit,
-      sinceMs,
-      textContains,
-      source,
-      format = 'text',
-      saveTo,
-      preview,
-    } = (args as {
-      level?: string;
-      limit?: number;
-      sinceMs?: number;
-      textContains?: string;
-      source?: string;
-      format?: 'text' | 'json';
-      saveTo?: boolean | string;
-      preview?: number;
-    }) || {};
+export const handleListConsoleMessages = defineToolHandler<typeof listConsoleMessagesTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { level, limit, sinceMs, textContains, source, format = 'text', saveTo, preview } = args;
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
@@ -288,8 +270,8 @@ export const handleListConsoleMessages = defineToolHandler(
   }
 );
 
-export const handleClearConsoleMessages = defineToolHandler(
-  async (_args: unknown): Promise<McpToolResponse> => {
+export const handleClearConsoleMessages = defineToolHandler<typeof clearConsoleMessagesTool>(
+  async (_args): Promise<McpToolResponse> => {
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 

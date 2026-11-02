@@ -34,7 +34,7 @@ export const enableDebuggerTool = {
     readOnlyHint: false,
   },
   inputSchema: { type: 'object', properties: {} },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const listScriptsTool = {
   name: 'list_scripts',
@@ -44,7 +44,7 @@ export const listScriptsTool = {
     readOnlyHint: true,
   },
   inputSchema: { type: 'object', properties: {} },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const getScriptSourceTool = {
   name: 'get_script_source',
@@ -60,7 +60,7 @@ export const getScriptSourceTool = {
     },
     required: ['scriptUrl'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const setLogpointTool = {
   name: 'set_logpoint',
@@ -81,7 +81,7 @@ export const setLogpointTool = {
     },
     required: ['url', 'line', 'expression'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const removeLogpointTool = {
   name: 'remove_logpoint',
@@ -96,7 +96,7 @@ export const removeLogpointTool = {
     },
     required: ['logpoint'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const getLogpointResultsTool = {
   name: 'get_logpoint_results',
@@ -111,14 +111,14 @@ export const getLogpointResultsTool = {
     },
     required: ['logpoint'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 // ============================================================================
 // Handlers
 // ============================================================================
 
-export const handleEnableDebugger = defineToolHandler(
-  async (_args: unknown): Promise<McpToolResponse> => {
+export const handleEnableDebugger = defineToolHandler<typeof enableDebuggerTool>(
+  async (_args): Promise<McpToolResponse> => {
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
     requireDebuggingSupport(firefox);
@@ -127,8 +127,8 @@ export const handleEnableDebugger = defineToolHandler(
   }
 );
 
-export const handleListScripts = defineToolHandler(
-  async (_args: unknown): Promise<McpToolResponse> => {
+export const handleListScripts = defineToolHandler<typeof listScriptsTool>(
+  async (_args): Promise<McpToolResponse> => {
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
     requireDebuggingSupport(firefox);
@@ -144,9 +144,9 @@ export const handleListScripts = defineToolHandler(
   }
 );
 
-export const handleGetScriptSource = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { scriptUrl } = args as { scriptUrl: string };
+export const handleGetScriptSource = defineToolHandler<typeof getScriptSourceTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { scriptUrl } = args;
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
     requireDebuggingSupport(firefox);
@@ -159,9 +159,9 @@ export const handleGetScriptSource = defineToolHandler(
   }
 );
 
-export const handleSetLogpoint = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { url, line, expression } = args as { url: string; line: number; expression: string };
+export const handleSetLogpoint = defineToolHandler<typeof setLogpointTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { url, line, expression } = args;
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
     requireDebuggingSupport(firefox);
@@ -170,9 +170,9 @@ export const handleSetLogpoint = defineToolHandler(
   }
 );
 
-export const handleRemoveLogpoint = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { logpoint } = args as { logpoint: string };
+export const handleRemoveLogpoint = defineToolHandler<typeof removeLogpointTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { logpoint } = args;
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
     requireDebuggingSupport(firefox);
@@ -181,9 +181,9 @@ export const handleRemoveLogpoint = defineToolHandler(
   }
 );
 
-export const handleGetLogpointResults = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { logpoint } = args as { logpoint: string };
+export const handleGetLogpointResults = defineToolHandler<typeof getLogpointResultsTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { logpoint } = args;
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
     requireDebuggingSupport(firefox);

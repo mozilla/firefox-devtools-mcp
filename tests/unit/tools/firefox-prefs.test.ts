@@ -25,7 +25,7 @@ describe('Firefox Prefs Tool Definitions', () => {
 
     it('should require prefs parameter', () => {
       const schema = setFirefoxPrefsTool.inputSchema as {
-        required?: string[];
+        required?: readonly string[];
       };
       expect(schema.required).toContain('prefs');
     });
@@ -50,7 +50,7 @@ describe('Firefox Prefs Tool Definitions', () => {
 
     it('should require names parameter', () => {
       const schema = getFirefoxPrefsTool.inputSchema as {
-        required?: string[];
+        required?: readonly string[];
       };
       expect(schema.required).toContain('names');
     });
@@ -87,6 +87,7 @@ describe('Firefox Prefs Tool Handlers', () => {
 
   describe('handleSetFirefoxPrefs', () => {
     it('should return error when prefs parameter is missing', async () => {
+      // @ts-expect-error invalid arguments
       const result = await handleSetFirefoxPrefs({});
 
       expect(result.isError).toBe(true);
@@ -103,6 +104,7 @@ describe('Firefox Prefs Tool Handlers', () => {
 
   describe('handleGetFirefoxPrefs', () => {
     it('should return error when names parameter is missing', async () => {
+      // @ts-expect-error invalid arguments
       const result = await handleGetFirefoxPrefs({});
 
       expect(result.isError).toBe(true);

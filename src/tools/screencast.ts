@@ -61,17 +61,11 @@ export const screencastStartTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleScreencastStart = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { context, frameRate, width, height, mimeType } = (args ?? {}) as {
-      context?: string;
-      frameRate?: number;
-      width?: number;
-      height?: number;
-      mimeType?: string;
-    };
+export const handleScreencastStart = defineToolHandler<typeof screencastStartTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { context, frameRate, width, height, mimeType } = args;
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
@@ -133,11 +127,11 @@ export const screencastStopTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleScreencastStop = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { screencast } = (args ?? {}) as { screencast?: string };
+export const handleScreencastStop = defineToolHandler<typeof screencastStopTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { screencast } = args;
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();

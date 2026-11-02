@@ -167,6 +167,7 @@ describe('Input Tools', () => {
       const { handlePressKey } = await import('../../../src/tools/input.js');
 
       for (const args of [{}, { key: '' }, { key: 42 }]) {
+        // @ts-expect-error invalid arguments
         const result = await handlePressKey(args);
         expect(result.isError).toBe(true);
         expect(textOf(result)).toContain('key parameter is required');
@@ -178,6 +179,7 @@ describe('Input Tools', () => {
       const { handlePressKey } = await import('../../../src/tools/input.js');
 
       for (const uid of ['', 42]) {
+        // @ts-expect-error invalid arguments
         const result = await handlePressKey({ key: 'Enter', uid });
         expect(result.isError).toBe(true);
         expect(textOf(result)).toContain('uid parameter must be a non-empty string');
@@ -244,6 +246,7 @@ describe('Input Tools', () => {
       const { handleTypeText } = await import('../../../src/tools/input.js');
 
       for (const args of [{}, { text: '' }, { text: 42 }]) {
+        // @ts-expect-error invalid arguments
         const result = await handleTypeText(args);
         expect(result.isError).toBe(true);
         expect(textOf(result)).toContain('text parameter is required');

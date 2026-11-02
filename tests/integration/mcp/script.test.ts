@@ -2,7 +2,7 @@
  * Integration tests for evaluate_script, called through the MCP server
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, assert, beforeAll, afterAll, beforeEach } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fixtureUrl } from '../../helpers/firefox.js';
@@ -54,7 +54,7 @@ describe('evaluate_script (MCP)', () => {
   it('passes snapshot UIDs as element arguments', async () => {
     const snapshot = await mcp().callTool('take_snapshot');
     const uid = /uid=(\S+) button "Click Me"/.exec(snapshot.text)?.[1];
-    expect(uid).toBeDefined();
+    assert(uid, 'snapshot contains the button uid');
 
     const result = await mcp().callTool('evaluate_script', {
       function: '(el) => el.id',
