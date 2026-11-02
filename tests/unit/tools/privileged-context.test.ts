@@ -74,6 +74,7 @@ describe('Privileged Context Tool Handlers', () => {
 
   describe('handleEvaluatePrivilegedScript', () => {
     it('should return error when function parameter is missing', async () => {
+      // @ts-expect-error invalid arguments
       const result = await handleEvaluatePrivilegedScript({});
 
       expect(result.isError).toBe(true);
@@ -81,6 +82,7 @@ describe('Privileged Context Tool Handlers', () => {
     });
 
     it('should reject plain expressions (not function strings)', async () => {
+      // @ts-expect-error invalid arguments
       const result = await handleEvaluatePrivilegedScript({ function: 'document.title' });
 
       expect(result.isError).toBe(true);
@@ -130,6 +132,7 @@ describe('Privileged Context Tool Handlers', () => {
     });
 
     it('should return error when context parameter is missing', async () => {
+      // @ts-expect-error invalid arguments
       const result = await handleEvaluatePrivilegedScript({ function: '() => 1' });
 
       expect(result.isError).toBe(true);

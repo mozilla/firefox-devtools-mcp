@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { removeDir } from '../../helpers/fs.js';
 import { join } from 'node:path';
+import { ReadinessState } from '../../../src/firefox/bidi.js';
 import { tmpdir } from 'node:os';
 import {
   listPagesTool,
@@ -71,7 +72,7 @@ describe('Pages Tools', () => {
     ])('%s should expose an optional wait enum', (_name, tool) => {
       const schema = tool.inputSchema as {
         properties?: Record<string, any>;
-        required?: string[];
+        required?: readonly string[];
       };
       expect(schema.properties?.wait).toBeDefined();
       expect(schema.properties?.wait.type).toBe('string');
@@ -95,7 +96,7 @@ describe('Pages Tools', () => {
     it('should expose maxLength, saveTo, and preview without marking them required', () => {
       const schema = getPageTextTool.inputSchema as {
         properties?: Record<string, unknown>;
-        required?: string[];
+        required?: readonly string[];
       };
       expect(schema.properties?.maxLength).toBeDefined();
       expect(schema.properties?.saveTo).toBeDefined();
@@ -191,7 +192,10 @@ describe('Pages Tools', () => {
 
     it('passes an explicit wait through to navigate', async () => {
       const { handleNavigatePage } = await import('../../../src/tools/pages.js');
-      const result = await handleNavigatePage({ url: 'https://example.com', wait: 'complete' });
+      const result = await handleNavigatePage({
+        url: 'https://example.com',
+        wait: ReadinessState.Complete,
+      });
 
       expect(navigate).toHaveBeenCalledWith('https://example.com', 'complete');
       const text = (result.content[0] as { type: 'text'; text: string }).text;
@@ -209,13 +213,14 @@ describe('Pages Tools', () => {
 
     it('passes an explicit wait through to new_page', async () => {
       const { handleNewPage } = await import('../../../src/tools/pages.js');
-      await handleNewPage({ url: 'https://example.com', wait: 'complete' });
+      await handleNewPage({ url: 'https://example.com', wait: ReadinessState.Complete });
 
       expect(createNewPage).toHaveBeenCalledWith('https://example.com', 'complete');
     });
 
     it('rejects an unknown wait value instead of silently ignoring it', async () => {
       const { handleNavigatePage } = await import('../../../src/tools/pages.js');
+      // @ts-expect-error invalid arguments
       const result = await handleNavigatePage({ url: 'https://example.com', wait: 'load' });
 
       const text = (result.content[0] as { type: 'text'; text: string }).text;

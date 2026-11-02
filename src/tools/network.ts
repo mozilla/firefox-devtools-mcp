@@ -96,7 +96,7 @@ export const listNetworkRequestsTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const getNetworkRequestTool = {
   name: 'get_network_request',
@@ -133,7 +133,7 @@ export const getNetworkRequestTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const setNetworkCacheTool = {
   name: 'set_network_cache',
@@ -158,7 +158,7 @@ export const setNetworkCacheTool = {
     },
     required: ['behavior'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 /**
  * Fetch a body without letting a missing facade method or transport error fail
@@ -228,8 +228,8 @@ function renderBodyForFile(result: NetworkBodyResult): {
 }
 
 // Tool handlers
-export const handleListNetworkRequests = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
+export const handleListNetworkRequests = defineToolHandler<typeof listNetworkRequestsTool>(
+  async (args): Promise<McpToolResponse> => {
     const {
       limit,
       sinceMs,
@@ -245,22 +245,7 @@ export const handleListNetworkRequests = defineToolHandler(
       format = 'text',
       saveTo,
       preview,
-    } = (args as {
-      limit?: number;
-      sinceMs?: number;
-      urlContains?: string;
-      method?: string;
-      status?: number;
-      statusMin?: number;
-      statusMax?: number;
-      isXHR?: boolean;
-      resourceType?: string;
-      sortBy?: 'timestamp' | 'duration' | 'status';
-      detail?: 'summary' | 'min' | 'full';
-      format?: 'text' | 'json';
-      saveTo?: boolean | string;
-      preview?: number;
-    }) || {};
+    } = args;
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
@@ -475,15 +460,9 @@ export const handleListNetworkRequests = defineToolHandler(
   }
 );
 
-export const handleGetNetworkRequest = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { id, url, format, saveTo, preview } = args as {
-      id?: string;
-      url?: string;
-      format?: 'text' | 'json';
-      saveTo?: boolean | string;
-      preview?: number;
-    };
+export const handleGetNetworkRequest = defineToolHandler<typeof getNetworkRequestTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { id, url, format, saveTo, preview } = args;
 
     if (!id && !url) {
       return errorResponse('id or url required');
@@ -600,9 +579,9 @@ export const handleGetNetworkRequest = defineToolHandler(
   }
 );
 
-export const handleSetNetworkCache = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { behavior, scope } = (args as { behavior?: unknown; scope?: unknown }) || {};
+export const handleSetNetworkCache = defineToolHandler<typeof setNetworkCacheTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { behavior, scope } = args;
 
     // An unrecognised value is rejected rather than defaulting: silently caching
     // when the caller asked to bypass would quietly invalidate their measurement.

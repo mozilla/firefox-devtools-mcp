@@ -11,6 +11,14 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { removeDir } from './fs.js';
+import type { ToolArgsOf } from '@/types/tool-args.js';
+import type { MODULES } from '@/tools/index.js';
+
+type RegisteredToolDefinition = (typeof MODULES)[number]['tools'][number]['definition'];
+
+type ToolName = RegisteredToolDefinition['name'];
+
+type ToolArgs<N extends ToolName> = ToolArgsOf<Extract<RegisteredToolDefinition, { name: N }>>;
 
 const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '../..');
 
@@ -22,7 +30,7 @@ export interface ToolResult {
 export interface McpTestServer {
   /** Temporary home directory of the server process. */
   home: string;
-  callTool(name: string, args?: Record<string, unknown>): Promise<ToolResult>;
+  callTool<N extends ToolName>(name: N, args?: ToolArgs<N>): Promise<ToolResult>;
   close(): Promise<void>;
 }
 
@@ -58,7 +66,7 @@ export async function startMcpServer(serverArgs: string[] = []): Promise<McpTest
 
   return {
     home,
-    async callTool(name, args = {}) {
+    async callTool(name, args: any = {}) {
       const result = await client.callTool({ name, arguments: args }, undefined, {
         timeout: 60000,
       });

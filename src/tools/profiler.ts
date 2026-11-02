@@ -40,10 +40,10 @@ export const profilerIsActiveTool = {
     type: 'object',
     properties: {},
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleProfilerIsActive = defineToolHandler(
-  async (_args: unknown): Promise<McpToolResponse> => {
+export const handleProfilerIsActive = defineToolHandler<typeof profilerIsActiveTool>(
+  async (_args): Promise<McpToolResponse> => {
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
     checkProfilerSupported(firefox);
@@ -99,18 +99,11 @@ export const profilerStartTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleProfilerStart = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { preset, entries, interval, features, threads, activeContext } = args as {
-      preset?: string;
-      entries?: number;
-      interval?: number;
-      features?: string[];
-      threads?: string[];
-      activeContext?: string;
-    };
+export const handleProfilerStart = defineToolHandler<typeof profilerStartTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { preset, entries, interval, features, threads, activeContext } = args;
 
     const params: Record<string, unknown> = {};
 
@@ -168,11 +161,11 @@ export const profilerStopTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleProfilerStop = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { discard } = args as { discard?: boolean };
+export const handleProfilerStop = defineToolHandler<typeof profilerStopTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { discard } = args;
 
     const params: Record<string, unknown> = {};
     if (discard !== undefined) {

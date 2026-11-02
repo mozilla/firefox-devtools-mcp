@@ -27,38 +27,34 @@ export const printPageTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handlePrintPage = defineToolHandler(async function handlePrintPage(
-  args: unknown
-): Promise<McpToolResponse> {
-  const { landscape, background, saveTo } = (args ?? {}) as {
-    landscape?: boolean;
-    background?: boolean;
-    saveTo?: boolean | string;
-  };
+export const handlePrintPage = defineToolHandler<typeof printPageTool>(
+  async function handlePrintPage(args): Promise<McpToolResponse> {
+    const { landscape, background, saveTo } = args;
 
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
 
-  const base64Pdf = await firefox.printPage({
-    landscape: landscape === true,
-    background: background === true,
-  });
+    const base64Pdf = await firefox.printPage({
+      landscape: landscape === true,
+      background: background === true,
+    });
 
-  if (!base64Pdf || typeof base64Pdf !== 'string') {
-    throw new Error('Invalid PDF data');
+    if (!base64Pdf || typeof base64Pdf !== 'string') {
+      throw new Error('Invalid PDF data');
+    }
+
+    const saved = await saveOutput(
+      Buffer.from(base64Pdf, 'base64'),
+      typeof saveTo === 'string' ? saveTo : undefined,
+      'page',
+      'pdf'
+    );
+
+    return successResponse(`PDF saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`);
   }
-
-  const saved = await saveOutput(
-    Buffer.from(base64Pdf, 'base64'),
-    typeof saveTo === 'string' ? saveTo : undefined,
-    'page',
-    'pdf'
-  );
-
-  return successResponse(`PDF saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`);
-});
+);
 
 export const module = defineModule({
   name: 'print',

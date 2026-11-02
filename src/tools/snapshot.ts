@@ -63,7 +63,7 @@ export const takeSnapshotTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const resolveUidToSelectorTool = {
   name: 'resolve_uid_to_selector',
@@ -81,7 +81,7 @@ export const resolveUidToSelectorTool = {
     },
     required: ['uid'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 export const clearSnapshotTool = {
   name: 'clear_snapshot',
@@ -93,132 +93,126 @@ export const clearSnapshotTool = {
     type: 'object',
     properties: {},
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 // Handlers
-export const handleTakeSnapshot = defineToolHandler(async function handleTakeSnapshot(
-  args: unknown
-): Promise<McpToolResponse> {
-  try {
-    const {
-      maxLines: requestedMaxLines = DEFAULT_SNAPSHOT_LINES,
-      includeAttributes = false,
-      includeText = true,
-      maxDepth,
-      includeAll = false,
-      selector,
-      saveTo,
-      preview,
-    } = (args as {
-      maxLines?: number;
-      includeAttributes?: boolean;
-      includeText?: boolean;
-      maxDepth?: number;
-      includeAll?: boolean;
-      selector?: string;
-      saveTo?: boolean | string;
-      preview?: number;
-    }) || {};
+export const handleTakeSnapshot = defineToolHandler<typeof takeSnapshotTool>(
+  async function handleTakeSnapshot(args): Promise<McpToolResponse> {
+    try {
+      const {
+        maxLines: requestedMaxLines = DEFAULT_SNAPSHOT_LINES,
+        includeAttributes = false,
+        includeText = true,
+        maxDepth,
+        includeAll = false,
+        selector,
+        saveTo,
+        preview,
+      } = args ?? {};
 
-    // Apply hard cap on maxLines to prevent token overflow
-    const maxLines = Math.min(Math.max(1, requestedMaxLines), TOKEN_LIMITS.MAX_SNAPSHOT_LINES_CAP);
-    const wasCapped = requestedMaxLines > TOKEN_LIMITS.MAX_SNAPSHOT_LINES_CAP;
-
-    const { getFirefox } = await import('../index.js');
-    const firefox = await getFirefox();
-
-    // Pass snapshot options to manager
-    const snapshotOptions: any = {};
-    if (includeAll) {
-      snapshotOptions.includeAll = includeAll;
-    }
-    if (selector) {
-      snapshotOptions.selector = selector;
-    }
-    const snapshot = await firefox.takeSnapshot(
-      Object.keys(snapshotOptions).length > 0 ? snapshotOptions : undefined
-    );
-
-    // Import formatter to apply custom options
-    const { formatSnapshotTree } = await import('../firefox/snapshot/formatter.js');
-    const options: any = {
-      includeAttributes,
-      includeText,
-    };
-    if (maxDepth !== undefined) {
-      options.maxDepth = maxDepth;
-    }
-    // A saved snapshot is the complete tree, so keep attribute values untruncated.
-    if (saveTo) {
-      options.maxAttrLength = Infinity;
-    }
-    const formattedText = formatSnapshotTree(snapshot.json.root, 0, options);
-
-    if (saveTo) {
-      const saved = await saveOutput(
-        formattedText,
-        saveTo === true ? undefined : saveTo,
-        'snapshot',
-        'txt'
+      // Apply hard cap on maxLines to prevent token overflow
+      const maxLines = Math.min(
+        Math.max(1, requestedMaxLines),
+        TOKEN_LIMITS.MAX_SNAPSHOT_LINES_CAP
       );
-      let output = `Snapshot saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`;
+      const wasCapped = requestedMaxLines > TOKEN_LIMITS.MAX_SNAPSHOT_LINES_CAP;
+
+      const { getFirefox } = await import('../index.js');
+      const firefox = await getFirefox();
+
+      // Pass snapshot options to manager
+      const snapshotOptions: any = {};
+      if (includeAll) {
+        snapshotOptions.includeAll = includeAll;
+      }
+      if (selector) {
+        snapshotOptions.selector = selector;
+      }
+      const snapshot = await firefox.takeSnapshot(
+        Object.keys(snapshotOptions).length > 0 ? snapshotOptions : undefined
+      );
+
+      // Import formatter to apply custom options
+      const { formatSnapshotTree } = await import('../firefox/snapshot/formatter.js');
+      const options: any = {
+        includeAttributes,
+        includeText,
+      };
+      if (maxDepth !== undefined) {
+        options.maxDepth = maxDepth;
+      }
+      // A saved snapshot is the complete tree, so keep attribute values untruncated.
+      if (saveTo) {
+        options.maxAttrLength = Infinity;
+      }
+      const formattedText = formatSnapshotTree(snapshot.json.root, 0, options);
+
+      if (saveTo) {
+        const saved = await saveOutput(
+          formattedText,
+          saveTo === true ? undefined : saveTo,
+          'snapshot',
+          'txt'
+        );
+        let output = `Snapshot saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`;
+        if (snapshot.json.truncated) {
+          output += ' [DOM truncated]';
+        }
+        const excerpt = previewExcerpt(formattedText, preview);
+        if (excerpt) {
+          output += '\nPreview:\n' + excerpt;
+        }
+        return successResponse(output);
+      }
+
+      // Get snapshot text (truncated if needed)
+      const lines = formattedText.split('\n');
+
+      const truncated = lines.length > maxLines;
+      const displayLines = truncated ? lines.slice(0, maxLines) : lines;
+
+      // Build compact output
+      let output = 'Snapshot';
+      if (selector) {
+        output += ` [selector: ${selector}]`;
+      }
+      if (includeAll) {
+        output += ' [includeAll: true]';
+      }
+      if (wasCapped) {
+        output += ` [maxLines capped: ${TOKEN_LIMITS.MAX_SNAPSHOT_LINES_CAP}]`;
+      }
       if (snapshot.json.truncated) {
         output += ' [DOM truncated]';
       }
-      const excerpt = previewExcerpt(formattedText, preview);
-      if (excerpt) {
-        output += '\nPreview:\n' + excerpt;
+      output += '\n\n';
+
+      // Add snapshot tree
+      output += displayLines.join('\n');
+
+      if (truncated) {
+        output +=
+          '\n\n' +
+          truncationFooter(lines.length - maxLines, 'lines', [
+            'maxLines to show more',
+            'selector to scope',
+            'saveTo to dump the full tree to a file',
+          ]);
       }
+
       return successResponse(output);
+    } catch (error) {
+      throw new Error(
+        `Failed to take snapshot: ${(error as Error).message}\n\n` +
+          'The page may not be fully loaded or accessible.'
+      );
     }
-
-    // Get snapshot text (truncated if needed)
-    const lines = formattedText.split('\n');
-
-    const truncated = lines.length > maxLines;
-    const displayLines = truncated ? lines.slice(0, maxLines) : lines;
-
-    // Build compact output
-    let output = 'Snapshot';
-    if (selector) {
-      output += ` [selector: ${selector}]`;
-    }
-    if (includeAll) {
-      output += ' [includeAll: true]';
-    }
-    if (wasCapped) {
-      output += ` [maxLines capped: ${TOKEN_LIMITS.MAX_SNAPSHOT_LINES_CAP}]`;
-    }
-    if (snapshot.json.truncated) {
-      output += ' [DOM truncated]';
-    }
-    output += '\n\n';
-
-    // Add snapshot tree
-    output += displayLines.join('\n');
-
-    if (truncated) {
-      output +=
-        '\n\n' +
-        truncationFooter(lines.length - maxLines, 'lines', [
-          'maxLines to show more',
-          'selector to scope',
-          'saveTo to dump the full tree to a file',
-        ]);
-    }
-
-    return successResponse(output);
-  } catch (error) {
-    throw new Error(
-      `Failed to take snapshot: ${(error as Error).message}\n\n` +
-        'The page may not be fully loaded or accessible.'
-    );
   }
-});
+);
 
-export const handleResolveUidToSelector = defineToolHandler(
-  async function handleResolveUidToSelector(args: unknown): Promise<McpToolResponse> {
-    const { uid } = args as { uid: string };
+export const handleResolveUidToSelector = defineToolHandler<typeof resolveUidToSelectorTool>(
+  async function handleResolveUidToSelector(args): Promise<McpToolResponse> {
+    const { uid } = args;
 
     if (!uid || typeof uid !== 'string') {
       throw new Error('uid parameter is required and must be a string');
@@ -236,16 +230,16 @@ export const handleResolveUidToSelector = defineToolHandler(
   }
 );
 
-export const handleClearSnapshot = defineToolHandler(async function handleClearSnapshot(
-  _args: unknown
-): Promise<McpToolResponse> {
-  const { getFirefox } = await import('../index.js');
-  const firefox = await getFirefox();
+export const handleClearSnapshot = defineToolHandler<typeof clearSnapshotTool>(
+  async function handleClearSnapshot(_args): Promise<McpToolResponse> {
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
 
-  await firefox.clearSnapshot();
+    await firefox.clearSnapshot();
 
-  return successResponse('🧹 Snapshot cleared');
-});
+    return successResponse('🧹 Snapshot cleared');
+  }
+);
 
 export const module = defineModule({
   name: 'snapshot',

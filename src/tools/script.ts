@@ -61,28 +61,14 @@ export const evaluateScriptTool = {
     },
     required: ['function'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
 // Constants
 const DEFAULT_TIMEOUT = 5000; // 5 seconds
 
-export const handleEvaluateScript = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const {
-      function: fnString,
-      args: fnArgs,
-      timeout,
-      sandbox,
-      saveTo,
-      preview,
-    } = args as {
-      function: string;
-      args?: Array<{ uid: string }>;
-      timeout?: number;
-      sandbox?: string;
-      saveTo?: boolean | string;
-      preview?: number;
-    };
+export const handleEvaluateScript = defineToolHandler<typeof evaluateScriptTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { function: fnString, args: fnArgs, timeout, sandbox, saveTo, preview } = args;
 
     // Validate function
     validateFunction(fnString);

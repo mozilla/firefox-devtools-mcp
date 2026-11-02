@@ -61,17 +61,10 @@ export const restartFirefoxTool = {
       },
     },
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleRestartFirefox = defineToolHandler(async (input: unknown) => {
-  const { firefoxPath, profilePath, env, headless, startUrl, prefs } = input as {
-    firefoxPath?: string;
-    profilePath?: string;
-    env?: string[];
-    headless?: boolean;
-    startUrl?: string;
-    prefs?: Record<string, string | number | boolean>;
-  };
+export const handleRestartFirefox = defineToolHandler<typeof restartFirefoxTool>(async (input) => {
+  const { firefoxPath, profilePath, env, headless, startUrl, prefs } = input;
 
   const { args, getFirefoxIfRunning, resetFirefox, setNextLaunchOptions } = await import(
     '../index.js'

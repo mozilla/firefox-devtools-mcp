@@ -59,11 +59,11 @@ export const setFirefoxPrefsTool = {
     },
     required: ['prefs'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleSetFirefoxPrefs = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { prefs } = args as { prefs: Record<string, string | number | boolean> };
+export const handleSetFirefoxPrefs = defineToolHandler<typeof setFirefoxPrefsTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { prefs } = args;
 
     if (!prefs || typeof prefs !== 'object') {
       throw new Error('prefs parameter is required and must be an object');
@@ -127,11 +127,11 @@ export const getFirefoxPrefsTool = {
     },
     required: ['names'],
   },
-} satisfies ToolDefinition;
+} as const satisfies ToolDefinition;
 
-export const handleGetFirefoxPrefs = defineToolHandler(
-  async (args: unknown): Promise<McpToolResponse> => {
-    const { names } = args as { names: string[] };
+export const handleGetFirefoxPrefs = defineToolHandler<typeof getFirefoxPrefsTool>(
+  async (args): Promise<McpToolResponse> => {
+    const { names } = args;
 
     if (!names || !Array.isArray(names) || names.length === 0) {
       throw new Error('names parameter is required and must be a non-empty array');

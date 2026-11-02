@@ -33,7 +33,7 @@ describe('Tool registry', () => {
         };
         if (!exports.module) {
           orphans.push(`${file} (no "module" export)`);
-        } else if (!MODULES.includes(exports.module)) {
+        } else if (!MODULES.includes(exports.module as any)) {
           orphans.push(`${file} (module "${exports.module.name}" missing from MODULES)`);
         }
       }

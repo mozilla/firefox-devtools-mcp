@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screencastStartTool, screencastStopTool } from '../../../src/tools/screencast.js';
-import type { McpToolResponse } from '../../../src/types/common.js';
+import type * as screencast from '../../../src/tools/screencast.js';
 
 const mockGetFirefox = vi.hoisted(() => vi.fn());
-
-type ScreencastHandler = (args: unknown) => Promise<McpToolResponse>;
 
 vi.mock('../../../src/index.js', () => ({
   getFirefox: () => mockGetFirefox(),
@@ -45,8 +43,8 @@ describe('Screencast Tool Definitions', () => {
 describe('Screencast Tool Handlers', () => {
   const mockSendBiDiCommand = vi.fn();
   const mockGetCurrentContextId = vi.fn();
-  let handleScreencastStart: ScreencastHandler;
-  let handleScreencastStop: ScreencastHandler;
+  let handleScreencastStart: typeof screencast.handleScreencastStart;
+  let handleScreencastStop: typeof screencast.handleScreencastStop;
 
   beforeEach(async () => {
     // resetAllMocks clears the mockResolvedValueOnce queues; resetModules gives a

@@ -87,6 +87,7 @@ describe('Network Tools', () => {
 
     it('rejects an unknown behavior instead of defaulting to cached', async () => {
       const { handleSetNetworkCache } = await import('../../../src/tools/network.js');
+      // @ts-expect-error invalid arguments
       const result = await handleSetNetworkCache({ behavior: 'disabled' });
 
       expect(textOf(result)).toContain('behavior must be one of default, bypass');
@@ -95,6 +96,7 @@ describe('Network Tools', () => {
 
     it('rejects an unknown scope instead of silently using the tab', async () => {
       const { handleSetNetworkCache } = await import('../../../src/tools/network.js');
+      // @ts-expect-error invalid arguments
       const result = await handleSetNetworkCache({ behavior: 'bypass', scope: 'everything' });
 
       expect(textOf(result)).toContain("scope must be 'tab' or 'global'");
