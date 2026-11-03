@@ -87,19 +87,8 @@ export const handleAcceptDialog = defineToolHandler<typeof acceptDialogTool>(
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    try {
-      await firefox.acceptDialog(promptText);
-      return successResponse(promptText ? `Accepted: "${promptText}"` : 'Accepted');
-    } catch (error) {
-      const errorMsg = (error as Error).message;
-
-      // Concise error for no active dialog
-      if (errorMsg.includes('no such alert') || errorMsg.includes('No dialog')) {
-        throw new Error('No active dialog');
-      }
-
-      throw error;
-    }
+    await firefox.acceptDialog(promptText);
+    return successResponse(promptText ? `Accepted: "${promptText}"` : 'Accepted');
   }
 );
 
@@ -108,19 +97,8 @@ export const handleDismissDialog = defineToolHandler<typeof dismissDialogTool>(
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    try {
-      await firefox.dismissDialog();
-      return successResponse('Dismissed');
-    } catch (error) {
-      const errorMsg = (error as Error).message;
-
-      // Concise error for no active dialog
-      if (errorMsg.includes('no such alert') || errorMsg.includes('No dialog')) {
-        throw new Error('No active dialog');
-      }
-
-      throw error;
-    }
+    await firefox.dismissDialog();
+    return successResponse('Dismissed');
   }
 );
 
