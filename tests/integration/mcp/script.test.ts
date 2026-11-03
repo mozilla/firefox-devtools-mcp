@@ -2,37 +2,22 @@
  * Integration tests for evaluate_script, called through the MCP server
  */
 
-import { describe, it, expect, assert, beforeAll, afterAll, beforeEach } from 'vitest';
+import { expect, assert } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fixtureUrl } from '../../helpers/firefox.js';
-import { startMcpServer, type McpTestServer } from '../../helpers/mcp.js';
+import { mcpTest, type McpTestServer } from '../../helpers/mcp.js';
 
-describe('evaluate_script (MCP)', () => {
-  let server: McpTestServer | undefined;
+mcpTest.override('mcpServerArgs', ['--tools', 'pages', 'snapshot', 'script']);
 
-  function mcp(): McpTestServer {
-    if (!server) {
-      throw new Error('MCP server did not start');
-    }
-    return server;
-  }
-
-  beforeAll(async () => {
-    server = await startMcpServer(['--tools', 'pages', 'snapshot', 'script']);
-  });
-
-  afterAll(async () => {
-    await server?.close();
-  });
-
-  beforeEach(async () => {
-    const result = await mcp().callTool('navigate_page', { url: fixtureUrl('simple.html') });
+mcpTest.describe('evaluate_script (MCP)', () => {
+  mcpTest.beforeEach(async ({ mcp }) => {
+    const result = await mcp.callTool('navigate_page', { url: fixtureUrl('simple.html') });
     expect(result.isError).toBe(false);
   });
 
-  it('returns the value of the function', async () => {
-    const result = await mcp().callTool('evaluate_script', {
+  mcpTest('returns the value of the function', async ({ mcp }) => {
+    const result = await mcp.callTool('evaluate_script', {
       function: '() => ({ title: document.title, count: 1 + 1 })',
     });
 
@@ -42,8 +27,8 @@ describe('evaluate_script (MCP)', () => {
     expect(result.text).toContain('"count": 2');
   });
 
-  it('awaits a returned promise', async () => {
-    const result = await mcp().callTool('evaluate_script', {
+  mcpTest('awaits a returned promise', async ({ mcp }) => {
+    const result = await mcp.callTool('evaluate_script', {
       function: '() => new Promise((r) => setTimeout(() => r("done"), 50))',
     });
 
@@ -51,12 +36,12 @@ describe('evaluate_script (MCP)', () => {
     expect(result.text).toContain('"done"');
   });
 
-  it('passes snapshot UIDs as element arguments', async () => {
-    const snapshot = await mcp().callTool('take_snapshot');
+  mcpTest('passes snapshot UIDs as element arguments', async ({ mcp }) => {
+    const snapshot = await mcp.callTool('take_snapshot');
     const uid = /uid=(\S+) button "Click Me"/.exec(snapshot.text)?.[1];
     assert(uid, 'snapshot contains the button uid');
 
-    const result = await mcp().callTool('evaluate_script', {
+    const result = await mcp.callTool('evaluate_script', {
       function: '(el) => el.id',
       args: [{ uid }],
     });
@@ -65,9 +50,9 @@ describe('evaluate_script (MCP)', () => {
     expect(result.text).toContain('"clickBtn"');
   });
 
-  it('reports an unknown UID', async () => {
-    await mcp().callTool('take_snapshot');
-    const result = await mcp().callTool('evaluate_script', {
+  mcpTest('reports an unknown UID', async ({ mcp }) => {
+    await mcp.callTool('take_snapshot');
+    const result = await mcp.callTool('evaluate_script', {
       function: '(el) => el.id',
       args: [{ uid: 'does-not-exist' }],
     });
@@ -76,8 +61,8 @@ describe('evaluate_script (MCP)', () => {
     expect(result.text).toContain('does-not-exist');
   });
 
-  it('reports an exception thrown by the function', async () => {
-    const result = await mcp().callTool('evaluate_script', {
+  mcpTest('reports an exception thrown by the function', async ({ mcp }) => {
+    const result = await mcp.callTool('evaluate_script', {
       function: '() => { throw new Error("failure in page"); }',
     });
 
@@ -86,14 +71,14 @@ describe('evaluate_script (MCP)', () => {
     expect(result.text).toContain('failure in page');
   });
 
-  it('rejects a plain expression', async () => {
-    const result = await mcp().callTool('evaluate_script', { function: 'document.title' });
+  mcpTest('rejects a plain expression', async ({ mcp }) => {
+    const result = await mcp.callTool('evaluate_script', { function: 'document.title' });
 
     expect(result.isError).toBe(true);
   });
 
-  it('times out a function that never settles', async () => {
-    const result = await mcp().callTool('evaluate_script', {
+  mcpTest('times out a function that never settles', async ({ mcp }) => {
+    const result = await mcp.callTool('evaluate_script', {
       function: '() => new Promise(() => {})',
       timeout: 200,
     });
@@ -102,14 +87,14 @@ describe('evaluate_script (MCP)', () => {
     expect(result.text).toContain('timed out (exceeded 200ms)');
   });
 
-  describe('sandbox', () => {
-    it('does not see page globals', async () => {
-      await mcp().callTool('evaluate_script', { function: '() => { window.pageValue = 42; }' });
+  mcpTest.describe('sandbox', () => {
+    mcpTest('does not see page globals', async ({ mcp }) => {
+      await mcp.callTool('evaluate_script', { function: '() => { window.pageValue = 42; }' });
 
-      const page = await mcp().callTool('evaluate_script', {
+      const page = await mcp.callTool('evaluate_script', {
         function: '() => typeof window.pageValue',
       });
-      const sandboxed = await mcp().callTool('evaluate_script', {
+      const sandboxed = await mcp.callTool('evaluate_script', {
         function: '() => typeof window.pageValue',
         sandbox: 'isolated',
       });
@@ -118,8 +103,8 @@ describe('evaluate_script (MCP)', () => {
       expect(sandboxed.text).toContain('"undefined"');
     });
 
-    it('shares the page DOM', async () => {
-      const result = await mcp().callTool('evaluate_script', {
+    mcpTest('shares the page DOM', async ({ mcp }) => {
+      const result = await mcp.callTool('evaluate_script', {
         function: '() => document.getElementById("title").textContent',
         sandbox: 'isolated',
       });
@@ -128,17 +113,17 @@ describe('evaluate_script (MCP)', () => {
       expect(result.text).toContain('"Simple Test Page"');
     });
 
-    it('keeps its state across calls with the same name', async () => {
-      await mcp().callTool('evaluate_script', {
+    mcpTest('keeps its state across calls with the same name', async ({ mcp }) => {
+      await mcp.callTool('evaluate_script', {
         function: '() => { window.sandboxValue = "kept"; }',
         sandbox: 'first',
       });
 
-      const same = await mcp().callTool('evaluate_script', {
+      const same = await mcp.callTool('evaluate_script', {
         function: '() => window.sandboxValue ?? null',
         sandbox: 'first',
       });
-      const other = await mcp().callTool('evaluate_script', {
+      const other = await mcp.callTool('evaluate_script', {
         function: '() => window.sandboxValue ?? null',
         sandbox: 'second',
       });
@@ -148,14 +133,14 @@ describe('evaluate_script (MCP)', () => {
     });
   });
 
-  describe('saveTo', () => {
-    function outputDir(): string {
-      return join(mcp().home, '.firefox-mcp', 'output');
+  mcpTest.describe('saveTo', () => {
+    function outputDir(mcp: McpTestServer): string {
+      return join(mcp.home, '.firefox-mcp', 'output');
     }
 
-    it('writes the result to the given file without a preview', async () => {
-      const filePath = join(outputDir(), 'result.json');
-      const result = await mcp().callTool('evaluate_script', {
+    mcpTest('writes the result to the given file without a preview', async ({ mcp }) => {
+      const filePath = join(outputDir(mcp), 'result.json');
+      const result = await mcp.callTool('evaluate_script', {
         function: '() => "x".repeat(5000)',
         saveTo: filePath,
       });
@@ -166,10 +151,10 @@ describe('evaluate_script (MCP)', () => {
       expect(JSON.parse(readFileSync(filePath, 'utf8'))).toBe('x'.repeat(5000));
     });
 
-    it('returns a truncated preview when asked', async () => {
-      const result = await mcp().callTool('evaluate_script', {
+    mcpTest('returns a truncated preview when asked', async ({ mcp }) => {
+      const result = await mcp.callTool('evaluate_script', {
         function: '() => "x".repeat(5000)',
-        saveTo: join(outputDir(), 'preview.json'),
+        saveTo: join(outputDir(mcp), 'preview.json'),
         preview: 100,
       });
 
@@ -179,10 +164,10 @@ describe('evaluate_script (MCP)', () => {
       expect(result.text).not.toContain('x'.repeat(5000));
     });
 
-    it('ignores a non-positive preview', async () => {
-      const result = await mcp().callTool('evaluate_script', {
+    mcpTest('ignores a non-positive preview', async ({ mcp }) => {
+      const result = await mcp.callTool('evaluate_script', {
         function: '() => 1',
-        saveTo: join(outputDir(), 'no-preview.json'),
+        saveTo: join(outputDir(mcp), 'no-preview.json'),
         preview: -1,
       });
 
@@ -190,9 +175,9 @@ describe('evaluate_script (MCP)', () => {
       expect(result.text).not.toContain('Preview:');
     });
 
-    it('writes "undefined" when the function returns nothing', async () => {
-      const filePath = join(outputDir(), 'undefined.json');
-      const result = await mcp().callTool('evaluate_script', {
+    mcpTest('writes "undefined" when the function returns nothing', async ({ mcp }) => {
+      const filePath = join(outputDir(mcp), 'undefined.json');
+      const result = await mcp.callTool('evaluate_script', {
         function: '() => undefined',
         saveTo: filePath,
       });
@@ -201,15 +186,15 @@ describe('evaluate_script (MCP)', () => {
       expect(readFileSync(filePath, 'utf8')).toBe('undefined');
     });
 
-    it('generates a file in the output directory when saveTo is true', async () => {
-      const result = await mcp().callTool('evaluate_script', {
+    mcpTest('generates a file in the output directory when saveTo is true', async ({ mcp }) => {
+      const result = await mcp.callTool('evaluate_script', {
         function: '() => 1',
         saveTo: true,
       });
 
       expect(result.isError).toBe(false);
       const savedPath = /Result saved to: (.+) \(/.exec(result.text)?.[1];
-      expect(savedPath).toContain(join(outputDir(), 'evaluate-script-'));
+      expect(savedPath).toContain(join(outputDir(mcp), 'evaluate-script-'));
       expect(existsSync(savedPath as string)).toBe(true);
     });
   });
