@@ -164,12 +164,17 @@ export class PageManagement {
    * @param promptText - Optional text to enter in prompt dialog
    */
   async acceptDialog(promptText?: string): Promise<void> {
+    const contextId = this.getCurrentContextId();
+    if (!contextId) {
+      throw new Error(`Cannot accept dialog: no browsing context ID`);
+    }
+
     try {
-      const alert = await this.driver.switchTo().alert();
-      if (promptText !== undefined) {
-        await alert.sendKeys(promptText);
-      }
-      await alert.accept();
+      await this.sendBiDiCommand('browsingContext.handleUserPrompt', {
+        context: contextId,
+        accept: true,
+        userText: promptText,
+      });
     } catch (error) {
       throw new Error(
         `Failed to accept dialog: ${error instanceof Error ? error.message : String(error)}`
@@ -181,9 +186,16 @@ export class PageManagement {
    * Dismiss dialog (alert/confirm/prompt)
    */
   async dismissDialog(): Promise<void> {
+    const contextId = this.getCurrentContextId();
+    if (!contextId) {
+      throw new Error(`Cannot dismiss dialog: no browsing context ID`);
+    }
+
     try {
-      const alert = await this.driver.switchTo().alert();
-      await alert.dismiss();
+      await this.sendBiDiCommand('browsingContext.handleUserPrompt', {
+        context: contextId,
+        accept: false,
+      });
     } catch (error) {
       throw new Error(
         `Failed to dismiss dialog: ${error instanceof Error ? error.message : String(error)}`
