@@ -141,6 +141,7 @@ describe('FirefoxCore connect() BiDi endpoint check', () => {
 
   // Mocks for the launch path (used by the launch-mode test only)
   const mockEnableBidi = vi.fn();
+  const mockSetAlertBehavior = vi.fn();
   const mockOptionsAddArguments = vi.fn();
 
   // Fake socket for the Marionette port probe: emits `events` in order on the
@@ -199,6 +200,7 @@ describe('FirefoxCore connect() BiDi endpoint check', () => {
       default: {
         Options: class {
           enableBidi = mockEnableBidi;
+          setAlertBehavior = mockSetAlertBehavior;
           addArguments = mockOptionsAddArguments;
           windowSize = vi.fn();
           setBinary = vi.fn();
@@ -218,6 +220,7 @@ describe('FirefoxCore connect() BiDi endpoint check', () => {
     vi.doMock('selenium-webdriver', () => ({
       Capabilities: class {
         set = mockCapabilitiesSet;
+        setAlertBehavior = mockSetAlertBehavior;
       },
       Builder: class {
         forBrowser = vi.fn().mockReturnThis();

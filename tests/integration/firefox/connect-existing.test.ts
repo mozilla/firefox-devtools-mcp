@@ -59,7 +59,7 @@ function findFirefoxBinary(): string {
   return 'firefox';
 }
 
-describe('Connect Existing Viewport Tests', () => {
+describe('Connect Existing Viewport and Dialog Tests', () => {
   let firefoxProcess: ChildProcess | undefined;
   let profile: string;
   let marionettePort: number;
@@ -143,4 +143,18 @@ describe('Connect Existing Viewport Tests', () => {
       await closeFirefox(second);
     }
   }, 60000);
+
+  it('should keep a prompt open until it is accepted', async () => {
+    const firefox = await createTestFirefox({ connectExisting: true, marionettePort });
+
+    await firefox.evaluate(
+      'window.result = "pending"; setTimeout(() => { window.result = prompt("foo"); });'
+    );
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(await firefox.evaluate('window.result')).toBe('pending');
+
+    await firefox.acceptDialog('bar');
+    await waitFor(async () => (await firefox.evaluate('window.result')) !== 'pending');
+    expect(await firefox.evaluate('window.result')).toBe('bar');
+  });
 });
