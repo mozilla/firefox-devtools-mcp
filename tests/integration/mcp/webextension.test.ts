@@ -2,13 +2,15 @@
  * Integration tests for list_extensions, called through the MCP server
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { expect } from 'vitest';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { zipSync } from 'fflate';
 import { compareVersions } from '@/utils/version.js';
 import { fixturesPath } from '../../helpers/firefox.js';
-import { startMcpServer, type McpTestServer } from '../../helpers/mcp.js';
+import { mcpTest } from '../../helpers/mcp.js';
+
+mcpTest.override('mcpServerArgs', ['--tools', 'webextension', 'management']);
 
 const extensionDir = resolve(fixturesPath, 'test-extension');
 // Own filename: moz-extension.test.ts packs the same fixture as test-extension.xpi
@@ -22,34 +24,25 @@ function packExtension(): void {
   writeFileSync(xpiPath, zipSync(entries));
 }
 
-describe('list_extensions (MCP)', () => {
-  let server: McpTestServer | undefined;
+mcpTest.describe('list_extensions (MCP)', () => {
   let extensionId = '';
   let listExtensionsSupported = false;
 
-  function mcp(): McpTestServer {
-    if (!server) {
-      throw new Error('MCP server did not start');
-    }
-    return server;
-  }
-
-  beforeAll(async () => {
+  mcpTest.beforeAll(async ({ mcp }) => {
     packExtension();
-    server = await startMcpServer(['--tools', 'webextension', 'management']);
 
     // webExtension.moz:listExtensions needs Firefox 158
-    const info = await mcp().callTool('get_firefox_info');
+    const info = await mcp.callTool('get_firefox_info');
     const version = /Firefox version: (\d+)/.exec(info.text)?.[1];
     listExtensionsSupported = version !== undefined && compareVersions(version, '158.0') >= 0;
     if (!listExtensionsSupported) {
       return;
     }
 
-    const empty = await mcp().callTool('list_extensions');
+    const empty = await mcp.callTool('list_extensions');
     expect(empty.text).toBe('No extensions installed');
 
-    const installed = await mcp().callTool('install_extension', {
+    const installed = await mcp.callTool('install_extension', {
       type: 'archivePath',
       path: xpiPath,
     });
@@ -58,28 +51,27 @@ describe('list_extensions (MCP)', () => {
     expect(extensionId).toBeTruthy();
   }, 60000);
 
-  afterAll(async () => {
+  mcpTest.afterAll(async ({ mcp }) => {
     try {
-      if (server && extensionId) {
-        await server.callTool('uninstall_extension', { id: extensionId });
+      if (extensionId) {
+        await mcp.callTool('uninstall_extension', { id: extensionId });
       }
     } finally {
-      await server?.close();
       if (existsSync(xpiPath)) {
         unlinkSync(xpiPath);
       }
     }
   });
 
-  beforeEach((ctx) => {
+  mcpTest.beforeEach(({ skip }) => {
     if (!listExtensionsSupported) {
       console.warn('Skipping list_extensions tests: requires Firefox 158 or later');
-      ctx.skip();
+      skip();
     }
   });
 
-  it('formats the extension list', async () => {
-    const result = await mcp().callTool('list_extensions', { ids: [extensionId] });
+  mcpTest('formats the extension list', async ({ mcp }) => {
+    const result = await mcp.callTool('list_extensions', { ids: [extensionId] });
 
     expect(result.isError).toBe(false);
     expect(result.text).toContain('1 extension(s)');
@@ -92,16 +84,16 @@ describe('list_extensions (MCP)', () => {
     expect(result.text).toContain('Background scripts: (none)');
   });
 
-  it('reports policy fields omitted without system access', async () => {
-    const result = await mcp().callTool('list_extensions', { ids: [extensionId] });
+  mcpTest('reports policy fields omitted without system access', async ({ mcp }) => {
+    const result = await mcp.callTool('list_extensions', { ids: [extensionId] });
 
     expect(result.isError).toBe(false);
     expect(result.text).toContain('UUID: `uuid` omitted due to restricted system access.');
     expect(result.text).toContain('Base URL: `baseURL` omitted due to restricted system access.');
   });
 
-  it('describes the filters when nothing matches', async () => {
-    const result = await mcp().callTool('list_extensions', {
+  mcpTest('describes the filters when nothing matches', async ({ mcp }) => {
+    const result = await mcp.callTool('list_extensions', {
       ids: [extensionId],
       name: 'no-such-extension',
       isActive: true,

@@ -10,6 +10,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { test } from 'vitest';
 import { removeDir } from './fs.js';
 import type { ToolArgsOf } from '@/types/tool-args.js';
 import type { MODULES } from '@/tools/index.js';
@@ -88,3 +89,11 @@ export async function startMcpServer(serverArgs: string[] = []): Promise<McpTest
     },
   };
 }
+
+export const mcpTest = test
+  .extend('mcpServerArgs', { scope: 'file' }, [] as string[])
+  .extend('mcp', { scope: 'file' }, async ({ mcpServerArgs }, { onCleanup }) => {
+    const server = await startMcpServer(mcpServerArgs);
+    onCleanup(() => server.close());
+    return server;
+  });
