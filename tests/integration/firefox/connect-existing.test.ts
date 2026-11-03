@@ -79,7 +79,7 @@ describe('Connect Existing Viewport Tests', () => {
         '0',
         fixtureUrl('simple.html'),
       ],
-      { stdio: 'ignore' }
+      { stdio: 'ignore', env: { ...process.env, MOZ_DISABLE_UPDATE_PROCESSING: '1' } }
     );
     const portFile = join(profile, 'MarionetteActivePort');
     await waitFor(
