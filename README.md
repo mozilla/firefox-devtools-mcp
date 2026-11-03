@@ -16,7 +16,7 @@ It controls Firefox through WebDriver BiDi (via Selenium WebDriver) and works wi
 
 Repository: https://github.com/mozilla/firefox-devtools-mcp
 
-> **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx @mozilla/firefox-devtools-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
+> **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx @mozilla/firefox-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
 
 ## Security
 
@@ -42,13 +42,13 @@ Recommended: use `npx` so you run the latest published version from npm.
 #### Claude Code
 
 ```bash
-claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest
+claude mcp add firefox-devtools npx @mozilla/firefox-mcp@latest
 
 # Headless + viewport via args
-claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest -- --headless --viewport 1280x720
+claude mcp add firefox-devtools npx @mozilla/firefox-mcp@latest -- --headless --viewport 1280x720
 
 # Or via environment variables
-claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest \
+claude mcp add firefox-devtools npx @mozilla/firefox-mcp@latest \
   --env START_URL=https://example.com \
   --env FIREFOX_HEADLESS=true
 ```
@@ -56,17 +56,17 @@ claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp@latest \
 #### Codex
 
 ```bash
-codex mcp add firefox-devtools -- npx @mozilla/firefox-devtools-mcp@latest
+codex mcp add firefox-devtools -- npx @mozilla/firefox-mcp@latest
 
 # Headless + viewport via args
 codex mcp add firefox-devtools -- \
-  npx @mozilla/firefox-devtools-mcp@latest -- --headless --viewport 1280x720
+  npx @mozilla/firefox-mcp@latest -- --headless --viewport 1280x720
 
 # Or via environment variables
 codex mcp add firefox-devtools \
   --env START_URL=https://example.com \
   --env FIREFOX_HEADLESS=true \
-  -- npx @mozilla/firefox-devtools-mcp@latest
+  -- npx @mozilla/firefox-mcp@latest
 ```
 
 ### Option B — Edit the configuration file
@@ -80,7 +80,7 @@ Add to Claude Code’s mcp_settings.json:
   "mcpServers": {
     "firefox-devtools": {
       "command": "npx",
-      "args": ["-y", "@mozilla/firefox-devtools-mcp@latest", "--headless", "--viewport", "1280x720"],
+      "args": ["-y", "@mozilla/firefox-mcp@latest", "--headless", "--viewport", "1280x720"],
       "env": {
         "START_URL": "about:blank"
       }
@@ -96,7 +96,7 @@ Add to ~/.codex/config.toml:
 ```toml
 [mcp_servers.firefox-devtools]
 command = "npx"
-args = ["-y", "@mozilla/firefox-devtools-mcp@latest", "--headless", "--viewport", "1280x720"]
+args = ["-y", "@mozilla/firefox-mcp@latest", "--headless", "--viewport", "1280x720"]
 
 [mcp_servers.firefox-devtools.env]
 START_URL = "about:blank"
@@ -112,7 +112,7 @@ npm run setup
 ## Try it with MCP Inspector
 
 ```bash
-npx @modelcontextprotocol/inspector npx @mozilla/firefox-devtools-mcp@latest --start-url https://example.com --headless
+npx @modelcontextprotocol/inspector npx @mozilla/firefox-mcp@latest --start-url https://example.com --headless
 ```
 
 Then call tools like:
@@ -172,10 +172,10 @@ surface, and use `--tool-preset slim` or an explicit `--tools` list to drop it.
 
 ```bash
 # Use the developer preset (adds network, console, debugging and profiler tools)
-npx @mozilla/firefox-devtools-mcp --tool-preset developer
+npx @mozilla/firefox-mcp --tool-preset developer
 
 # Enable only the modules you need
-npx @mozilla/firefox-devtools-mcp --tools pages network console
+npx @mozilla/firefox-mcp --tools pages network console
 ```
 
 The `prefs` and `privileged` modules require `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` and are only
@@ -211,13 +211,13 @@ Use `--android-device` to automate Firefox running on an Android device. Require
 adb devices
 
 # Launch Firefox for Android on the single connected device
-npx @mozilla/firefox-devtools-mcp --android-device auto --android-wipe-app-data
+npx @mozilla/firefox-mcp --android-device auto --android-wipe-app-data
 
 # Target a specific device
-npx @mozilla/firefox-devtools-mcp --android-device <serial> --android-wipe-app-data
+npx @mozilla/firefox-mcp --android-device <serial> --android-wipe-app-data
 
 # Use Firefox Nightly instead
-npx @mozilla/firefox-devtools-mcp --android-device <serial> --android-package org.mozilla.fenix --android-wipe-app-data
+npx @mozilla/firefox-mcp --android-device <serial> --android-package org.mozilla.fenix --android-wipe-app-data
 ```
 
 Port forwarding between the host and device is handled automatically by geckodriver.
@@ -231,7 +231,7 @@ Use `--connect-existing` to automate your real browsing session, with cookies, l
 firefox --marionette --remote-debugging-port
 
 # Run the MCP server
-npx @mozilla/firefox-devtools-mcp --connect-existing --marionette-port 2828
+npx @mozilla/firefox-mcp --connect-existing --marionette-port 2828
 ```
 
 Both flags are required because the MCP uses both WebDriver Classic (`--marionette`) and WebDriver BiDi (`--remote-debugging-port`). If Firefox is only started with `--marionette`, the MCP server fails to connect and asks you to restart Firefox with both flags.
@@ -318,7 +318,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on local development, te
     "mcpServers": {
       "firefox-devtools": {
         "command": "cmd",
-        "args": ["/c", "npx", "-y", "@mozilla/firefox-devtools-mcp@latest"]
+        "args": ["/c", "npx", "-y", "@mozilla/firefox-mcp@latest"]
       }
     }
     ```
@@ -329,7 +329,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on local development, te
     "mcpServers": {
       "firefox-devtools": {
         "command": "C:\\nvm4w\\nodejs\\npx.ps1",
-        "args": ["-y", "@mozilla/firefox-devtools-mcp@latest"]
+        "args": ["-y", "@mozilla/firefox-mcp@latest"]
       }
     }
     ```

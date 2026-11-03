@@ -7,7 +7,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@mozilla/firefox-devtools-mcp@latest",
+        "@mozilla/firefox-mcp@latest",
         "--auto-profile",
         "--tool-preset",
         "developer",

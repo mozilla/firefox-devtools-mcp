@@ -62,7 +62,7 @@ function detectNodePath() {
 
 async function main() {
   console.log(
-    `${colors.bright}${colors.blue}🚀 Firefox DevTools MCP Configuration Setup${colors.reset}\n`
+    `${colors.bright}${colors.blue}🚀 Firefox MCP Configuration Setup${colors.reset}\n`
   );
 
   // Ask which client to configure

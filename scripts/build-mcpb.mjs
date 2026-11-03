@@ -44,7 +44,7 @@ try {
 
   const outDir = resolve(root, 'dist-mcpb');
   mkdirSync(outDir, { recursive: true });
-  const outFile = resolve(outDir, `firefox-devtools-mcp-${pkg.version}.mcpb`);
+  const outFile = resolve(outDir, `firefox-mcp-${pkg.version}.mcpb`);
 
   console.log('Packing .mcpb bundle...');
   execSync(`npx mcpb pack "${stagingDir}" "${outFile}"`, {
