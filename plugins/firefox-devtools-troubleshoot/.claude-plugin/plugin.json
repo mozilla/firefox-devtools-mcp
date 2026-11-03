@@ -1,5 +1,6 @@
 {
   "name": "firefox-devtools-troubleshoot",
+  "displayName": "Firefox MCP Troubleshoot",
   "description": "Diagnose and fix Firefox DevTools MCP setup issues. Use this if the firefox-devtools-mcp plugin is not working.",
   "author": {
     "name": "Mozilla",
