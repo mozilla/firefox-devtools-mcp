@@ -44,13 +44,13 @@ Recommended: use `npx` so you run the latest published version from npm.
 #### Claude Code
 
 ```bash
-claude mcp add firefox-devtools npx @mozilla/firefox-mcp@latest
+claude mcp add firefox npx @mozilla/firefox-mcp@latest
 
 # Headless + viewport via args
-claude mcp add firefox-devtools npx @mozilla/firefox-mcp@latest -- --headless --viewport 1280x720
+claude mcp add firefox npx @mozilla/firefox-mcp@latest -- --headless --viewport 1280x720
 
 # Or via environment variables
-claude mcp add firefox-devtools npx @mozilla/firefox-mcp@latest \
+claude mcp add firefox npx @mozilla/firefox-mcp@latest \
   --env START_URL=https://example.com \
   --env FIREFOX_HEADLESS=true
 ```
@@ -58,14 +58,14 @@ claude mcp add firefox-devtools npx @mozilla/firefox-mcp@latest \
 #### Codex
 
 ```bash
-codex mcp add firefox-devtools -- npx @mozilla/firefox-mcp@latest
+codex mcp add firefox -- npx @mozilla/firefox-mcp@latest
 
 # Headless + viewport via args
-codex mcp add firefox-devtools -- \
+codex mcp add firefox -- \
   npx @mozilla/firefox-mcp@latest -- --headless --viewport 1280x720
 
 # Or via environment variables
-codex mcp add firefox-devtools \
+codex mcp add firefox \
   --env START_URL=https://example.com \
   --env FIREFOX_HEADLESS=true \
   -- npx @mozilla/firefox-mcp@latest
@@ -80,7 +80,7 @@ Add to Claude Code’s mcp_settings.json:
 ```json
 {
   "mcpServers": {
-    "firefox-devtools": {
+    "firefox": {
       "command": "npx",
       "args": ["-y", "@mozilla/firefox-mcp@latest", "--headless", "--viewport", "1280x720"],
       "env": {
@@ -96,11 +96,11 @@ Add to Claude Code’s mcp_settings.json:
 Add to ~/.codex/config.toml:
 
 ```toml
-[mcp_servers.firefox-devtools]
+[mcp_servers.firefox]
 command = "npx"
 args = ["-y", "@mozilla/firefox-mcp@latest", "--headless", "--viewport", "1280x720"]
 
-[mcp_servers.firefox-devtools.env]
+[mcp_servers.firefox.env]
 START_URL = "about:blank"
 ```
 
@@ -313,12 +313,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on local development, te
 - Firefox not found: pass `--firefox-path "/Applications/Firefox.app/Contents/MacOS/firefox"` (macOS) or the correct path on your OS.
 - First run is slow: Selenium sets up the BiDi session; subsequent runs are faster.
 - Stale UIDs: a UID stays valid until its element is removed or the page navigates; take a fresh snapshot (`take_snapshot`) when a UID tool reports one is gone.
-- Windows 10: Error during discovery for MCP server 'firefox-devtools': MCP error -32000: Connection closed
+- Windows 10: Error during discovery for MCP server 'firefox': MCP error -32000: Connection closed
   - **Solution 1** Wrap with `cmd /c` ([details](https://github.com/modelcontextprotocol/servers/issues/1082#issuecomment-2791786310)):
 
     ```json
     "mcpServers": {
-      "firefox-devtools": {
+      "firefox": {
         "command": "cmd",
         "args": ["/c", "npx", "-y", "@mozilla/firefox-mcp@latest"]
       }
@@ -329,7 +329,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on local development, te
 
     ```json
     "mcpServers": {
-      "firefox-devtools": {
+      "firefox": {
         "command": "C:\\nvm4w\\nodejs\\npx.ps1",
         "args": ["-y", "@mozilla/firefox-mcp@latest"]
       }
