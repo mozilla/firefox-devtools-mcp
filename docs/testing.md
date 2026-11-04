@@ -12,7 +12,7 @@ release and demo tooling only.
 
 Pick the kind of test from where the logic under test lives.
 
-1. **MCP harness** (`tests/integration/mcp/`, `startMcpServer` from
+1. **MCP harness** (`tests/integration/mcp/`, `mcpTest` from
    `tests/helpers/mcp.ts`). Starts the server in a child process and calls tools
    through an MCP client. For logic in tool handlers and in the server
    lifecycle (start, reconnect, restart, close). One file per tool module, plus
