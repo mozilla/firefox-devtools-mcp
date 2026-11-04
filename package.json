@@ -9,8 +9,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "firefox-mcp": "dist/index.js",
-    "firefox-devtools-mcp": "dist/index.js"
+    "firefox-mcp": "dist/index.js"
   },
   "scripts": {
     "dev": "tsx watch src/index.moz.ts",

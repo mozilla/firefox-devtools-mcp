@@ -19,7 +19,12 @@ if (!existsSync(resolve(root, 'dist', 'index.js'))) {
 }
 
 const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
-const compat = { ...pkg, name: '@mozilla/firefox-devtools-mcp' };
+const compat = {
+  ...pkg,
+  name: '@mozilla/firefox-devtools-mcp',
+  // A bin name of its own, so both packages can be installed globally side by side
+  bin: { 'firefox-devtools-mcp': 'dist/index.js' },
+};
 
 // prepublishOnly would rebuild inside the staging directory
 delete compat.scripts;
