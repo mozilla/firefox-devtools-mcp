@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Builds the firefox-devtools-mcp .mcpb bundle (Claude Desktop extension).
+ * Builds the firefox-mcp .mcpb bundle (Claude Desktop extension).
  * Assembles a staging directory with dist/, production node_modules and
  * manifest.json, then runs `mcpb pack` on it.
  */
@@ -18,7 +18,7 @@ const manifest = JSON.parse(readFileSync(resolve(root, 'manifest.mcpb.json'), 'u
 console.log('Building server...');
 execSync('npm run build', { cwd: root, stdio: 'inherit' });
 
-const stagingDir = mkdtempSync(resolve(tmpdir(), 'firefox-devtools-mcpb-'));
+const stagingDir = mkdtempSync(resolve(tmpdir(), 'firefox-mcpb-'));
 
 try {
   cpSync(resolve(root, 'dist'), resolve(stagingDir, 'dist'), { recursive: true });
@@ -44,7 +44,7 @@ try {
 
   const outDir = resolve(root, 'dist-mcpb');
   mkdirSync(outDir, { recursive: true });
-  const outFile = resolve(outDir, `firefox-devtools-mcp-${pkg.version}.mcpb`);
+  const outFile = resolve(outDir, `firefox-mcp-${pkg.version}.mcpb`);
 
   console.log('Packing .mcpb bundle...');
   execSync(`npx mcpb pack "${stagingDir}" "${outFile}"`, {

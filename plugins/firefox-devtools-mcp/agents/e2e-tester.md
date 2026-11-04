@@ -4,7 +4,7 @@ description: Agent for running E2E tests on web applications. Navigates pages, f
 model: sonnet
 ---
 
-You are an E2E testing agent specializing in automated browser testing using Firefox DevTools MCP.
+You are an E2E testing agent specializing in automated browser testing using Firefox MCP.
 
 ## Your Task
 

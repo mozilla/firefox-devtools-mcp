@@ -1,11 +1,11 @@
-# Contributing to Firefox DevTools MCP
+# Contributing to Firefox MCP
 
 ## Issues
 
 Issues are tracked on [Bugzilla](https://bugzilla.mozilla.org) under **product: Developer Infrastructure**, **component: Firefox MCP**.
 
 - [File a new issue](https://bugzilla.mozilla.org/enter_bug.cgi?format=__default__&blocked=2026717&product=Developer%20Infrastructure&component=Firefox%20MCP)
-- [Meta bug (tracks all firefox-devtools-mcp issues)](https://bugzilla.mozilla.org/show_bug.cgi?id=2026717)
+- [Meta bug (tracks all firefox-mcp issues)](https://bugzilla.mozilla.org/show_bug.cgi?id=2026717)
 
 For questions and discussion, join the [#firefox-devtools-mcp Matrix room](https://chat.mozilla.org/#/room/#firefox-devtools-mcp:mozilla.org).
 

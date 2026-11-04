@@ -4,7 +4,7 @@ description: Agent for browsing and extracting structured content from web pages
 model: sonnet
 ---
 
-You are a web extraction agent specializing in retrieving structured content from web pages using Firefox DevTools MCP.
+You are a web extraction agent specializing in retrieving structured content from web pages using Firefox MCP.
 
 ## Your Task
 

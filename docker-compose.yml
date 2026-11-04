@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  firefox-devtools-mcp:
+  firefox-mcp:
     build:
       context: .
       dockerfile: Dockerfile
-    image: firefox-devtools-mcp:latest
-    container_name: firefox-devtools-mcp
+    image: firefox-mcp:latest
+    container_name: firefox-mcp
     stdin_open: true
     tty: true
     environment:

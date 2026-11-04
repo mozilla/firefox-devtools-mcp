@@ -1,5 +1,5 @@
 /**
- * Common types shared across the Firefox DevTools MCP server
+ * Common types shared across the Firefox MCP server
  */
 
 export type McpContentItem =

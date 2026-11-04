@@ -310,7 +310,7 @@ export async function run(
   const transport = new StdioServerTransport();
   await mcpServer.connect(transport);
 
-  log('Firefox DevTools MCP server running on stdio');
+  log('Firefox MCP server running on stdio');
   log('Ready to accept tool requests');
 
   // Clean up the Marionette session so Firefox accepts new connections.

@@ -1,5 +1,5 @@
 /**
- * Download tracking tools for Firefox DevTools MCP
+ * Download tracking tools for Firefox MCP
  * Surfaces BiDi download events and controls download behavior
  */
 

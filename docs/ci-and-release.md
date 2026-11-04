@@ -24,11 +24,17 @@ Workflows
 
 - Publish (.github/workflows/publish.yml)
   - On GitHub Release published, or via manual dispatch: builds and publishes to npm with provenance.
-  - Two jobs: `publish` pushes both npm packages, then `publish-mcp-registry` syncs `server.json`
+  - Two jobs: `publish` pushes the npm packages, then `publish-mcp-registry` syncs `server.json`
     to the `package.json` version and publishes to the official MCP Registry.
+  - `publish` pushes three packages from the same build: `@mozilla/firefox-mcp`, the compat
+    package `@mozilla/firefox-devtools-mcp` (the name used before the rename, still published so
+    that existing setups keep updating) and the moz package.
   - Manual dispatch takes `npm-publish` (default false) and `mcp-publish` (default true), so a
     failed registry publish can be re-run on its own without npm rejecting an already published
     version. `release.yml` passes both explicitly when it triggers the workflow.
+  - Each npm step skips a package whose version is already on npm. If a publish stops
+    halfway, rerun it with `npm-publish` checked and the release tag as the ref: it
+    publishes the missing packages with provenance, then registers the version.
   - The registry verifies the package on npm, so `publish-mcp-registry` first polls `npm view`
     for the version it is about to register, up to five minutes, and fails if it never appears.
   - To re-run the registry publish on its own, use the Actions UI, whose checkboxes send real
@@ -57,14 +63,15 @@ MCP Registry
   `packages[].version` in step with `package.json`, and the publish job syncs them again in its
   own checkout so a release cannot register a mismatched version.
 - The registry proves package ownership through the `mcpName` field in `package.json`, which must
-  keep matching the `name` in `server.json` (`io.github.mozilla/firefox-devtools-mcp`).
+  keep matching the `name` in `server.json` (`io.github.mozilla/firefox-mcp`).
 - The `io.github.mozilla/*` namespace comes from owning the `mozilla` GitHub organization, so no
   DNS verification is involved.
 - `mcp-publisher` is pinned to a release and its sigstore bundle is checked with `cosign
   verify-blob` before it runs, since it executes in a job holding `id-token: write`. Bumping the
   pinned `VERSION` in the workflow is a deliberate step.
-- `scripts/generate-moz-package.mjs` and `scripts/build-mcpb.mjs` both strip `mcpName` from the
-  `package.json` they ship, since neither artifact is the package registered under that name.
+- `scripts/generate-moz-package.mjs`, `scripts/publish-compat-package.mjs` and
+  `scripts/build-mcpb.mjs` all strip `mcpName` from the `package.json` they ship, since none of
+  these artifacts is the package registered under that name.
 
 Client plugin manifests
 - `plugins/*/.claude-plugin/` (Claude), `gemini-extension.json` (Gemini CLI) and the root
