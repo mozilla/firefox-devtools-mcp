@@ -43,8 +43,15 @@ jobs:
           npm run format:check
           npm run build
 
+      # Each step skips a version already on npm, so a rerun can finish a partial publish.
       - name: Publish main package
-        run: npm publish --access public --provenance
+        run: |
+          PKG=$(node -p "require('./package.json').name + '@' + require('./package.json').version")
+          if [ "$(npm view "$PKG" version --prefer-online 2>/dev/null)" = "${PKG##*@}" ]; then
+            echo "$PKG is already published, skipping."
+          else
+            npm publish --access public --provenance
+          fi
 
       - name: Publish compat package
         run: npm run publish:compat -- --access public --provenance

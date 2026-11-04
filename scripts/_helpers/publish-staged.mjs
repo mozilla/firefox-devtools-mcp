@@ -12,7 +12,21 @@ import { tmpdir } from 'node:os';
 
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
+function isPublished({ name, version }) {
+  try {
+    const output = execSync(`npm view ${name}@${version} version --prefer-online`, {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return output.toString().trim() === version;
+  } catch {
+    return false;
+  }
+}
+
 /**
+ * Does nothing when this version is already on npm, so that a publish job can
+ * be rerun after it stopped halfway.
+ *
  * @param {object} options
  * @param {object} options.pkg content of the published package.json
  * @param {string} options.stagingPrefix prefix of the temporary folder name
@@ -20,6 +34,11 @@ export const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
  * @param {(stagingDir: string) => void} [options.prepare] adjusts the staged files before publishing
  */
 export function publishStaged({ pkg, stagingPrefix, npmArgs, prepare }) {
+  if (isPublished(pkg)) {
+    console.log(`${pkg.name}@${pkg.version} is already published, skipping.`);
+    return;
+  }
+
   const stagingDir = mkdtempSync(resolve(tmpdir(), stagingPrefix));
 
   try {

@@ -32,6 +32,9 @@ Workflows
   - Manual dispatch takes `npm-publish` (default false) and `mcp-publish` (default true), so a
     failed registry publish can be re-run on its own without npm rejecting an already published
     version. `release.yml` passes both explicitly when it triggers the workflow.
+  - Each npm step skips a package whose version is already on npm. If a publish stops
+    halfway, rerun it with `npm-publish` checked and the release tag as the ref: it
+    publishes the missing packages with provenance, then registers the version.
   - The registry verifies the package on npm, so `publish-mcp-registry` first polls `npm view`
     for the version it is about to register, up to five minutes, and fails if it never appears.
   - To re-run the registry publish on its own, use the Actions UI, whose checkboxes send real
