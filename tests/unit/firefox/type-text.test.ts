@@ -84,7 +84,7 @@ describe('DomInteractions.typeText', () => {
   it('should focus a uid first and still type through the actions keyboard', async () => {
     const { bidi, sendCommand, callFunction } = createBidi();
     const sharedRef: Script.SharedReference = { sharedId: 'shared-1' };
-    const resolveUid = vi.fn().mockResolvedValue(sharedRef);
+    const resolveUid = vi.fn().mockResolvedValue({ context: CONTEXT, element: sharedRef });
     const dom = new DomInteractions(bidi, resolveUid);
 
     await dom.typeText(CONTEXT, 'hello', { uid: 'uid-1' });
@@ -98,7 +98,9 @@ describe('DomInteractions.typeText', () => {
 
   it('should reject a uid that cannot take focus before typing anything', async () => {
     const { bidi, sendCommand } = createBidi(false);
-    const resolveUid = vi.fn().mockResolvedValue({ sharedId: 'shared-2' });
+    const resolveUid = vi
+      .fn()
+      .mockResolvedValue({ context: CONTEXT, element: { sharedId: 'shared-2' } });
     const dom = new DomInteractions(bidi, resolveUid);
 
     await expect(dom.typeText(CONTEXT, 'hello', { uid: 'uid-2' })).rejects.toThrow(

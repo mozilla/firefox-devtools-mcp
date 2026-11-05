@@ -5,6 +5,7 @@
 import { Key } from 'selenium-webdriver';
 import type { BrowsingContext, Input, Script } from 'webdriver-bidi-protocol';
 import type { BiDiFacade } from './bidi';
+import type { ResolvedElement } from './snapshot/resolver.js';
 
 /**
  * Key names accepted by press_key. Names are matched case-insensitively.
@@ -159,7 +160,7 @@ export class DomInteractions {
     private resolveUid: (
       context: BrowsingContext.BrowsingContext,
       uid: string
-    ) => Promise<Script.SharedReference> = () => {
+    ) => Promise<ResolvedElement> = () => {
       throw new Error('Not implemented');
     }
   ) {}
@@ -248,9 +249,9 @@ export class DomInteractions {
     uid: string,
     dblClick = false
   ): Promise<void> {
-    const el = await this.resolveUid(context, uid);
-    await this.waitForVisible(context, el);
-    const { x, y } = await this.scrollAndGetInViewCenterPoint(context, el);
+    const { context: frame, element: el } = await this.resolveUid(context, uid);
+    await this.waitForVisible(frame, el);
+    const { x, y } = await this.scrollAndGetInViewCenterPoint(frame, el);
     const actions: Input.PointerSourceAction[] = [
       { type: 'pointerMove', x, y },
       { type: 'pointerDown', button: 0 },
@@ -260,17 +261,17 @@ export class DomInteractions {
       actions.push({ type: 'pointerDown', button: 0 });
       actions.push({ type: 'pointerUp', button: 0 });
     }
-    await this.sendPointerActions(context, actions);
+    await this.sendPointerActions(frame, actions);
   }
 
   /**
    * Hover over element by UID
    */
   async hoverByUid(context: BrowsingContext.BrowsingContext, uid: string): Promise<void> {
-    const el = await this.resolveUid(context, uid);
-    await this.waitForVisible(context, el);
-    const { x, y } = await this.scrollAndGetInViewCenterPoint(context, el);
-    await this.sendPointerActions(context, [{ type: 'pointerMove', x, y }]);
+    const { context: frame, element: el } = await this.resolveUid(context, uid);
+    await this.waitForVisible(frame, el);
+    const { x, y } = await this.scrollAndGetInViewCenterPoint(frame, el);
+    await this.sendPointerActions(frame, [{ type: 'pointerMove', x, y }]);
   }
 
   /**
@@ -281,13 +282,13 @@ export class DomInteractions {
     uid: string,
     value: string
   ): Promise<void> {
-    const el = await this.resolveUid(context, uid);
+    const { context: frame, element: el } = await this.resolveUid(context, uid);
     // Select the old content after focusing and delete it with a key press,
     // instead of assigning the value directly: a page that writes its own value
     // back on focus (such as a controlled React input that re-renders) would
     // otherwise restore it, and the typed text would be appended to it.
     const hasContent = await this.bidi.callFunction<boolean>(
-      context,
+      frame,
       `
       (el) => {
         el.focus();
@@ -306,7 +307,7 @@ export class DomInteractions {
     );
     const actions = hasContent ? comboKeyActions({ modifiers: [], key: Key.BACK_SPACE }) : [];
     actions.push(...textKeyActions(value));
-    await this.sendKeyActions(context, actions);
+    await this.sendKeyActions(frame, actions);
   }
 
   /**
@@ -318,13 +319,13 @@ export class DomInteractions {
     fromUid: string,
     toUid: string
   ): Promise<void> {
-    const [sourceElement, targetElement] = await Promise.all([
+    const [source, target] = await Promise.all([
       this.resolveUid(context, fromUid),
       this.resolveUid(context, toUid),
     ]);
     // Use JS drag events fallback for compatibility (Actions DnD not used)
     await this.bidi.callFunction(
-      context,
+      source.context,
       `
       (src, tgt) => {
         function dispatch(type, target, dt) {
@@ -339,7 +340,7 @@ export class DomInteractions {
         dispatch('dragend', src, dt);
       }
       `,
-      [sourceElement, targetElement]
+      [source.element, target.element]
     );
   }
 
@@ -364,9 +365,9 @@ export class DomInteractions {
     uid: string,
     filePath: string
   ): Promise<void> {
-    const el = await this.resolveUid(context, uid);
+    const { context: frame, element: el } = await this.resolveUid(context, uid);
     const files = filePath.split('\n').filter((path) => path !== '');
-    await this.bidi.sendCommand('input.setFiles', { context, element: el, files });
+    await this.bidi.sendCommand('input.setFiles', { context: frame, element: el, files });
   }
 
   /**
@@ -418,10 +419,10 @@ export class DomInteractions {
    * focused.
    */
   private async focusByUid(context: BrowsingContext.BrowsingContext, uid: string): Promise<void> {
-    const el = await this.resolveUid(context, uid);
-    await this.waitForVisible(context, el, 5000);
+    const { context: frame, element: el } = await this.resolveUid(context, uid);
+    await this.waitForVisible(frame, el, 5000);
     const focused = await this.bidi.callFunction(
-      context,
+      frame,
       '(el) => { el.focus(); return el.getRootNode().activeElement === el; }',
       [el]
     );
@@ -476,13 +477,13 @@ export class DomInteractions {
     context: BrowsingContext.BrowsingContext,
     uid: string
   ): Promise<string> {
-    const el = await this.resolveUid(context, uid);
-    await this.waitForVisible(context, el);
-    await this.scrollAndGetInViewCenterPoint(context, el);
+    const { context: frame, element: el } = await this.resolveUid(context, uid);
+    await this.waitForVisible(frame, el);
+    await this.scrollAndGetInViewCenterPoint(frame, el);
 
     // Take screenshot of element (WebDriver BiDi automatically crops to element bounds)
     const result = await this.bidi.sendCommand('browsingContext.captureScreenshot', {
-      context,
+      context: frame,
       format: { type: 'png' },
       clip: { type: 'element', element: el },
     });

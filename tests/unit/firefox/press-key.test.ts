@@ -75,7 +75,7 @@ describe('DomInteractions.pressKey', () => {
   it('should focus a uid before pressing the key', async () => {
     const { bidi, sendCommand, callFunction } = createBidi();
     const sharedRef: Script.SharedReference = { sharedId: 'shared-1' };
-    const resolveUid = vi.fn().mockResolvedValue(sharedRef);
+    const resolveUid = vi.fn().mockResolvedValue({ context: CONTEXT, element: sharedRef });
     const dom = new DomInteractions(bidi, resolveUid);
 
     await dom.pressKey(CONTEXT, 'Enter', 'uid-1');
@@ -92,7 +92,9 @@ describe('DomInteractions.pressKey', () => {
 
   it('should reject a uid that cannot take focus instead of pressing elsewhere', async () => {
     const { bidi, sendCommand } = createBidi(false);
-    const resolveUid = vi.fn().mockResolvedValue({ sharedId: 'shared-2' });
+    const resolveUid = vi
+      .fn()
+      .mockResolvedValue({ context: CONTEXT, element: { sharedId: 'shared-2' } });
     const dom = new DomInteractions(bidi, resolveUid);
 
     await expect(dom.pressKey(CONTEXT, 'Escape', 'uid-2')).rejects.toThrow(

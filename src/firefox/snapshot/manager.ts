@@ -12,7 +12,7 @@ import { nativeToLocalValue } from '../../utils/local-value.js';
 import { logDebug } from '../../utils/logger.js';
 import type { Snapshot, SnapshotJson, InjectedScriptResult } from './types.js';
 import { formatSnapshotTree } from './formatter.js';
-import { UidResolver } from './resolver.js';
+import { UidResolver, type ResolvedElement } from './resolver.js';
 
 export const SNAPSHOT_MANAGER_SANDBOX = 'snapshot-manager';
 
@@ -179,6 +179,16 @@ export class SnapshotManager {
     uid: string
   ): Promise<Script.SharedReference> {
     return await this.resolver.resolveUidToElement(context, uid);
+  }
+
+  /**
+   * Resolve UID to its element and the browsing context of the frame that holds it
+   */
+  async resolveUidToContextElement(
+    context: BrowsingContext.BrowsingContext,
+    uid: string
+  ): Promise<ResolvedElement> {
+    return await this.resolver.resolveUidToContextElement(context, uid);
   }
 
   /**
