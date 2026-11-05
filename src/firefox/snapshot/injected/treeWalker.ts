@@ -115,13 +115,14 @@ export function walkTree(
       }
     } else {
       // Walk regular children
-      for (let i = 0; i < el.children.length; i++) {
+      const children = el.shadowRoot ? [...el.shadowRoot.children, ...el.children] : el.children;
+      for (let i = 0; i < children.length; i++) {
         if (nodeCount >= MAX_NODES) {
           truncated = true;
           break;
         }
 
-        const child = el.children[i];
+        const child = children[i];
         if (!child) {
           continue;
         }
