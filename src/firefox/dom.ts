@@ -4,6 +4,7 @@
 
 import { Key } from 'selenium-webdriver';
 import type { BrowsingContext, Input, Script } from 'webdriver-bidi-protocol';
+import { nativeToLocalValue } from '../utils/local-value.js';
 import type { BiDiFacade } from './bidi';
 
 /**
@@ -274,6 +275,49 @@ export class DomInteractions {
   }
 
   /**
+   * Pick the option of a select by its value or visible text. Typing would only reach it through
+   * the browser's type-ahead, which ignores option values and does nothing when no text matches.
+   * @returns false if the element is not a select
+   */
+  private async selectOption(
+    context: BrowsingContext.BrowsingContext,
+    uid: string,
+    el: Script.SharedReference,
+    value: string
+  ): Promise<boolean> {
+    const unmatched = await this.bidi.callFunction<string[] | null>(
+      context,
+      `
+      (el, value) => {
+        if (el.nodeName !== 'SELECT') {
+          return null;
+        }
+        const options = [...el.options];
+        const option =
+          options.find((o) => o.value === value) ?? options.find((o) => o.text.trim() === value);
+        if (!option) {
+          return options.map((o) => o.text.trim());
+        }
+        if (!option.selected) {
+          option.selected = true;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return [];
+      }
+      `,
+      [el, nativeToLocalValue(value)]
+    );
+    if (unmatched === null) {
+      return false;
+    }
+    if (unmatched.length > 0) {
+      throw new Error(`${uid} has no option "${value}". Options: ${unmatched.join(', ')}`);
+    }
+    return true;
+  }
+
+  /**
    * Fill input field by UID
    */
   async fillByUid(
@@ -282,6 +326,9 @@ export class DomInteractions {
     value: string
   ): Promise<void> {
     const el = await this.resolveUid(context, uid);
+    if (await this.selectOption(context, uid, el, value)) {
+      return;
+    }
     // Select the old content after focusing and delete it with a key press,
     // instead of assigning the value directly: a page that writes its own value
     // back on focus (such as a controlled React input that re-renders) would

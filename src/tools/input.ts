@@ -51,7 +51,7 @@ export const hoverByUidTool = {
 
 export const fillByUidTool = {
   name: 'fill_by_uid',
-  description: 'Fill text input/textarea by UID.',
+  description: 'Fill text input/textarea or pick a select option by UID.',
   annotations: {
     readOnlyHint: false,
   },
