@@ -59,7 +59,7 @@ export function isVisible(el: Element): boolean {
     } catch {
       return false;
     }
-    current = current.parentElement;
+    current = current.parentElement ?? (current.getRootNode() as ShadowRoot).host ?? null;
   }
 
   return true;

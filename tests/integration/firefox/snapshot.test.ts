@@ -233,4 +233,46 @@ describe('Snapshot Integration Tests', () => {
 
     expect(hasInvisibleButton).toBe(false);
   }, 10000);
+
+  describe('shadow DOM', () => {
+    const SHADOW_PAGE =
+      'data:text/html,<x-box id=open></x-box><x-box id=hidden style="display:none"></x-box>' +
+      '<output id=out></output><script>customElements.define("x-box", class extends HTMLElement {' +
+      ' connectedCallback() { const root = this.attachShadow({ mode: "open" });' +
+      ' root.innerHTML = "<input id=deep><button id=deepBtn>Deep</button>";' +
+      ' root.getElementById("deepBtn").onclick = () =>' +
+      ' { out.textContent = this.id + ":" + root.getElementById("deep").value; }; } });</script>';
+
+    function shadowNode(snapshot: { json: { root: SnapshotNode } }, id: string) {
+      return findNodeInSnapshot(snapshot.json.root, (node) => node.id === id);
+    }
+
+    it('should include the elements of an open shadow root', async () => {
+      await firefox.navigate(SHADOW_PAGE);
+
+      const snapshot = await firefox.takeSnapshot();
+
+      expect(shadowNode(snapshot, 'deepBtn')?.name).toBe('Deep');
+    }, 10000);
+
+    it('should let shadow DOM elements be filled and clicked by UID', async () => {
+      await firefox.navigate(SHADOW_PAGE);
+      const snapshot = await firefox.takeSnapshot();
+
+      await firefox.fillByUid(shadowNode(snapshot, 'deep')!.uid, 'abc');
+      await firefox.clickByUid(shadowNode(snapshot, 'deepBtn')!.uid);
+
+      expect(await firefox.evaluate('document.getElementById("out").textContent')).toBe('open:abc');
+    }, 10000);
+
+    it('should leave out the shadow root of a hidden host', async () => {
+      await firefox.navigate(SHADOW_PAGE);
+
+      const snapshot = await firefox.takeSnapshot({ includeAll: true });
+
+      expect(findNodesInSnapshot(snapshot.json.root, (node) => node.id === 'deepBtn')).toHaveLength(
+        1
+      );
+    }, 10000);
+  });
 });
