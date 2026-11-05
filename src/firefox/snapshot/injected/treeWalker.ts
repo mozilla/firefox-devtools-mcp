@@ -159,7 +159,9 @@ export function walkTree(
     const roleAttr = el.getAttribute('role');
     const nameAttr = getElementName(el);
     const textAttr = getTextContent(el);
-    const valueAttr = (htmlEl as any).value;
+    const inputType = tag === 'input' ? (el as HTMLInputElement).type : undefined;
+    const isToggle = inputType === 'checkbox' || inputType === 'radio';
+    const valueAttr = inputType === 'password' ? undefined : (htmlEl as any).value;
     const hrefAttr = (htmlEl as any).href;
     const srcAttr = (htmlEl as any).src;
     const ariaAttr = getAriaAttributes(el);
@@ -171,6 +173,8 @@ export function walkTree(
       ...(idAttr && { id: idAttr }),
       ...(roleAttr && { role: roleAttr }),
       ...(nameAttr && { name: nameAttr }),
+      ...(inputType && inputType !== 'text' && { type: inputType }),
+      ...(isToggle && { checked: (el as HTMLInputElement).checked }),
       ...(valueAttr && { value: valueAttr }),
       ...(hrefAttr && { href: hrefAttr }),
       ...(srcAttr && { src: srcAttr }),

@@ -60,6 +60,14 @@ export function formatSnapshotTree(
     attrs.push(`tag=${node.tag}`);
   }
 
+  if (node.type) {
+    attrs.push(`type=${node.type}`);
+  }
+
+  if (node.checked !== undefined) {
+    attrs.push(node.checked ? 'checked' : 'unchecked');
+  }
+
   // Value
   if (node.value) {
     attrs.push(`value="${truncate(node.value, maxAttrLength)}"`);

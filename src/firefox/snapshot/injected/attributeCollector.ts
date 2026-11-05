@@ -20,13 +20,11 @@ export function getElementName(el: Element): string | undefined {
     return el.getAttribute('aria-label') || undefined;
   }
 
-  // label for input
-  const htmlEl = el as HTMLElement;
-  const elId = htmlEl.id;
-  if (elId) {
-    const label = document.querySelector(`label[for="${elId}"]`);
-    if (label?.textContent) {
-      return label.textContent.trim();
+  const label = (el as HTMLInputElement).labels?.[0];
+  if (label) {
+    const name = getLabelText(label);
+    if (name) {
+      return name;
     }
   }
 
@@ -52,6 +50,18 @@ export function getElementName(el: Element): string | undefined {
   }
 
   return undefined;
+}
+
+/**
+ * Text of a label without the controls it wraps, so that a select does not name itself after its
+ * options
+ */
+function getLabelText(label: HTMLLabelElement): string | undefined {
+  const copy = label.cloneNode(true) as HTMLLabelElement;
+  for (const control of copy.querySelectorAll('input, select, textarea, button')) {
+    control.remove();
+  }
+  return copy.textContent?.replace(/\s+/g, ' ').trim() || undefined;
 }
 
 /**

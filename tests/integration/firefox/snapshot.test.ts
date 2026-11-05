@@ -233,4 +233,73 @@ describe('Snapshot Integration Tests', () => {
 
     expect(hasInvisibleButton).toBe(false);
   }, 10000);
+
+  describe('form controls', () => {
+    const CONTROLS_PAGE =
+      'data:text/html,<label>Username <input id=user></label>' +
+      '<label>Password <input id=pass type=password value=secret></label>' +
+      '<label><input id=remember type=checkbox> Remember me</label>' +
+      '<label>Team <select id=team><option>Red</option><option>Blue</option></select></label>' +
+      '<label for=mail>Mail</label><input id=mail type=email>';
+
+    function lineOf(text: string, name: string): string | undefined {
+      return text.split('\n').find((line) => line.includes(`"${name}"`));
+    }
+
+    it('should name a control after the label that wraps it', async () => {
+      await firefox.navigate(CONTROLS_PAGE);
+
+      const { text } = await firefox.takeSnapshot();
+
+      expect(lineOf(text, 'Username')).toContain('input');
+      expect(lineOf(text, 'Remember me')).toContain('input');
+    }, 10000);
+
+    it('should leave the options out of the name of a select', async () => {
+      await firefox.navigate(CONTROLS_PAGE);
+
+      const { text } = await firefox.takeSnapshot();
+
+      expect(lineOf(text, 'Team')).toContain('select');
+    }, 10000);
+
+    it('should still name a control after a label pointing at it by id', async () => {
+      await firefox.navigate(CONTROLS_PAGE);
+
+      const { text } = await firefox.takeSnapshot();
+
+      expect(lineOf(text, 'Mail')).toContain('input');
+    }, 10000);
+
+    it('should show the input type', async () => {
+      await firefox.navigate(CONTROLS_PAGE);
+
+      const { text } = await firefox.takeSnapshot();
+
+      expect(lineOf(text, 'Mail')).toContain('type=email');
+      expect(lineOf(text, 'Remember me')).toContain('type=checkbox');
+    }, 10000);
+
+    it('should show whether a checkbox is checked', async () => {
+      await firefox.navigate(CONTROLS_PAGE);
+
+      const before = await firefox.takeSnapshot();
+      const { uid } = findNodeInSnapshot(before.json.root, (n) => n.id === 'remember')!;
+      await firefox.clickByUid(uid);
+      const after = await firefox.takeSnapshot();
+
+      expect(lineOf(before.text, 'Remember me')).toContain('unchecked');
+      expect(lineOf(after.text, 'Remember me')).toMatch(/ checked( |$)/);
+      expect(lineOf(after.text, 'Remember me')).not.toContain('unchecked');
+    }, 10000);
+
+    it('should keep the value of a password field out of the snapshot', async () => {
+      await firefox.navigate(CONTROLS_PAGE);
+
+      const { text } = await firefox.takeSnapshot();
+
+      expect(lineOf(text, 'Password')).toContain('type=password');
+      expect(text).not.toContain('secret');
+    }, 10000);
+  });
 });
