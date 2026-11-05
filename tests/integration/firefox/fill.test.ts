@@ -74,4 +74,42 @@ describe('fill_by_uid Integration Tests', () => {
 
     expect(await valueOf('r')).toBe('');
   }, 20000);
+
+  describe('select elements', () => {
+    const SELECT_PAGE =
+      'data:text/html,<select id=s><option value=1>Red</option><option value=2>Green</option></select>' +
+      '<script>window.changes = []; s.addEventListener("change", () => changes.push(s.value));</script>';
+
+    it('should select an option by its value', async () => {
+      await firefox.navigate(SELECT_PAGE);
+
+      await firefox.fillByUid(await uidOf('s'), '2');
+
+      expect(await firefox.evaluate('document.getElementById("s").value')).toBe('2');
+    }, 20000);
+
+    it('should select an option by its visible text', async () => {
+      await firefox.navigate(SELECT_PAGE);
+
+      await firefox.fillByUid(await uidOf('s'), 'Green');
+
+      expect(await firefox.evaluate('document.getElementById("s").value')).toBe('2');
+    }, 20000);
+
+    it('should fire a change event like a user selection does', async () => {
+      await firefox.navigate(SELECT_PAGE);
+
+      await firefox.fillByUid(await uidOf('s'), 'Green');
+
+      expect(await firefox.evaluate('window.changes')).toEqual(['2']);
+    }, 20000);
+
+    it('should reject an unknown option and name the available ones', async () => {
+      await firefox.navigate(SELECT_PAGE);
+      const uid = await uidOf('s');
+
+      await expect(firefox.fillByUid(uid, 'Purple')).rejects.toThrow(/"Purple".*Red.*Green/);
+      expect(await firefox.evaluate('document.getElementById("s").value')).toBe('1');
+    }, 20000);
+  });
 });

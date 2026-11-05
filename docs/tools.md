@@ -196,7 +196,7 @@ Parameters:
 
 ### `fill_by_uid`
 
-Fill text input/textarea by UID.
+Fill text input/textarea or pick a select option by UID.
 
 Parameters:
 
