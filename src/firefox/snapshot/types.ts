@@ -41,6 +41,10 @@ export interface SnapshotNode {
   id?: string;
   role?: string;
   name?: string;
+  /** Input type, left out for text inputs */
+  type?: string;
+  /** Checked state of a checkbox or radio button */
+  checked?: boolean;
   value?: string;
   href?: string;
   src?: string;
