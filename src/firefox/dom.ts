@@ -4,6 +4,7 @@
 
 import { Key } from 'selenium-webdriver';
 import type { BrowsingContext, Input, Script } from 'webdriver-bidi-protocol';
+import { nativeToLocalValue } from '../utils/local-value.js';
 import type { BiDiFacade } from './bidi';
 
 /**
@@ -153,6 +154,41 @@ function comboKeyActions({ modifiers, key }: KeyCombo): Input.KeySourceAction[] 
   return actions;
 }
 
+export interface WaitForOptions {
+  /** CSS selector of an element that has to be visible */
+  selector?: string | undefined;
+  /** Text that has to be visible */
+  text?: string | undefined;
+  /** Wait until it is no longer there instead */
+  gone?: boolean | undefined;
+  timeout?: number | undefined;
+}
+
+// Looks through the document, its open shadow roots and same-origin frames, like a snapshot does.
+const PRESENCE_SCRIPT = `(selector, text) => {
+  const roots = [document];
+  for (let i = 0; i < roots.length; i++) {
+    for (const el of roots[i].querySelectorAll('*')) {
+      if (el.shadowRoot) {
+        roots.push(el.shadowRoot);
+      }
+      try {
+        if (el.contentDocument) {
+          roots.push(el.contentDocument);
+        }
+      } catch {}
+    }
+  }
+  if (selector) {
+    return roots.some((root) =>
+      [...root.querySelectorAll(selector)].some((el) => el.checkVisibility({ visibilityProperty: true }))
+    );
+  }
+  const textOf = (root) =>
+    root.body ? root.body.innerText : [...root.children].map((el) => el.innerText).join('\\n');
+  return roots.some((root) => textOf(root).includes(text));
+}`;
+
 export class DomInteractions {
   constructor(
     private bidi: BiDiFacade,
@@ -233,6 +269,45 @@ export class DomInteractions {
       context,
       actions: [{ type: 'pointer', id: 'mcp_mouse', actions }],
     });
+  }
+
+  /**
+   * Wait until an element or text shows up, or with gone until it disappears. A page that
+   * navigates in the meantime is searched again once its new document is there.
+   * @returns Milliseconds waited
+   */
+  async waitFor(
+    context: BrowsingContext.BrowsingContext,
+    options: WaitForOptions
+  ): Promise<number> {
+    const { selector, text, gone = false, timeout = 5000 } = options;
+    const started = Date.now();
+    for (;;) {
+      let present: boolean | undefined;
+      try {
+        present = await this.bidi.callFunction<boolean>(
+          context,
+          PRESENCE_SCRIPT,
+          [nativeToLocalValue(selector), nativeToLocalValue(text)],
+          'wait_for'
+        );
+      } catch (error) {
+        if (/not a valid selector/.test((error as Error).message)) {
+          throw error;
+        }
+      }
+      const waited = Date.now() - started;
+      if (present !== undefined && present !== gone) {
+        return waited;
+      }
+      if (waited >= timeout) {
+        const target = selector ? `selector ${selector}` : `text "${text}"`;
+        throw new Error(
+          `${target} ${gone ? 'was still there' : 'did not appear'} after ${timeout} ms`
+        );
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
   }
 
   // ============================================================================

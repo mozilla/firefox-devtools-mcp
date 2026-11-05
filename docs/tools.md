@@ -14,7 +14,7 @@ the Mozilla-internal build; the public package drops both.
 | Module                    | Tools | slim | basic | developer | mozilla | all |
 | ------------------------- | ----- | ---- | ----- | --------- | ------- | --- |
 | `pages`                   | 6     | yes  | yes   | yes       | yes     | yes |
-| `snapshot`                | 3     | yes  | yes   | yes       | yes     | yes |
+| `snapshot`                | 4     | yes  | yes   | yes       | yes     | yes |
 | `input`                   | 8     | yes  | yes   | yes       | yes     | yes |
 | `network`                 | 3     | -    | -     | yes       | yes     | yes |
 | `console`                 | 2     | -    | -     | yes       | yes     | yes |
@@ -166,6 +166,19 @@ Resolve UID to CSS selector. Fails if the element is gone.
 Parameters:
 
 - `uid` (string, required) - UID from snapshot
+
+### `wait_for`
+
+_Read-only._
+
+Wait until text or an element matching a CSS selector is visible, or with gone until it disappears. Also searches open shadow roots and same-origin iframes.
+
+Parameters:
+
+- `text` (string, optional) - Visible text to wait for
+- `selector` (string, optional) - CSS selector to wait for
+- `gone` (boolean, optional) - Wait until it disappears (default: false)
+- `timeout` (number, optional) - Timeout in ms (default: 5000, max: 30000)
 
 ### `clear_snapshot`
 
