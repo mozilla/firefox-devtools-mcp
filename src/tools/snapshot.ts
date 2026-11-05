@@ -83,6 +83,36 @@ export const resolveUidToSelectorTool = {
   },
 } as const satisfies ToolDefinition;
 
+export const waitForTool = {
+  name: 'wait_for',
+  description:
+    'Wait until text or an element matching a CSS selector is visible, or with gone until it disappears. Also searches open shadow roots and same-origin iframes.',
+  annotations: {
+    readOnlyHint: true,
+  },
+  inputSchema: {
+    type: 'object',
+    properties: {
+      text: {
+        type: 'string',
+        description: 'Visible text to wait for',
+      },
+      selector: {
+        type: 'string',
+        description: 'CSS selector to wait for',
+      },
+      gone: {
+        type: 'boolean',
+        description: 'Wait until it disappears (default: false)',
+      },
+      timeout: {
+        type: 'number',
+        description: 'Timeout in ms (default: 5000, max: 30000)',
+      },
+    },
+  },
+} as const satisfies ToolDefinition;
+
 export const clearSnapshotTool = {
   name: 'clear_snapshot',
   description: 'Clear snapshot UIDs. Usually not needed.',
@@ -230,6 +260,29 @@ export const handleResolveUidToSelector = defineToolHandler<typeof resolveUidToS
   }
 );
 
+const MAX_WAIT_TIMEOUT = 30000;
+
+export const handleWaitFor = defineToolHandler<typeof waitForTool>(
+  async function handleWaitFor(args): Promise<McpToolResponse> {
+    const { text, selector, gone = false, timeout = 5000 } = args ?? {};
+    if ((text === undefined) === (selector === undefined)) {
+      throw new Error('wait_for needs either text or selector, not both');
+    }
+
+    const { getFirefox } = await import('../index.js');
+    const firefox = await getFirefox();
+
+    const waited = await firefox.waitFor({
+      text,
+      selector,
+      gone,
+      timeout: Math.min(Math.max(0, timeout), MAX_WAIT_TIMEOUT),
+    });
+    const target = selector ?? `"${text}"`;
+    return successResponse(`${target} ${gone ? 'disappeared' : 'appeared'} after ${waited} ms`);
+  }
+);
+
 export const handleClearSnapshot = defineToolHandler<typeof clearSnapshotTool>(
   async function handleClearSnapshot(_args): Promise<McpToolResponse> {
     const { getFirefox } = await import('../index.js');
@@ -247,6 +300,7 @@ export const module = defineModule({
   tools: [
     [takeSnapshotTool, handleTakeSnapshot],
     [resolveUidToSelectorTool, handleResolveUidToSelector],
+    [waitForTool, handleWaitFor],
     [clearSnapshotTool, handleClearSnapshot],
   ],
 });
