@@ -6,6 +6,7 @@
 import { successResponse } from '../utils/response-helpers.js';
 import { handleUidError } from '../utils/uid-helpers.js';
 import { defineModule, defineToolHandler, type ToolDefinition } from './module.js';
+import { dialogOpenedResponse } from './utilities.js';
 import type { McpToolResponse } from '../types/common.js';
 
 // Tool definitions
@@ -213,12 +214,14 @@ export const handleClickByUid = defineToolHandler<typeof clickByUidTool>(
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    try {
-      await firefox.clickByUid(uid, dblClick);
-      return successResponse(`${dblClick ? 'dblclick' : 'click'} ${uid}`);
-    } catch (error) {
-      throw handleUidError(error as Error, uid);
-    }
+    return await firefox.raceAgainstDialogOpened(async () => {
+      try {
+        await firefox.clickByUid(uid, dblClick);
+        return successResponse(`${dblClick ? 'dblclick' : 'click'} ${uid}`);
+      } catch (error) {
+        throw handleUidError(error as Error, uid);
+      }
+    }, dialogOpenedResponse);
   }
 );
 

@@ -2,9 +2,9 @@
  * Integration tests for accept_dialog and dismiss_dialog, called through the MCP server
  */
 
-import { describe, expect } from 'vitest';
+import { assert, describe, expect } from 'vitest';
 import { mcpTest, type McpTestServer } from '../../helpers/mcp.js';
-import { waitFor } from '../../helpers/firefox.js';
+import { fixtureUrl, waitFor } from '../../helpers/firefox.js';
 
 async function getResult(mcp: McpTestServer) {
   return (await mcp.callTool('evaluate_script', { function: '() => window.result' })).text;
@@ -68,5 +68,35 @@ describe('Dialog handlers', () => {
     const result = await mcp.callTool('dismiss_dialog');
     expect(result.isError).toBe(true);
     expect(result.text).toContain('Failed to dismiss dialog');
+  });
+
+  mcpTest('evaluate_script should return when a dialog opens', async ({ mcp }) => {
+    const result = await mcp.callTool('evaluate_script', {
+      function: `() => alert('foo')`,
+    });
+    expect(result.isError).toBe(false);
+    expect(result.text).toContain('Dialog opened while tool was running: alert "foo"');
+
+    const accepted = await mcp.callTool('accept_dialog');
+    expect(accepted.isError).toBe(false);
+    expect(accepted.text).toContain('Accepted');
+  });
+
+  mcpTest('click_by_uid should return when a dialog opens', async ({ mcp }) => {
+    await mcp.callTool('navigate_page', { url: fixtureUrl('simple.html') });
+    await mcp.callTool('evaluate_script', {
+      function: `() => document.getElementById('clickBtn').addEventListener('click', () => alert('foo'))`,
+    });
+    const snapshot = await mcp.callTool('take_snapshot');
+    const uid = /uid=(\S+) button "Click Me"/.exec(snapshot.text)?.[1];
+    assert(uid, 'snapshot contains the button uid');
+
+    const result = await mcp.callTool('click_by_uid', { uid });
+    expect(result.isError).toBe(false);
+    expect(result.text).toContain('Dialog opened while tool was running: alert "foo"');
+
+    const accepted = await mcp.callTool('accept_dialog');
+    expect(accepted.isError).toBe(false);
+    expect(accepted.text).toContain('Accepted');
   });
 });

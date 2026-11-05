@@ -8,7 +8,13 @@ import { FirefoxCore } from './core.js';
 import { BiDiFacade, type FirefoxExtension } from './bidi.js';
 import { listExtensions, type ListExtensionsFilters } from './webextension.js';
 import { logDebug } from '../utils/logger.js';
-import { ConsoleEvents, NetworkEvents, DebuggingEvents, DownloadEvents } from './events/index.js';
+import {
+  ConsoleEvents,
+  NetworkEvents,
+  DebuggingEvents,
+  DownloadEvents,
+  DialogEvents,
+} from './events/index.js';
 import type { NetworkBodyResult } from './events/network.js';
 import { DomInteractions } from './dom.js';
 import { PageManagement } from './pages.js';
@@ -25,6 +31,7 @@ export class FirefoxClient {
   private consoleEvents: ConsoleEvents | null = null;
   private networkEvents: NetworkEvents | null = null;
   private debuggingEvents: DebuggingEvents | null = null;
+  private dialogEvents: DialogEvents | null = null;
   private downloadEvents: DownloadEvents | null = null;
   private dom: DomInteractions | null = null;
   private pages: PageManagement | null = null;
@@ -104,6 +111,14 @@ export class FirefoxClient {
     } catch {
       logDebug('Unable to subscribe to debugging events');
       this.debuggingEvents = null;
+    }
+
+    this.dialogEvents = new DialogEvents(this.bidi);
+    try {
+      await this.dialogEvents.subscribe();
+    } catch {
+      logDebug('Unable to subscribe to dialog events');
+      this.dialogEvents = null;
     }
 
     this.downloadEvents = new DownloadEvents(this.bidi);
@@ -237,6 +252,16 @@ export class FirefoxClient {
       throw new Error('Not connected');
     }
     return await this.pages.setViewportSize(width, height);
+  }
+
+  async raceAgainstDialogOpened<T>(
+    fn: () => Promise<T>,
+    dialogOpenedResult: (dialog: BrowsingContext.UserPromptOpenedParameters) => T
+  ) {
+    if (!this.dialogEvents) {
+      throw new Error('Dialog events not available');
+    }
+    return await this.dialogEvents.raceAgainstDialogOpened(fn, dialogOpenedResult);
   }
 
   async acceptDialog(promptText?: string): Promise<void> {

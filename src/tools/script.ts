@@ -8,6 +8,7 @@ import { remoteValueToNative } from '../utils/remote-value.js';
 import { validateFunction } from '../utils/js-validation.js';
 import { saveOutput } from '../utils/save-output.js';
 import { defineModule, defineToolHandler, type ToolDefinition } from './module.js';
+import { dialogOpenedResponse } from './utilities.js';
 import type { McpToolResponse } from '../types/common.js';
 import { BiDiTimeoutError } from '../utils/errors.js';
 
@@ -76,98 +77,100 @@ export const handleEvaluateScript = defineToolHandler<typeof evaluateScriptTool>
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    const scriptTimeout = timeout ?? DEFAULT_TIMEOUT;
+    return await firefox.raceAgainstDialogOpened(async () => {
+      const scriptTimeout = timeout ?? DEFAULT_TIMEOUT;
 
-    // Prepare arguments: resolve UIDs to references shared ids if provided
-    const resolvedArgs: Script.LocalValue[] = [];
-    if (fnArgs && fnArgs.length > 0) {
-      for (const arg of fnArgs) {
-        try {
-          resolvedArgs.push(await firefox.resolveUidToElement(arg.uid));
-        } catch (error) {
-          const errorMsg = (error as Error).message;
+      // Prepare arguments: resolve UIDs to references shared ids if provided
+      const resolvedArgs: Script.LocalValue[] = [];
+      if (fnArgs && fnArgs.length > 0) {
+        for (const arg of fnArgs) {
+          try {
+            resolvedArgs.push(await firefox.resolveUidToElement(arg.uid));
+          } catch (error) {
+            const errorMsg = (error as Error).message;
 
-          // Provide friendly error for stale UIDs
-          if (
-            errorMsg.includes('stale') ||
-            errorMsg.includes('Snapshot') ||
-            errorMsg.includes('UID')
-          ) {
-            throw new Error(
-              `UID "${arg.uid}" is invalid or from an old snapshot.\n\n` +
-                'The page may have changed since the snapshot was taken.\n' +
-                'Please call take_snapshot to get fresh UIDs and try again.'
-            );
+            // Provide friendly error for stale UIDs
+            if (
+              errorMsg.includes('stale') ||
+              errorMsg.includes('Snapshot') ||
+              errorMsg.includes('UID')
+            ) {
+              throw new Error(
+                `UID "${arg.uid}" is invalid or from an old snapshot.\n\n` +
+                  'The page may have changed since the snapshot was taken.\n' +
+                  'Please call take_snapshot to get fresh UIDs and try again.'
+              );
+            }
+
+            throw new Error(`Failed to resolve UID "${arg.uid}": ${errorMsg}`);
           }
-
-          throw new Error(`Failed to resolve UID "${arg.uid}": ${errorMsg}`);
         }
       }
-    }
 
-    // Execute with resolved args (empty array if no args)
-    const context = firefox.getCurrentContextId();
-    if (!context) {
-      throw new Error('No active browsing context');
-    }
-    let result;
-    try {
-      result = await firefox.sendBiDiCommand(
-        'script.callFunction',
-        {
-          functionDeclaration: fnString,
-          awaitPromise: true,
-          arguments: resolvedArgs,
-          target: {
-            context,
-            ...(sandbox !== undefined && { sandbox }),
+      // Execute with resolved args (empty array if no args)
+      const context = firefox.getCurrentContextId();
+      if (!context) {
+        throw new Error('No active browsing context');
+      }
+      let result;
+      try {
+        result = await firefox.sendBiDiCommand(
+          'script.callFunction',
+          {
+            functionDeclaration: fnString,
+            awaitPromise: true,
+            arguments: resolvedArgs,
+            target: {
+              context,
+              ...(sandbox !== undefined && { sandbox }),
+            },
           },
-        },
-        { timeout: scriptTimeout }
-      );
-    } catch (error) {
-      if (error instanceof BiDiTimeoutError) {
+          { timeout: scriptTimeout }
+        );
+      } catch (error) {
+        if (error instanceof BiDiTimeoutError) {
+          return errorResponse(
+            new Error(
+              `Script execution timed out (exceeded ${scriptTimeout}ms).\n\n` +
+                'The function may contain an infinite loop or be waiting for a slow operation.\n' +
+                'Try simplifying the script or increasing the timeout parameter.'
+            )
+          );
+        }
+        throw error;
+      }
+
+      if (result.type === 'success') {
+        // JSON.stringify returns undefined for an undefined script result
+        const json = JSON.stringify(remoteValueToNative(result.result), null, 2) ?? 'undefined';
+
+        if (saveTo) {
+          const saved = await saveOutput(
+            json,
+            saveTo === true ? undefined : saveTo,
+            'evaluate-script'
+          );
+          let output = `Script ran on page. Result saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`;
+          const excerpt = previewExcerpt(json, preview);
+          if (excerpt) {
+            output += '\nPreview:\n```json\n' + excerpt + '\n```';
+          }
+          return successResponse(output);
+        }
+
+        return successResponse('Script ran on page and returned:\n```json\n' + json + '\n```');
+      } else {
+        const exceptionDetails = result.exceptionDetails;
         return errorResponse(
           new Error(
-            `Script execution timed out (exceeded ${scriptTimeout}ms).\n\n` +
-              'The function may contain an infinite loop or be waiting for a slow operation.\n' +
-              'Try simplifying the script or increasing the timeout parameter.'
+            `Script execution failed: ${exceptionDetails.text}\n\n` +
+              '```json\n' +
+              JSON.stringify(remoteValueToNative(exceptionDetails.exception), null, 2) +
+              '\n```'
           )
         );
       }
-      throw error;
-    }
-
-    if (result.type === 'success') {
-      // JSON.stringify returns undefined for an undefined script result
-      const json = JSON.stringify(remoteValueToNative(result.result), null, 2) ?? 'undefined';
-
-      if (saveTo) {
-        const saved = await saveOutput(
-          json,
-          saveTo === true ? undefined : saveTo,
-          'evaluate-script'
-        );
-        let output = `Script ran on page. Result saved to: ${saved.path} (${(saved.bytes / 1024).toFixed(1)}KB)`;
-        const excerpt = previewExcerpt(json, preview);
-        if (excerpt) {
-          output += '\nPreview:\n```json\n' + excerpt + '\n```';
-        }
-        return successResponse(output);
-      }
-
-      return successResponse('Script ran on page and returned:\n```json\n' + json + '\n```');
-    } else {
-      const exceptionDetails = result.exceptionDetails;
-      return errorResponse(
-        new Error(
-          `Script execution failed: ${exceptionDetails.text}\n\n` +
-            '```json\n' +
-            JSON.stringify(remoteValueToNative(exceptionDetails.exception), null, 2) +
-            '\n```'
-        )
-      );
-    }
+    }, dialogOpenedResponse);
   }
 );
 

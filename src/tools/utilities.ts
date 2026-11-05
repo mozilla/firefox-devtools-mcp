@@ -4,6 +4,7 @@
 
 import { successResponse } from '../utils/response-helpers.js';
 import { defineModule, defineToolHandler, type ToolDefinition } from './module.js';
+import type { BrowsingContext } from 'webdriver-bidi-protocol';
 import type { McpToolResponse } from '../types/common.js';
 
 // Tool definitions - Dialogs
@@ -101,6 +102,14 @@ export const handleDismissDialog = defineToolHandler<typeof dismissDialogTool>(
     return successResponse('Dismissed');
   }
 );
+
+export function dialogOpenedResponse(dialog: BrowsingContext.UserPromptOpenedParameters) {
+  const defaultValue =
+    dialog.defaultValue !== undefined ? ` with default value "${dialog.defaultValue}"` : '';
+  return successResponse(
+    `Dialog opened while tool was running: ${dialog.type} "${dialog.message}"${defaultValue}. Use accept_dialog or dismiss_dialog.`
+  );
+}
 
 // Handlers - History
 export const handleNavigateHistory = defineToolHandler<typeof navigateHistoryTool>(
