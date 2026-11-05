@@ -5,4 +5,5 @@
 export { ConsoleEvents, type ConsoleEventsOptions } from './console.js';
 export { NetworkEvents, type NetworkEventsOptions } from './network.js';
 export { DebuggingEvents } from './debugging.js';
+export { DialogEvents } from './dialogs.js';
 export { DownloadEvents } from './downloads.js';

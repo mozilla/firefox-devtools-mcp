@@ -3,6 +3,7 @@
  */
 
 import { Builder, Browser, Capabilities, WebDriver } from 'selenium-webdriver';
+import { UserPromptHandler } from 'selenium-webdriver/lib/capabilities.js';
 import firefox from 'selenium-webdriver/firefox.js';
 import {
   mkdirSync,
@@ -290,6 +291,7 @@ export class FirefoxCore {
       if (this.options.acceptInsecureCerts) {
         caps.set('acceptInsecureCerts', true);
       }
+      caps.setAlertBehavior(UserPromptHandler.IGNORE);
 
       const serviceBuilder = new firefox.ServiceBuilder(geckodriverPath);
       this.driver = firefox.Driver.createSession(caps, serviceBuilder.build());
@@ -364,6 +366,7 @@ export class FirefoxCore {
       // session in a locked state that blocks reconnection.
       const caps = new Capabilities();
       caps.set('webSocketUrl', true);
+      caps.setAlertBehavior(UserPromptHandler.IGNORE);
 
       // createSession() returns synchronously; the session is established async under the hood.
       // Passing geckodriverPath to ServiceBuilder prevents getBinaryPaths() from running,
@@ -409,6 +412,7 @@ export class FirefoxCore {
       // Standard path: launch a new Firefox via selenium-webdriver
       const firefoxOptions = new firefox.Options();
       firefoxOptions.enableBidi();
+      firefoxOptions.setAlertBehavior(UserPromptHandler.IGNORE);
 
       if (this.options.headless) {
         firefoxOptions.addArguments('-headless');

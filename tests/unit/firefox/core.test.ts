@@ -313,6 +313,7 @@ describe('FirefoxCore connect() profile handling', () => {
   const mockAddArguments = vi.fn();
   const mockSetProfile = vi.fn();
   const mockEnableBidi = vi.fn();
+  const mockSetAlertBehavior = vi.fn();
   const mockSetBinary = vi.fn();
   const mockWindowSize = vi.fn();
   const mockSetAcceptInsecureCerts = vi.fn();
@@ -327,6 +328,7 @@ describe('FirefoxCore connect() profile handling', () => {
       default: {
         Options: class {
           enableBidi = mockEnableBidi;
+          setAlertBehavior = mockSetAlertBehavior;
           addArguments = mockAddArguments;
           setProfile = mockSetProfile;
           setBinary = mockSetBinary;
@@ -453,6 +455,7 @@ describe('FirefoxCore connect() binary lookup failure', () => {
       default: {
         Options: class {
           enableBidi = vi.fn();
+          setAlertBehavior = vi.fn();
           addArguments = vi.fn();
           setBinary = vi.fn();
           windowSize = vi.fn();
