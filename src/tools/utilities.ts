@@ -87,9 +87,15 @@ export const handleAcceptDialog = defineToolHandler<typeof acceptDialogTool>(
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
+    const dialog = firefox.getCurrentDialog();
+    const value = !dialog
+      ? promptText
+      : (dialog.type as string) === 'prompt'
+        ? (promptText ?? dialog.defaultValue)
+        : undefined;
 
-    await firefox.acceptDialog(promptText);
-    return successResponse(promptText ? `Accepted: "${promptText}"` : 'Accepted');
+    await firefox.acceptDialog(value);
+    return successResponse(value !== undefined ? `Accepted: "${value}"` : 'Accepted');
   }
 );
 

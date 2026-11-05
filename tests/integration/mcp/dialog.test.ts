@@ -99,4 +99,55 @@ describe('Dialog handlers', () => {
     expect(accepted.isError).toBe(false);
     expect(accepted.text).toContain('Accepted');
   });
+
+  mcpTest(
+    `accept_dialog without promptText should use a prompt's default value`,
+    async ({ mcp }) => {
+      await mcp.callTool('evaluate_script', {
+        function: `() => window.result = prompt('foo', 'default value')`,
+      });
+
+      const accepted = await mcp.callTool('accept_dialog');
+      expect(accepted.isError).toBe(false);
+      expect(accepted.text).toBe('Accepted: "default value"');
+
+      const result = await mcp.callTool('evaluate_script', {
+        function: '() => window.result',
+      });
+      expect(result.isError).toBe(false);
+      expect(result.text).toContain('default value');
+    }
+  );
+
+  mcpTest(
+    `accept_dialog should override a prompt's default value with an empty string`,
+    async ({ mcp }) => {
+      await mcp.callTool('evaluate_script', {
+        function: `() => window.result = prompt('foo', 'default value')`,
+      });
+
+      const accepted = await mcp.callTool('accept_dialog', { promptText: '' });
+      expect(accepted.isError).toBe(false);
+      expect(accepted.text).toBe('Accepted: ""');
+
+      const result = await mcp.callTool('evaluate_script', {
+        function: '() => window.result',
+      });
+      expect(result.isError).toBe(false);
+      expect(result.text).toContain('""');
+    }
+  );
+
+  mcpTest(
+    'accept_dialog should ignore promptText if the current dialog is not a prompt',
+    async ({ mcp }) => {
+      await mcp.callTool('evaluate_script', {
+        function: `() => alert('foo')`,
+      });
+
+      const accepted = await mcp.callTool('accept_dialog', { promptText: 'bar' });
+      expect(accepted.isError).toBe(false);
+      expect(accepted.text).toBe('Accepted');
+    }
+  );
 });

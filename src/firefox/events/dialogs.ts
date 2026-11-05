@@ -7,6 +7,10 @@ import type { BiDiFacade } from '../bidi.js';
 import { logDebug } from '../../utils/logger.js';
 
 export class DialogEvents {
+  private dialogs = new Map<
+    BrowsingContext.BrowsingContext,
+    BrowsingContext.UserPromptOpenedParameters
+  >();
   private subscribed = false;
 
   constructor(private bidi: BiDiFacade) {}
@@ -19,10 +23,25 @@ export class DialogEvents {
       return;
     }
 
-    await this.bidi.subscribe(['browsingContext.userPromptOpened']);
+    await this.bidi.subscribe([
+      'browsingContext.userPromptOpened',
+      'browsingContext.userPromptClosed',
+    ]);
+
+    this.bidi.on('browsingContext.userPromptOpened', (dialog) => {
+      this.dialogs.set(dialog.context, dialog);
+    });
+
+    this.bidi.on('browsingContext.userPromptClosed', ({ context }) => {
+      this.dialogs.delete(context);
+    });
 
     this.subscribed = true;
     logDebug('Dialog listener ready');
+  }
+
+  getDialog(context: BrowsingContext.BrowsingContext) {
+    return this.dialogs.get(context);
   }
 
   async raceAgainstDialogOpened<T>(
