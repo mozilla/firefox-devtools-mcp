@@ -108,6 +108,8 @@ export function walkTree(
             iframeResult.node.isIframe = true;
             iframeResult.node.frameSrc = iframe.src;
             childResults.push(iframeResult.node);
+          } else {
+            childResults.push(...iframeResult.relevantChildren);
           }
         }
       } catch {

@@ -118,7 +118,7 @@ export class FirefoxClient {
     this.dom = new DomInteractions(
       this.bidi,
       (context: BrowsingContext.BrowsingContext, uid: string) =>
-        this.snapshot!.resolveUidToElement(context, uid)
+        this.snapshot!.resolveUidToContextElement(context, uid)
     );
 
     this.pages = new PageManagement(
