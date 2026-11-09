@@ -275,7 +275,7 @@ export const handleClearConsoleMessages = defineToolHandler<typeof clearConsoleM
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    const count = (await firefox.getConsoleMessages()).length;
+    const count = (await firefox.getConsoleMessages({ startListening: false })).length;
     firefox.clearConsoleMessages();
 
     return successResponse(`cleared ${count} messages`);

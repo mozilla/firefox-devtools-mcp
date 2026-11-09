@@ -123,6 +123,13 @@ Then call tools like:
 - `list_downloads` (always‑on capture), `set_download_behavior`
 - `screenshot_page`, `list_console_messages`
 
+Console collection starts when `list_console_messages` is first requested,
+rather than when Firefox connects. Earlier entries are available only if Firefox
+still has them cached. After that first request, collection continues across
+navigations as before. `clear_console_messages` clears the collected buffer
+without starting collection. This avoids activating Firefox's console listener
+for sessions that only use page controls.
+
 ## CLI options
 
 You can pass flags or environment variables (names on the right):

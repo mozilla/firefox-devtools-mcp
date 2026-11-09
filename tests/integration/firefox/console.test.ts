@@ -3,7 +3,11 @@
  * Tests with real Firefox browser in headless mode
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, realpathSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, basename, join } from 'node:path';
+import { removeDir } from '../../helpers/fs.js';
 import {
   createTestFirefox,
   closeFirefox,
@@ -13,6 +17,64 @@ import {
   fixtureUrl,
 } from '../../helpers/firefox.js';
 import type { FirefoxClient } from '@/firefox/index.js';
+import { ReadinessState } from '@/firefox/bidi.js';
+
+describe('Console subscription lifecycle', () => {
+  let firefox: FirefoxClient;
+  let profileRoot: string;
+  const temporaryRoot = realpathSync(tmpdir());
+
+  beforeEach(async () => {
+    profileRoot = mkdtempSync(join(temporaryRoot, 'firefox-console-lifecycle-'));
+    firefox = await createTestFirefox({ profilePath: profileRoot });
+  });
+
+  afterEach(async () => {
+    await closeFirefox(firefox);
+    expect(dirname(realpathSync(profileRoot))).toBe(temporaryRoot);
+    expect(basename(profileRoot).startsWith('firefox-console-lifecycle-')).toBe(true);
+    removeDir(profileRoot);
+  });
+
+  it('starts collection on the first read and receives cached page-load messages', async () => {
+    await firefox.navigate(fixtureUrl('console.html'), ReadinessState.Complete);
+
+    expect(await firefox.getConsoleMessages({ startListening: false })).toEqual([]);
+
+    await waitFor(async () => {
+      const messages = await firefox.getConsoleMessages();
+      return messages.some((message) => message.text.includes('Info message on load'));
+    });
+  });
+
+  it('does not duplicate messages when the first reads are concurrent', async () => {
+    await Promise.all(Array.from({ length: 8 }, () => firefox.getConsoleMessages()));
+    firefox.clearConsoleMessages();
+    const text = 'concurrent-console-subscription';
+    await firefox.evaluate(`console.log(${JSON.stringify(text)})`);
+
+    await waitFor(async () => {
+      const messages = await firefox.getConsoleMessages();
+      return messages.some((message) => message.text === text);
+    });
+
+    const messages = await firefox.getConsoleMessages();
+    expect(messages.filter((message) => message.text === text)).toHaveLength(1);
+  });
+
+  it('starts a fresh collection after reconnecting', async () => {
+    await firefox.getConsoleMessages();
+    await firefox.close();
+    await firefox.connect();
+    await firefox.navigate(fixtureUrl('console.html'), ReadinessState.Complete);
+
+    expect(await firefox.getConsoleMessages({ startListening: false })).toEqual([]);
+    await waitFor(async () => {
+      const messages = await firefox.getConsoleMessages();
+      return messages.some((message) => message.text.includes('Info message on load'));
+    });
+  });
+});
 
 describe('Console Capture Integration Tests', () => {
   let firefox: FirefoxClient;
