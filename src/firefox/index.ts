@@ -80,12 +80,6 @@ export class FirefoxClient {
     this.consoleEvents = new ConsoleEvents(this.bidi, {
       autoClearOnNavigate: false,
     });
-    try {
-      await this.consoleEvents.subscribe();
-    } catch {
-      logDebug('Unable to subscribe to console events');
-      this.consoleEvents = null;
-    }
 
     this.networkEvents = new NetworkEvents(this.bidi, {
       autoClearOnNavigate: false,
@@ -189,13 +183,19 @@ export class FirefoxClient {
   // Console
   // ============================================================================
 
-  async getConsoleMessages(): Promise<ConsoleMessage[]> {
-    if (!this.consoleEvents) {
+  async getConsoleMessages({ startListening = true }: { startListening?: boolean } = {}): Promise<
+    ConsoleMessage[]
+  > {
+    const consoleEvents = this.consoleEvents;
+    if (!consoleEvents) {
       throw new Error(
         'Console events not available (Firefox Remote Agent not running — start Firefox with --remote-debugging-port to enable BiDi)'
       );
     }
-    return this.consoleEvents.getMessages();
+    if (startListening) {
+      await consoleEvents.subscribe();
+    }
+    return consoleEvents.getMessages();
   }
 
   clearConsoleMessages(): void {

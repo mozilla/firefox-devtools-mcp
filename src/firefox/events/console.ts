@@ -18,6 +18,8 @@ export interface ConsoleEventsOptions {
 export class ConsoleEvents {
   private consoleMessages: ConsoleMessage[] = [];
   private subscribed = false;
+  private subscriptionPromise: Promise<void> | null = null;
+  private listenersRegistered = false;
   private options: ConsoleEventsOptions;
 
   constructor(
@@ -38,10 +40,29 @@ export class ConsoleEvents {
       return;
     }
 
+    this.subscriptionPromise ??= this.subscribeToEvents().finally(() => {
+      this.subscriptionPromise = null;
+    });
+    await this.subscriptionPromise;
+  }
+
+  private async subscribeToEvents(): Promise<void> {
+    // Firefox can replay cached entries before session.subscribe returns.
+    this.registerListeners();
     await this.bidi.subscribe('log.entryAdded');
 
     // Subscribe to navigation events for lifecycle hooks
     await this.bidi.subscribe(['browsingContext.load', 'browsingContext.domContentLoaded']);
+
+    this.subscribed = true;
+    logDebug('Console listener active with lifecycle hooks');
+  }
+
+  private registerListeners(): void {
+    if (this.listenersRegistered) {
+      return;
+    }
+    this.listenersRegistered = true;
 
     this.bidi.on('log.entryAdded', (entry) => {
       const message: ConsoleMessage = {
@@ -60,9 +81,6 @@ export class ConsoleEvents {
       this.bidi.on('browsingContext.load', () => this.clearMessages());
       this.bidi.on('browsingContext.domContentLoaded', () => this.clearMessages());
     }
-
-    this.subscribed = true;
-    logDebug('Console listener active with lifecycle hooks');
   }
 
   /**
