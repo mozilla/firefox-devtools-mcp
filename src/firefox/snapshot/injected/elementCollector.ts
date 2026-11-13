@@ -59,7 +59,12 @@ export function isVisible(el: Element): boolean {
     } catch {
       return false;
     }
-    current = current.parentElement;
+    // A slotted element is rendered at its slot, so the slot's ancestors decide whether it shows
+    current =
+      current.assignedSlot ??
+      current.parentElement ??
+      (current.getRootNode() as ShadowRoot).host ??
+      null;
   }
 
   return true;

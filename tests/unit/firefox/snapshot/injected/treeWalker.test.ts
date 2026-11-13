@@ -293,6 +293,50 @@ describe('treeWalker', () => {
     });
   });
 
+  describe('shadow DOM', () => {
+    function walkedIds(): string[] {
+      const ids: string[] = [];
+      const visit = (node: SnapshotNode) => {
+        if (node.id) {
+          ids.push(node.id);
+        }
+        node.children.forEach(visit);
+      };
+      visit(walkTree(document.body, 1, { includeAll: true }).tree!);
+      return ids;
+    }
+
+    function attachCard(host: Element): void {
+      host.attachShadow({ mode: 'open' }).innerHTML =
+        '<nav id="bar"><slot name="action"><button id="fallback">Fallback</button></slot></nav>';
+    }
+
+    it('walks slotted elements at their slot', () => {
+      document.body.innerHTML = '<aside><button id="slotted" slot="action">Go</button></aside>';
+      attachCard(document.querySelector('aside')!);
+
+      const tree = walkTree(document.body, 1).tree!;
+      const bar = tree.children.find((c) => c.id === 'bar');
+      expect(bar!.children.map((c) => c.id)).toEqual(['slotted']);
+    });
+
+    it('skips light children that are not assigned to a slot', () => {
+      document.body.innerHTML = '<aside><button id="stray" slot="nowhere">Go</button></aside>';
+      attachCard(document.querySelector('aside')!);
+
+      expect(walkedIds()).not.toContain('stray');
+    });
+
+    it('walks fallback content only when nothing is assigned to the slot', () => {
+      document.body.innerHTML = '<aside><button slot="action">Go</button></aside>';
+      attachCard(document.querySelector('aside')!);
+      expect(walkedIds()).not.toContain('fallback');
+
+      document.querySelector('aside')!.innerHTML = '';
+      expect(walkedIds()).toContain('fallback');
+    });
+  });
+
   describe('iframes', () => {
     it('marks cross-origin iframe with crossOrigin flag', () => {
       const iframe = document.createElement('iframe');

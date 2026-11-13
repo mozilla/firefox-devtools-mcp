@@ -233,4 +233,97 @@ describe('Snapshot Integration Tests', () => {
 
     expect(hasInvisibleButton).toBe(false);
   }, 10000);
+
+  describe('shadow DOM', () => {
+    const SHADOW_PAGE =
+      'data:text/html,<x-box id=open></x-box><x-box id=hidden style="display:none"></x-box>' +
+      '<output id=out></output><script>customElements.define("x-box", class extends HTMLElement {' +
+      ' connectedCallback() { const root = this.attachShadow({ mode: "open" });' +
+      ' root.innerHTML = "<input id=deep><button id=deepBtn>Deep</button>";' +
+      ' root.getElementById("deepBtn").onclick = () =>' +
+      ' { out.textContent = this.id + ":" + root.getElementById("deep").value; }; } });</script>';
+
+    function shadowNode(snapshot: { json: { root: SnapshotNode } }, id: string) {
+      return findNodeInSnapshot(snapshot.json.root, (node) => node.id === id);
+    }
+
+    it('should include the elements of an open shadow root', async () => {
+      await firefox.navigate(SHADOW_PAGE);
+
+      const snapshot = await firefox.takeSnapshot();
+
+      expect(shadowNode(snapshot, 'deepBtn')?.name).toBe('Deep');
+    }, 10000);
+
+    it('should let shadow DOM elements be filled and clicked by UID', async () => {
+      await firefox.navigate(SHADOW_PAGE);
+      const snapshot = await firefox.takeSnapshot();
+
+      await firefox.fillByUid(shadowNode(snapshot, 'deep')!.uid, 'abc');
+      await firefox.clickByUid(shadowNode(snapshot, 'deepBtn')!.uid);
+
+      expect(await firefox.evaluate('document.getElementById("out").textContent')).toBe('open:abc');
+    }, 10000);
+
+    it('should leave out the shadow root of a hidden host', async () => {
+      await firefox.navigate(SHADOW_PAGE);
+
+      const snapshot = await firefox.takeSnapshot({ includeAll: true });
+
+      expect(findNodesInSnapshot(snapshot.json.root, (node) => node.id === 'deepBtn')).toHaveLength(
+        1
+      );
+    }, 10000);
+
+    describe('slots', () => {
+      const SLOT_PAGE =
+        'data:text/html,<x-card id=filled><button id=slotted slot=action>Slotted</button>' +
+        '<button id=stray slot=nowhere>Stray</button>' +
+        '<button id=covered slot=covered>Covered</button></x-card><x-card id=empty></x-card>' +
+        '<script>customElements.define("x-card", class extends' +
+        ' HTMLElement { connectedCallback() { this.attachShadow({ mode: "open" }).innerHTML =' +
+        ' "<nav id=" + this.id + "Bar><slot name=action><button id=" + this.id + "Fallback>' +
+        'Fallback</button></slot></nav><div style=display:none><slot name=covered></slot></div>";' +
+        ' } });</script>';
+
+      function hasNode(snapshot: { json: { root: SnapshotNode } }, id: string) {
+        return findNodesInSnapshot(snapshot.json.root, (node) => node.id === id).length > 0;
+      }
+
+      it('should show slotted elements at their slot', async () => {
+        await firefox.navigate(SLOT_PAGE);
+
+        const snapshot = await firefox.takeSnapshot();
+
+        expect(shadowNode(snapshot, 'filledBar')?.children.map((node) => node.id)).toEqual([
+          'slotted',
+        ]);
+      }, 10000);
+
+      it('should leave out light children that are not assigned to a slot', async () => {
+        await firefox.navigate(SLOT_PAGE);
+
+        const snapshot = await firefox.takeSnapshot({ includeAll: true });
+
+        expect(hasNode(snapshot, 'stray')).toBe(false);
+      }, 10000);
+
+      it('should show fallback content only when nothing is assigned to the slot', async () => {
+        await firefox.navigate(SLOT_PAGE);
+
+        const snapshot = await firefox.takeSnapshot({ includeAll: true });
+
+        expect(hasNode(snapshot, 'filledFallback')).toBe(false);
+        expect(hasNode(snapshot, 'emptyFallback')).toBe(true);
+      }, 10000);
+
+      it('should leave out slotted elements whose slot is hidden', async () => {
+        await firefox.navigate(SLOT_PAGE);
+
+        const snapshot = await firefox.takeSnapshot({ includeAll: true });
+
+        expect(hasNode(snapshot, 'covered')).toBe(false);
+      }, 10000);
+    });
+  });
 });
