@@ -274,5 +274,56 @@ describe('Snapshot Integration Tests', () => {
         1
       );
     }, 10000);
+
+    describe('slots', () => {
+      const SLOT_PAGE =
+        'data:text/html,<x-card id=filled><button id=slotted slot=action>Slotted</button>' +
+        '<button id=stray slot=nowhere>Stray</button>' +
+        '<button id=covered slot=covered>Covered</button></x-card><x-card id=empty></x-card>' +
+        '<script>customElements.define("x-card", class extends' +
+        ' HTMLElement { connectedCallback() { this.attachShadow({ mode: "open" }).innerHTML =' +
+        ' "<nav id=" + this.id + "Bar><slot name=action><button id=" + this.id + "Fallback>' +
+        'Fallback</button></slot></nav><div style=display:none><slot name=covered></slot></div>";' +
+        ' } });</script>';
+
+      function hasNode(snapshot: { json: { root: SnapshotNode } }, id: string) {
+        return findNodesInSnapshot(snapshot.json.root, (node) => node.id === id).length > 0;
+      }
+
+      it('should show slotted elements at their slot', async () => {
+        await firefox.navigate(SLOT_PAGE);
+
+        const snapshot = await firefox.takeSnapshot();
+
+        expect(shadowNode(snapshot, 'filledBar')?.children.map((node) => node.id)).toEqual([
+          'slotted',
+        ]);
+      }, 10000);
+
+      it('should leave out light children that are not assigned to a slot', async () => {
+        await firefox.navigate(SLOT_PAGE);
+
+        const snapshot = await firefox.takeSnapshot({ includeAll: true });
+
+        expect(hasNode(snapshot, 'stray')).toBe(false);
+      }, 10000);
+
+      it('should show fallback content only when nothing is assigned to the slot', async () => {
+        await firefox.navigate(SLOT_PAGE);
+
+        const snapshot = await firefox.takeSnapshot({ includeAll: true });
+
+        expect(hasNode(snapshot, 'filledFallback')).toBe(false);
+        expect(hasNode(snapshot, 'emptyFallback')).toBe(true);
+      }, 10000);
+
+      it('should leave out slotted elements whose slot is hidden', async () => {
+        await firefox.navigate(SLOT_PAGE);
+
+        const snapshot = await firefox.takeSnapshot({ includeAll: true });
+
+        expect(hasNode(snapshot, 'covered')).toBe(false);
+      }, 10000);
+    });
   });
 });
